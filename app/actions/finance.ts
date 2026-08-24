@@ -2,10 +2,11 @@
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { wallets, categories, budgets, transactions } from "@/lib/schema";
+import { wallets, categories, budgets, transactions, goals, subscriptions, Goal, Subscription } from "@/lib/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { ensureTahap2Tables } from "@/lib/db-init";
 
 async function userId() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -14,8 +15,9 @@ async function userId() {
 }
 
 export async function getFinanceData() {
+  await ensureTahap2Tables();
   const uid = await userId();
-  const [w, c, b, t] = await Promise.all([
+  const [w, c, b, t, g, s] = await Promise.all([
     db.select().from(wallets).where(eq(wallets.userId, uid)),
     db.select().from(categories).where(eq(categories.userId, uid)),
     db.select().from(budgets).where(eq(budgets.userId, uid)),
@@ -24,11 +26,21 @@ export async function getFinanceData() {
       .from(transactions)
       .where(eq(transactions.userId, uid))
       .orderBy(desc(transactions.date)),
+    db.select().from(goals).where(eq(goals.userId, uid)).orderBy(desc(goals.createdAt)),
+    db.select().from(subscriptions).where(eq(subscriptions.userId, uid)).orderBy(subscriptions.dueDate),
   ]);
-  return { wallets: w, categories: c, budgets: b, transactions: t };
+  return {
+    wallets: w,
+    categories: c,
+    budgets: b,
+    transactions: t,
+    goals: g,
+    subscriptions: s,
+  };
 }
 
 export async function seedDefaults() {
+  await ensureTahap2Tables();
   const uid = await userId();
   const existing = await db
     .select()
@@ -272,7 +284,6 @@ export async function transferBetweenWallets(form: {
 
   if (!fromW.length || !toW.length) throw new Error("Dompet tidak ditemukan");
 
-  // ensure a category for transfer exists
   let transferCat = await db
     .select()
     .from(categories)
@@ -322,6 +333,251 @@ export async function transferBetweenWallets(form: {
     }),
   ]);
 
+  revalidatePath("/");
+  return getFinanceData();
+}
+
+// -------------------------------------------------------------
+// FINANCIAL GOALS (TARGET TABUNGAN IMPIAN) ACTIONS
+// -------------------------------------------------------------
+export async function addGoal(form: {
+  name: string;
+  targetAmount: number;
+  currentAmount?: number;
+  targetDate?: string;
+  color?: string;
+  icon?: string;
+  walletId?: number;
+}) {
+  await ensureTahap2Tables();
+  const uid = await userId();
+  await db.insert(goals).values({
+    userId: uid,
+    name: form.name.trim(),
+    targetAmount: form.targetAmount,
+    currentAmount: form.currentAmount || 0,
+    targetDate: form.targetDate ? new Date(form.targetDate) : null,
+    color: form.color || "teal",
+    icon: form.icon || "target",
+    walletId: form.walletId || null,
+    isAchieved: (form.currentAmount || 0) >= form.targetAmount,
+  });
+  revalidatePath("/");
+  return getFinanceData();
+}
+
+export async function updateGoal(form: {
+  id: number;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  targetDate?: string;
+  color?: string;
+  icon?: string;
+  walletId?: number;
+}) {
+  await ensureTahap2Tables();
+  const uid = await userId();
+  await db
+    .update(goals)
+    .set({
+      name: form.name.trim(),
+      targetAmount: form.targetAmount,
+      currentAmount: form.currentAmount,
+      targetDate: form.targetDate ? new Date(form.targetDate) : null,
+      color: form.color || "teal",
+      icon: form.icon || "target",
+      walletId: form.walletId || null,
+      isAchieved: form.currentAmount >= form.targetAmount,
+    })
+    .where(and(eq(goals.id, form.id), eq(goals.userId, uid)));
+  revalidatePath("/");
+  return getFinanceData();
+}
+
+export async function depositToGoal(form: {
+  goalId: number;
+  amount: number;
+  walletId?: number;
+}) {
+  await ensureTahap2Tables();
+  const uid = await userId();
+  const [existing] = await db
+    .select()
+    .from(goals)
+    .where(and(eq(goals.id, form.goalId), eq(goals.userId, uid)));
+
+  if (!existing) throw new Error("Target tabungan tidak ditemukan");
+
+  const newCurrent = existing.currentAmount + form.amount;
+  const isAchieved = newCurrent >= existing.targetAmount;
+
+  await db
+    .update(goals)
+    .set({
+      currentAmount: newCurrent,
+      isAchieved,
+    })
+    .where(and(eq(goals.id, form.goalId), eq(goals.userId, uid)));
+
+  // If wallet selected, record expense transaction for tabungan
+  if (form.walletId) {
+    let tabunganCat = await db
+      .select()
+      .from(categories)
+      .where(and(eq(categories.userId, uid), eq(categories.name, "Tabungan & Investasi")));
+
+    let catId = tabunganCat[0]?.id;
+    if (!catId) {
+      const [inserted] = await db
+        .insert(categories)
+        .values({
+          userId: uid,
+          name: "Tabungan & Investasi",
+          type: "expense",
+          color: "emerald",
+        })
+        .returning();
+      catId = inserted.id;
+    }
+
+    await db.insert(transactions).values({
+      userId: uid,
+      walletId: form.walletId,
+      categoryId: catId,
+      type: "expense",
+      amount: form.amount,
+      description: `Alokasi Tabungan: ${existing.name}`,
+      date: new Date(),
+    });
+  }
+
+  revalidatePath("/");
+  return getFinanceData();
+}
+
+export async function deleteGoal(id: number) {
+  await ensureTahap2Tables();
+  const uid = await userId();
+  await db.delete(goals).where(and(eq(goals.id, id), eq(goals.userId, uid)));
+  revalidatePath("/");
+  return getFinanceData();
+}
+
+// -------------------------------------------------------------
+// SUBSCRIPTIONS & RECURRING BILLS ACTIONS
+// -------------------------------------------------------------
+export async function addSubscription(form: {
+  name: string;
+  amount: number;
+  billingCycle: string;
+  dueDate: number;
+  categoryId?: number;
+  walletId?: number;
+  reminderDaysBefore?: number;
+}) {
+  await ensureTahap2Tables();
+  const uid = await userId();
+  await db.insert(subscriptions).values({
+    userId: uid,
+    name: form.name.trim(),
+    amount: form.amount,
+    billingCycle: form.billingCycle || "monthly",
+    dueDate: form.dueDate || 1,
+    categoryId: form.categoryId || null,
+    walletId: form.walletId || null,
+    reminderDaysBefore: form.reminderDaysBefore || 3,
+    isActive: true,
+  });
+  revalidatePath("/");
+  return getFinanceData();
+}
+
+export async function updateSubscription(form: {
+  id: number;
+  name: string;
+  amount: number;
+  billingCycle: string;
+  dueDate: number;
+  categoryId?: number;
+  walletId?: number;
+  isActive: boolean;
+  reminderDaysBefore?: number;
+}) {
+  await ensureTahap2Tables();
+  const uid = await userId();
+  await db
+    .update(subscriptions)
+    .set({
+      name: form.name.trim(),
+      amount: form.amount,
+      billingCycle: form.billingCycle,
+      dueDate: form.dueDate,
+      categoryId: form.categoryId || null,
+      walletId: form.walletId || null,
+      isActive: form.isActive,
+      reminderDaysBefore: form.reminderDaysBefore || 3,
+    })
+    .where(and(eq(subscriptions.id, form.id), eq(subscriptions.userId, uid)));
+  revalidatePath("/");
+  return getFinanceData();
+}
+
+export async function paySubscription(form: {
+  subscriptionId: number;
+  walletId: number;
+  date?: string;
+}) {
+  await ensureTahap2Tables();
+  const uid = await userId();
+  const [sub] = await db
+    .select()
+    .from(subscriptions)
+    .where(and(eq(subscriptions.id, form.subscriptionId), eq(subscriptions.userId, uid)));
+
+  if (!sub) throw new Error("Tagihan tidak ditemukan");
+
+  let catId = sub.categoryId;
+  if (!catId) {
+    let billCat = await db
+      .select()
+      .from(categories)
+      .where(and(eq(categories.userId, uid), eq(categories.name, "Tagihan & Utilitas")));
+    catId = billCat[0]?.id;
+    if (!catId) {
+      const [inserted] = await db
+        .insert(categories)
+        .values({
+          userId: uid,
+          name: "Tagihan & Utilitas",
+          type: "expense",
+          color: "cyan",
+        })
+        .returning();
+      catId = inserted.id;
+    }
+  }
+
+  await db.insert(transactions).values({
+    userId: uid,
+    walletId: form.walletId,
+    categoryId: catId,
+    type: "expense",
+    amount: sub.amount,
+    description: `Pembayaran: ${sub.name}`,
+    date: form.date ? new Date(form.date) : new Date(),
+  });
+
+  revalidatePath("/");
+  return getFinanceData();
+}
+
+export async function deleteSubscription(id: number) {
+  await ensureTahap2Tables();
+  const uid = await userId();
+  await db
+    .delete(subscriptions)
+    .where(and(eq(subscriptions.id, id), eq(subscriptions.userId, uid)));
   revalidatePath("/");
   return getFinanceData();
 }

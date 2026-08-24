@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 export async function GET() {
   return NextResponse.json({
     name: 'Dompetku Mobile REST API',
-    version: '1.0.0',
+    version: '1.2.0',
     description: 'API backend untuk integrasi aplikasi Android, iOS, dan web clients.',
     baseUrl: '/api/v1',
     authentication: {
@@ -73,11 +73,6 @@ export async function GET() {
         methods: ['GET', 'POST'],
         queryParams: ['type (income|expense)'],
         description: 'Daftar dan buat kategori transaksi',
-        bodyExample: {
-          name: 'Makanan & Minuman',
-          type: 'expense',
-          color: 'amber',
-        },
       },
       {
         path: '/api/v1/categories/:id',
@@ -89,16 +84,62 @@ export async function GET() {
         methods: ['GET', 'POST'],
         queryParams: ['month (YYYY-MM)'],
         description: 'Daftar budget per bulan dengan realisasi & persentase, serta upsert budget',
-        bodyExample: {
-          categoryId: 1,
-          amount: 1500000,
-          month: '2026-08',
-        },
       },
       {
         path: '/api/v1/budgets/:id',
         methods: ['DELETE'],
         description: 'Hapus budget bulanan',
+      },
+      {
+        path: '/api/v1/goals',
+        methods: ['GET', 'POST'],
+        description: 'Tahap 2: Target Tabungan Impian (Financial Goals) dengan progress bar & deadline',
+        bodyExample: {
+          name: 'Beli Rumah Impian',
+          targetAmount: 150000000,
+          currentAmount: 25000000,
+          targetDate: '2027-12-31',
+        },
+      },
+      {
+        path: '/api/v1/goals/:id',
+        methods: ['GET', 'PUT', 'DELETE'],
+        description: 'Detail, update, dan hapus target tabungan',
+      },
+      {
+        path: '/api/v1/goals/:id/deposit',
+        methods: ['POST'],
+        description: 'Setor / alokasi saldo tabungan ke target tertentu',
+        bodyExample: {
+          amount: 1000000,
+          walletId: 1,
+        },
+      },
+      {
+        path: '/api/v1/subscriptions',
+        methods: ['GET', 'POST'],
+        description: 'Tahap 2: Manajemen Tagihan Rutin & Langganan (Netflix, BPJS, PLN, WiFi)',
+        bodyExample: {
+          name: 'Netflix Premium',
+          amount: 186000,
+          billingCycle: 'monthly',
+          dueDate: 15,
+          walletId: 1,
+          reminderDaysBefore: 3,
+        },
+      },
+      {
+        path: '/api/v1/subscriptions/:id',
+        methods: ['GET', 'PUT', 'DELETE'],
+        description: 'Detail, edit, dan hapus data tagihan rutin',
+      },
+      {
+        path: '/api/v1/subscriptions/:id/pay',
+        methods: ['POST'],
+        description: '1-Click Bayar Tagihan langsung memotong saldo dompet & mencatat transaksi',
+        bodyExample: {
+          walletId: 1,
+        },
       },
     ],
   })
