@@ -29,9 +29,11 @@ import {
   Check,
   CheckCircle2,
   ChevronRight,
+  Code2,
   CreditCard,
   Download,
   Edit3,
+  ExternalLink,
   FileSpreadsheet,
   Filter,
   Layers,
@@ -49,9 +51,11 @@ import {
   Search,
   Settings2,
   Shield,
+  Smartphone,
   Sparkles,
   Sun,
   Tag,
+  Terminal,
   Trash2,
   TrendingDown,
   TrendingUp,
@@ -113,6 +117,8 @@ export default function Dashboard({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('light')
+  const [apiTestResult, setApiTestResult] = useState<string | null>(null)
+  const [apiTesting, setApiTesting] = useState(false)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
@@ -185,6 +191,24 @@ export default function Dashboard({
     startTransition(() => {
       router.refresh()
     })
+  }
+
+  const testMobileApi = async () => {
+    setApiTesting(true)
+    setApiTestResult(null)
+    try {
+      const res = await fetch('/api/v1/summary')
+      const json = await res.json()
+      if (res.ok) {
+        setApiTestResult(`HTTP 200 OK — ${json.message} (Total Saldo: ${formatRupiah(json.data?.metrics?.totalBalance)})`)
+      } else {
+        setApiTestResult(`HTTP ${res.status}: ${json.message || 'Error'}`)
+      }
+    } catch (e: any) {
+      setApiTestResult(`Gagal menghubungi API: ${e.message}`)
+    } finally {
+      setApiTesting(false)
+    }
   }
 
   // Transactions Filter States
@@ -1678,7 +1702,73 @@ export default function Dashboard({
                 </div>
               </div>
 
-              {/* 3. User Profile Card */}
+              {/* 3. Mobile REST API & Android Integration Card (Tahap 1) */}
+              <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Smartphone className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                      <span>Integrasi REST API Aplikasi Android (Tahap 1)</span>
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Backend REST API v1 siap digunakan untuk menghubungkan aplikasi Android / Flutter / Kotlin.
+                    </p>
+                  </div>
+                  <a
+                    href="/api/v1"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100"
+                  >
+                    <Code2 className="h-4 w-4 text-emerald-600" />
+                    <span>Lihat Spesifikasi JSON</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="grid gap-2.5 sm:grid-cols-2">
+                    {[
+                      { method: 'GET', path: '/api/v1/summary', desc: 'Ringkasan finansial utama untuk home Android' },
+                      { method: 'GET / POST', path: '/api/v1/transactions', desc: 'Daftar transaksi, pagination, filter & catat baru' },
+                      { method: 'GET / POST', path: '/api/v1/wallets', desc: 'Kelola dompet & mutasi saldo real-time' },
+                      { method: 'POST', path: '/api/v1/wallets/transfer', desc: 'Transfer saldo antar dompet / rekening' },
+                      { method: 'GET / POST', path: '/api/v1/budgets', desc: 'Monitoring alokasi & sisa budget per bulan' },
+                      { method: 'GET / POST', path: '/api/v1/categories', desc: 'Kategori pengeluaran & pemasukan' },
+                    ].map((ep, idx) => (
+                      <div key={idx} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-3 flex flex-col justify-between">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-[11px] font-bold text-emerald-600 dark:text-emerald-400">{ep.path}</span>
+                          <span className="rounded bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 text-[9px] font-black uppercase text-slate-700 dark:text-slate-300">
+                            {ep.method}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{ep.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Test API Live Button */}
+                  <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <button
+                      onClick={testMobileApi}
+                      disabled={apiTesting}
+                      className="flex items-center gap-2 rounded-xl bg-slate-900 dark:bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-slate-800 dark:hover:bg-emerald-700 transition disabled:opacity-50"
+                    >
+                      <Terminal className="h-4 w-4 text-emerald-400 dark:text-white" />
+                      <span>{apiTesting ? 'Menguji API...' : 'Test Request API (/api/v1/summary)'}</span>
+                    </button>
+
+                    {apiTestResult && (
+                      <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-900">
+                        {apiTestResult}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. User Profile Card */}
               <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-6">
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -1717,7 +1807,7 @@ export default function Dashboard({
                 </div>
               </div>
 
-              {/* 4. Data Management */}
+              {/* 5. Data Management */}
               <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-4">
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
