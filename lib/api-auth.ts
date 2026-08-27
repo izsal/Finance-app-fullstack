@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { session as sessionTable, user as userTable } from '@/lib/schema'
 import { and, eq, gt } from 'drizzle-orm'
+import { ensureTahap2Tables } from '@/lib/db-init'
 
 export interface AuthUser {
   id: string
@@ -37,6 +38,8 @@ export function apiError(message = 'Terjadi kesalahan', status = 400, errors: an
 }
 
 export async function getAuthUser(req: NextRequest): Promise<AuthUser> {
+  await ensureTahap2Tables()
+
   // 1. Check Bearer Token in Authorization header (standard for Android apps)
   const authHeader = req.headers.get('authorization')
   if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {

@@ -5,7 +5,13 @@ import { getFinanceData, seedDefaults } from '@/app/actions/finance'
 import Dashboard from '@/components/dashboard'
 
 export default async function Page() {
-  const session = await auth.api.getSession({ headers: await headers() })
+  let session = null
+  try {
+    session = await auth.api.getSession({ headers: await headers() })
+  } catch {
+    // If not authenticated, redirect to sign-in
+  }
+
   if (!session?.user) redirect('/sign-in')
   let data = await getFinanceData()
   if (!data.wallets.length || !data.categories.length) data = await seedDefaults()

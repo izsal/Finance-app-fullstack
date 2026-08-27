@@ -3,9 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "NODE_OPTIONS='--dns-result-order=ipv4first' next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "db:push": "NODE_OPTIONS='--dns-result-order=ipv4first' drizzle-kit push",
+    "db:generate": "NODE_OPTIONS='--dns-result-order=ipv4first' drizzle-kit generate",
+    "db:clean": "node scripts/clean-db.js"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -13,6 +16,7 @@
     "better-auth": "^1.7.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.16.0",
@@ -33,13 +37,9 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.10",
     "postcss": "^8.5",
     "tailwindcss": "^4.3.3",
     "typescript": "5.7.3"
-  },
-  "pnpm": {
-    "overrides": {
-      "hono": "4.12.25"
-    }
   }
 }

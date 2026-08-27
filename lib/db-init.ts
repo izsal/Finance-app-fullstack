@@ -8,6 +8,46 @@ export async function ensureTahap2Tables() {
     const client = await pool.connect()
     try {
       await client.query(`
+        CREATE TABLE IF NOT EXISTS wallets (
+          id SERIAL PRIMARY KEY,
+          "userId" TEXT NOT NULL,
+          name TEXT NOT NULL,
+          type TEXT NOT NULL,
+          balance INTEGER NOT NULL DEFAULT 0,
+          color TEXT NOT NULL DEFAULT 'teal',
+          "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS categories (
+          id SERIAL PRIMARY KEY,
+          "userId" TEXT NOT NULL,
+          name TEXT NOT NULL,
+          type TEXT NOT NULL,
+          color TEXT NOT NULL DEFAULT 'slate',
+          "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS budgets (
+          id SERIAL PRIMARY KEY,
+          "userId" TEXT NOT NULL,
+          "categoryId" INTEGER NOT NULL,
+          amount INTEGER NOT NULL,
+          month TEXT NOT NULL,
+          "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS transactions (
+          id SERIAL PRIMARY KEY,
+          "userId" TEXT NOT NULL,
+          "walletId" INTEGER NOT NULL,
+          "categoryId" INTEGER NOT NULL,
+          type TEXT NOT NULL,
+          amount INTEGER NOT NULL,
+          description TEXT NOT NULL,
+          date TIMESTAMP NOT NULL DEFAULT NOW(),
+          "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+
         CREATE TABLE IF NOT EXISTS goals (
           id SERIAL PRIMARY KEY,
           "userId" TEXT NOT NULL,

@@ -9,9 +9,13 @@ import { revalidatePath } from "next/cache";
 import { ensureTahap2Tables } from "@/lib/db-init";
 
 async function userId() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
-  return session.user.id;
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) throw new Error("Unauthorized");
+    return session.user.id;
+  } catch {
+    throw new Error("Unauthorized");
+  }
 }
 
 export async function getFinanceData() {
