@@ -2249,6 +2249,7 @@ export default function Dashboard({
               close={() => setShowModal(null)}
               done={handleSuccess}
               onWalletCreated={(fresh) => setData(fresh)}
+              onDataUpdated={(fresh) => setData(fresh)}
             />
           )}
 
@@ -2339,12 +2340,14 @@ function TransactionModal({
   close,
   done,
   onWalletCreated,
+  onDataUpdated,
 }: {
   data: Data
   editData?: Transaction
   close: () => void
   done: (msg: string, freshData?: Data) => void
   onWalletCreated?: (freshData: Data) => void
+  onDataUpdated?: (freshData: Data) => void
 }) {
   const [description, setDescription] = useState(editData?.description || '')
   const [amount, setAmount] = useState<number>(editData?.amount || 0)
@@ -2356,13 +2359,15 @@ function TransactionModal({
   )
   const [submitting, setSubmitting] = useState(false)
   const [walletsList, setWalletsList] = useState(data.wallets)
+  const [categoriesList, setCategoriesList] = useState(data.categories)
   const [isCreatingWallet, setIsCreatingWallet] = useState(false)
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false)
 
-  const filteredCategories = data.categories.filter((c) => c.type === type)
+  const filteredCategories = categoriesList.filter((c) => c.type === type)
 
   const handleTypeChange = (newType: 'expense' | 'income') => {
     setType(newType)
-    const firstMatching = data.categories.find((c) => c.type === newType)
+    const firstMatching = categoriesList.find((c) => c.type === newType)
     if (firstMatching) setCategoryId(firstMatching.id)
   }
 
@@ -2397,6 +2402,7 @@ function TransactionModal({
       if (fresh?.wallets) {
         setWalletsList(fresh.wallets)
         onWalletCreated?.(fresh)
+        onDataUpdated?.(fresh)
         const newWallet = fresh.wallets.find((w) => w.name.toLowerCase() === name.toLowerCase())
         if (newWallet) {
           setWalletId(newWallet.id)
@@ -2406,6 +2412,33 @@ function TransactionModal({
       alert(err?.message || 'Gagal membuat dompet baru')
     } finally {
       setIsCreatingWallet(false)
+    }
+  }
+
+  const handleCreateCategory = async (inputValue: string) => {
+    if (!inputValue || !inputValue.trim()) return
+    const name = inputValue.trim()
+    setIsCreatingCategory(true)
+    try {
+      const fresh = await addCategory({
+        name,
+        type,
+        color: 'slate',
+      })
+      if (fresh?.categories) {
+        setCategoriesList(fresh.categories)
+        onDataUpdated?.(fresh)
+        const newCat = fresh.categories.find(
+          (c) => c.name.toLowerCase() === name.toLowerCase() && c.type === type
+        )
+        if (newCat) {
+          setCategoryId(newCat.id)
+        }
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Gagal membuat kategori baru')
+    } finally {
+      setIsCreatingCategory(false)
     }
   }
 
@@ -2532,13 +2565,18 @@ function TransactionModal({
           formatCreateLabel={(inputValue) => `+ Buat dompet baru: "${inputValue}"`}
         />
 
-        <CustomSelect
+        <CustomCreatableSelect
           label="Kategori Transaksi"
           required
+          isLoading={isCreatingCategory}
+          isDisabled={isCreatingCategory}
           value={categoryOptions.find((o) => o.value === categoryId)}
           onChange={(option) => option && setCategoryId(option.value)}
+          onCreateOption={handleCreateCategory}
           options={categoryOptions}
           isSearchable
+          placeholder="Pilih atau ketik untuk buat baru..."
+          formatCreateLabel={(inputValue) => `+ Buat kategori: "${inputValue}"`}
         />
       </div>
 
