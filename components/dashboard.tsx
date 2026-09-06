@@ -127,7 +127,7 @@ export default function Dashboard({
   user,
   initialData,
 }: {
-  user: { name: string; email: string }
+  user: { name: string; email: string; image?: string | null }
   initialData: Data
 }) {
   const [data, setData] = useState<Data>({
@@ -613,8 +613,12 @@ export default function Dashboard({
         {/* User Card in Sidebar */}
         <div className={`rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 p-3 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400 font-bold text-sm">
-              {user.name.charAt(0).toUpperCase()}
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400 font-bold text-sm overflow-hidden">
+              {user.image ? (
+                <img src={user.image} alt={user.name} className="h-full w-full object-cover" />
+              ) : (
+                user.name.charAt(0).toUpperCase()
+              )}
             </div>
             {!sidebarCollapsed && (
               <div className="min-w-0 flex-1">
@@ -2173,8 +2177,12 @@ export default function Dashboard({
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 p-4">
                   <div className="flex items-center gap-3.5">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-600 text-white font-black text-lg">
-                      {user.name.charAt(0).toUpperCase()}
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white font-black text-lg overflow-hidden">
+                      {user.image ? (
+                        <img src={user.image} alt={user.name} className="h-full w-full object-cover" />
+                      ) : (
+                        user.name.charAt(0).toUpperCase()
+                      )}
                     </div>
                     <div>
                       <p className="font-bold text-sm text-slate-900 dark:text-white">{user.name}</p>
