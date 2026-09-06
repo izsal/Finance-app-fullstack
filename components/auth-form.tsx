@@ -48,14 +48,16 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         callbackURL: '/',
       })
       if (result?.error) {
-        if (
+        console.error('Google Sign In Error:', result.error)
+        const isMissingConfig =
           result.error.message?.includes('Client Id') ||
           result.error.message?.includes('CLIENT_ID') ||
           result.error.status === 400 ||
           result.error.status === 500
-        ) {
+
+        if (isMissingConfig) {
           setError(
-            'Google OAuth belum aktif: Pastikan GOOGLE_CLIENT_ID dan GOOGLE_CLIENT_SECRET sudah diisi di file .env.local.'
+            'Google OAuth belum aktif: Pastikan GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, dan BETTER_AUTH_SECRET sudah diisi di Environment Variables Vercel, lalu lakukan Redeploy.'
           )
         } else {
           setError(result.error.message || 'Gagal masuk dengan akun Google.')
