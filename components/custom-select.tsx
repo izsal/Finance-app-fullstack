@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import Select, { type Props as SelectProps, type GroupBase, type StylesConfig } from 'react-select'
+import CreatableSelect, { type CreatableProps } from 'react-select/creatable'
 
 export interface OptionType<T = any> {
   value: T
@@ -11,24 +12,12 @@ export interface OptionType<T = any> {
   color?: string
 }
 
-export function CustomSelect<
+function useCustomStyles<
   Option = OptionType,
   IsMulti extends boolean = false,
   Group extends GroupBase<Option> = GroupBase<Option>
->(props: SelectProps<Option, IsMulti, Group> & { label?: string; required?: boolean }) {
-  const [isDark, setIsDark] = useState(false)
-
-  useEffect(() => {
-    const checkDark = () => {
-      setIsDark(document.documentElement.classList.contains('dark'))
-    }
-    checkDark()
-    const observer = new MutationObserver(checkDark)
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
-    return () => observer.disconnect()
-  }, [])
-
-  const customStyles: StylesConfig<Option, IsMulti, Group> = {
+>(isDark: boolean): StylesConfig<Option, IsMulti, Group> {
+  return {
     control: (base, state) => ({
       ...base,
       backgroundColor: isDark ? '#0f172a' : '#ffffff',
@@ -129,7 +118,26 @@ export function CustomSelect<
       },
     }),
   }
+}
 
+export function CustomSelect<
+  Option = OptionType,
+  IsMulti extends boolean = false,
+  Group extends GroupBase<Option> = GroupBase<Option>
+>(props: SelectProps<Option, IsMulti, Group> & { label?: string; required?: boolean }) {
+  const [isDark, setIsDark] = useState(false)
+
+  useEffect(() => {
+    const checkDark = () => {
+      setIsDark(document.documentElement.classList.contains('dark'))
+    }
+    checkDark()
+    const observer = new MutationObserver(checkDark)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    return () => observer.disconnect()
+  }, [])
+
+  const customStyles = useCustomStyles<Option, IsMulti, Group>(isDark)
   const { label, required, ...rest } = props
 
   return (
@@ -143,6 +151,49 @@ export function CustomSelect<
         menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
         menuPosition="fixed"
         styles={customStyles}
+        {...rest}
+      />
+    </div>
+  )
+}
+
+export function CustomCreatableSelect<
+  Option = OptionType,
+  IsMulti extends boolean = false,
+  Group extends GroupBase<Option> = GroupBase<Option>
+>(
+  props: CreatableProps<Option, IsMulti, Group> & {
+    label?: string
+    required?: boolean
+  }
+) {
+  const [isDark, setIsDark] = useState(false)
+
+  useEffect(() => {
+    const checkDark = () => {
+      setIsDark(document.documentElement.classList.contains('dark'))
+    }
+    checkDark()
+    const observer = new MutationObserver(checkDark)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    return () => observer.disconnect()
+  }, [])
+
+  const customStyles = useCustomStyles<Option, IsMulti, Group>(isDark)
+  const { label, required, formatCreateLabel, ...rest } = props
+
+  return (
+    <div className="space-y-1.5 w-full">
+      {label && (
+        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200 block">
+          {label} {required && <span className="text-rose-500">*</span>}
+        </label>
+      )}
+      <CreatableSelect
+        menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
+        menuPosition="fixed"
+        styles={customStyles}
+        formatCreateLabel={formatCreateLabel || ((inputValue) => `+ Buat dompet baru: "${inputValue}"`)}
         {...rest}
       />
     </div>

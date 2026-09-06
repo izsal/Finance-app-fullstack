@@ -83,7 +83,7 @@ import {
 import type { Budget, Category, Goal, Subscription, Transaction, Wallet as WalletType } from '@/lib/schema'
 import { formatIndoDate, formatRupiah } from '@/lib/utils'
 import { RupiahInput } from '@/components/rupiah-input'
-import { CustomSelect, type OptionType } from '@/components/custom-select'
+import { CustomSelect, CustomCreatableSelect, type OptionType } from '@/components/custom-select'
 import { DatePickerInput } from '@/components/date-picker-input'
 import { exportFinanceToExcel } from '@/lib/excel-export'
 import {
@@ -2248,6 +2248,7 @@ export default function Dashboard({
               editData={showModal.editData}
               close={() => setShowModal(null)}
               done={handleSuccess}
+              onWalletCreated={(fresh) => setData(fresh)}
             />
           )}
 
@@ -2337,11 +2338,13 @@ function TransactionModal({
   editData,
   close,
   done,
+  onWalletCreated,
 }: {
   data: Data
   editData?: Transaction
   close: () => void
   done: (msg: string, freshData?: Data) => void
+  onWalletCreated?: (freshData: Data) => void
 }) {
   const [description, setDescription] = useState(editData?.description || '')
   const [amount, setAmount] = useState<number>(editData?.amount || 0)
@@ -2352,6 +2355,8 @@ function TransactionModal({
     editData ? new Date(editData.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
   )
   const [submitting, setSubmitting] = useState(false)
+  const [walletsList, setWalletsList] = useState(data.wallets)
+  const [isCreatingWallet, setIsCreatingWallet] = useState(false)
 
   const filteredCategories = data.categories.filter((c) => c.type === type)
 
@@ -2361,7 +2366,50 @@ function TransactionModal({
     if (firstMatching) setCategoryId(firstMatching.id)
   }
 
-  const walletOptions: OptionType<number>[] = data.wallets.map((w) => ({
+  const handleCreateWallet = async (inputValue: string) => {
+    if (!inputValue || !inputValue.trim()) return
+    const name = inputValue.trim()
+    setIsCreatingWallet(true)
+    try {
+      let inferredType = 'Bank'
+      const lower = name.toLowerCase()
+      if (lower.includes('cash') || lower.includes('tunai') || lower.includes('dompet')) {
+        inferredType = 'Tunai'
+      } else if (
+        lower.includes('gopay') ||
+        lower.includes('ovo') ||
+        lower.includes('dana') ||
+        lower.includes('shopee') ||
+        lower.includes('linkaja') ||
+        lower.includes('qris') ||
+        lower.includes('e-wallet') ||
+        lower.includes('ewallet')
+      ) {
+        inferredType = 'E-Wallet'
+      }
+
+      const fresh = await addWallet({
+        name,
+        type: inferredType,
+        balance: 0,
+        color: 'teal',
+      })
+      if (fresh?.wallets) {
+        setWalletsList(fresh.wallets)
+        onWalletCreated?.(fresh)
+        const newWallet = fresh.wallets.find((w) => w.name.toLowerCase() === name.toLowerCase())
+        if (newWallet) {
+          setWalletId(newWallet.id)
+        }
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Gagal membuat dompet baru')
+    } finally {
+      setIsCreatingWallet(false)
+    }
+  }
+
+  const walletOptions: OptionType<number>[] = walletsList.map((w) => ({
     value: w.id,
     label: `${w.name} (${w.type})`,
   }))
@@ -2470,13 +2518,18 @@ function TransactionModal({
 
       {/* React-Select: Wallet & Category Selection */}
       <div className="grid gap-3 sm:grid-cols-2">
-        <CustomSelect
+        <CustomCreatableSelect
           label="Pilih Dompet / Rekening"
           required
+          isLoading={isCreatingWallet}
+          isDisabled={isCreatingWallet}
           value={walletOptions.find((o) => o.value === walletId)}
           onChange={(option) => option && setWalletId(option.value)}
+          onCreateOption={handleCreateWallet}
           options={walletOptions}
           isSearchable
+          placeholder="Pilih atau ketik untuk buat baru..."
+          formatCreateLabel={(inputValue) => `+ Buat dompet baru: "${inputValue}"`}
         />
 
         <CustomSelect
