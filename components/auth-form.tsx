@@ -1,10 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { authClient } from '@/lib/auth-client'
-import { AlertCircle, ArrowRight, Loader2, Lock, Mail, User, Wallet } from 'lucide-react'
+import {
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  Loader2,
+  Lock,
+  Mail,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  TrendingUp,
+  User,
+  Wallet,
+} from 'lucide-react'
 
 function GoogleIcon({ className = 'h-5 w-5' }: { className?: string }) {
   return (
@@ -98,22 +112,96 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-teal-50/20 to-slate-100 p-4 sm:p-6">
-      <div className="w-full max-w-md">
-        <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-7 sm:p-9 shadow-xl shadow-slate-200/50 backdrop-blur-sm">
+    <main className="relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-950 p-4 sm:p-6 text-slate-100 selection:bg-teal-500 selection:text-white">
+      {/* Background Animated Gradient Mesh */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-32 -left-32 h-[500px] w-[500px] rounded-full bg-gradient-to-br from-teal-500/25 via-emerald-500/15 to-transparent blur-[120px]" />
+        <div className="absolute -bottom-32 -right-32 h-[550px] w-[550px] rounded-full bg-gradient-to-tl from-cyan-500/20 via-teal-600/15 to-transparent blur-[140px]" />
+        <div className="absolute top-1/2 left-1/2 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/10 blur-[100px]" />
+        {/* Subtle dot matrix grid */}
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
+            backgroundSize: '32px 32px',
+          }}
+        />
+      </div>
+
+      {/* Floating Micro Finance Cards (Visible on Desktop) */}
+      <div className="pointer-events-none absolute inset-0 hidden lg:block overflow-hidden">
+        {/* Top-Left Floating Badge */}
+        <div className="absolute top-[18%] left-[10%] animate-pulse duration-1000">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-xl shadow-teal-950/40 backdrop-blur-xl">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400">
+                <TrendingUp className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+                  Arus Kas Positif
+                </p>
+                <p className="text-sm font-bold text-white">+Rp 8.450.000 / bln</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom-Right Floating Badge */}
+        <div className="absolute bottom-[20%] right-[10%]">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-xl shadow-teal-950/40 backdrop-blur-xl">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500/20 text-teal-400">
+                <Target className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+                    Target Dana Darurat
+                  </p>
+                  <span className="text-[11px] font-bold text-emerald-400">85%</span>
+                </div>
+                <div className="mt-2 w-36 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                  <div className="h-full rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 w-[85%]" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Container */}
+      <div className="relative z-10 w-full max-w-md my-8">
+        {/* Back to Home Link */}
+        <div className="mb-4 flex items-center justify-between">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 transition hover:text-white"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Kembali ke Beranda</span>
+          </Link>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-teal-500/20 bg-teal-500/10 px-2.5 py-0.5 text-[11px] font-medium text-teal-400">
+            <ShieldCheck className="h-3 w-3" />
+            <span>Enkripsi 256-bit</span>
+          </span>
+        </div>
+
+        {/* Glassmorphic Auth Card */}
+        <div className="overflow-hidden rounded-3xl border border-slate-800/90 bg-slate-900/80 p-7 sm:p-9 shadow-2xl shadow-slate-950/80 backdrop-blur-2xl">
           {/* Header */}
           <div className="mb-7 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-600 text-white shadow-md shadow-teal-600/20">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-500 text-white shadow-lg shadow-teal-500/25">
               <Wallet className="h-6 w-6" />
             </div>
-            <p className="text-xs font-bold uppercase tracking-wider text-teal-700">Dompetku</p>
-            <h1 className="mt-1.5 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-              {signup ? 'Buat Akun Baru' : 'Selamat Datang Kembali'}
+            <p className="text-xs font-bold uppercase tracking-wider text-teal-400">Dompetku</p>
+            <h1 className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-white">
+              {signup ? 'Mulai Gratis Sekarang' : 'Selamat Datang Kembali'}
             </h1>
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-xs sm:text-sm text-slate-400">
               {signup
-                ? 'Mulai atur cashflow, budget, dan impian finansialmu.'
-                : 'Masuk untuk mengelola dan memantau keuanganmu.'}
+                ? 'Kelola cashflow, budget, dan impian finansialmu dengan rapi.'
+                : 'Masuk untuk memantau saldo dan transaksi keuanganmu.'}
             </p>
           </div>
 
@@ -124,10 +212,10 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
               id="google-signin-btn"
               onClick={handleGoogleSignIn}
               disabled={googleLoading || loading}
-              className="relative flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:border-slate-300 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+              className="relative flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-700/80 bg-slate-800/80 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700 hover:border-slate-600 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {googleLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin text-slate-600" />
+                <Loader2 className="h-5 w-5 animate-spin text-teal-400" />
               ) : (
                 <GoogleIcon className="h-5 w-5" />
               )}
@@ -138,9 +226,9 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
           {/* Divider */}
           <div className="relative mb-6 flex items-center justify-center">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200" />
+              <div className="w-full border-t border-slate-800" />
             </div>
-            <span className="relative bg-white px-3 text-xs font-medium text-slate-400">
+            <span className="relative bg-slate-900/90 px-3 text-xs font-medium text-slate-500">
               atau lanjutkan dengan email
             </span>
           </div>
@@ -149,32 +237,32 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
           <form onSubmit={submit} className="space-y-4">
             {signup && (
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
                   Nama Lengkap
                 </label>
                 <div className="relative mt-1.5">
-                  <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                  <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
                     <User className="h-4 w-4" />
                   </span>
                   <input
                     id="name-input"
                     type="text"
-                    placeholder="Nama Anda"
+                    placeholder="Nama Lengkap Anda"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-3.5 text-sm text-slate-900 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                    className="w-full rounded-xl border border-slate-800 bg-slate-950/60 py-2.5 pl-10 pr-3.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
                   />
                 </div>
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
                 Email
               </label>
               <div className="relative mt-1.5">
-                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
                   <Mail className="h-4 w-4" />
                 </span>
                 <input
@@ -184,17 +272,17 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-3.5 text-sm text-slate-900 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950/60 py-2.5 pl-10 pr-3.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
                 Kata Sandi
               </label>
               <div className="relative mt-1.5">
-                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
                   <Lock className="h-4 w-4" />
                 </span>
                 <input
@@ -205,7 +293,7 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
                   onChange={(e) => setPassword(e.target.value)}
                   minLength={8}
                   required
-                  className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-3.5 text-sm text-slate-900 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950/60 py-2.5 pl-10 pr-3.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
                 />
               </div>
             </div>
@@ -214,9 +302,9 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
             {error && (
               <div
                 role="alert"
-                className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50/80 p-3 text-xs text-rose-700 leading-relaxed"
+                className="flex items-start gap-2.5 rounded-xl border border-rose-500/30 bg-rose-950/40 p-3 text-xs text-rose-300 leading-relaxed"
               >
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
                 <span>{error}</span>
               </div>
             )}
@@ -226,7 +314,7 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
               id="submit-auth-btn"
               type="submit"
               disabled={loading || googleLoading}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-teal-700 py-3 text-sm font-bold text-white shadow-md shadow-teal-700/20 transition hover:bg-teal-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 py-3 text-sm font-bold text-white shadow-lg shadow-teal-600/25 transition hover:from-teal-400 hover:to-emerald-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? (
                 <>
@@ -243,11 +331,11 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
           </form>
 
           {/* Switch mode */}
-          <p className="mt-6 text-center text-xs sm:text-sm text-slate-500">
+          <p className="mt-6 text-center text-xs sm:text-sm text-slate-400">
             {signup ? 'Sudah punya akun? ' : 'Belum punya akun? '}
             <Link
               id="switch-auth-mode-link"
-              className="font-bold text-teal-700 hover:text-teal-800 hover:underline"
+              className="font-bold text-teal-400 hover:text-teal-300 hover:underline"
               href={signup ? '/sign-in' : '/sign-up'}
             >
               {signup ? 'Masuk sekarang' : 'Daftar gratis'}
@@ -256,8 +344,8 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         </div>
 
         {/* Footer info */}
-        <p className="mt-6 text-center text-xs text-slate-400">
-          Data keuangan Anda aman, terenkripsi, dan terisolasi secara privat.
+        <p className="mt-6 text-center text-xs text-slate-500">
+          Data keuangan Anda aman, terenkripsi, dan terisolasi privat di qwarts.my.id.
         </p>
       </div>
     </main>
