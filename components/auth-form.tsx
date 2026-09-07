@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { authClient } from '@/lib/auth-client'
@@ -12,6 +12,8 @@ import {
   Loader2,
   Lock,
   Mail,
+  RefreshCw,
+  Send,
   ShieldCheck,
   Sparkles,
   Target,
@@ -52,6 +54,20 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [verificationSent, setVerificationSent] = useState(false)
+  const [resendingEmail, setResendingEmail] = useState(false)
+  const [resendSuccess, setResendSuccess] = useState('')
+  const [isVerifiedNotice, setIsVerifiedNotice] = useState(false)
+  const [isEmailUnverified, setIsEmailUnverified] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('verified') === 'true') {
+        setIsVerifiedNotice(true)
+      }
+    }
+  }, [])
 
   async function handleGoogleSignIn() {
     setGoogleLoading(true)
@@ -84,26 +100,82 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
     }
   }
 
+  async function handleResendVerification() {
+    if (!email) {
+      setError('Masukkan email Anda untuk mengirim ulang verifikasi.')
+      return
+    }
+    setResendingEmail(true)
+    setError('')
+    setResendSuccess('')
+    try {
+      const result = await authClient.sendVerificationEmail({
+        email,
+        callbackURL: '/sign-in?verified=true',
+      })
+      if (result?.error) {
+        setError(result.error.message || 'Gagal mengirim ulang email verifikasi.')
+      } else {
+        setResendSuccess('Tautan verifikasi baru berhasil dikirim ke email Anda.')
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Terjadi kesalahan saat mengirim verifikasi.')
+    } finally {
+      setResendingEmail(false)
+    }
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
-    try {
-      const result = signup
-        ? await authClient.signUp.email({ name, email, password })
-        : await authClient.signIn.email({ email, password })
+    setResendSuccess('')
+    setIsEmailUnverified(false)
 
-      if (result.error) {
-        setError(
-          result.error.message ||
-            (signup
-              ? 'Gagal mendaftar. Pastikan email belum terdaftar.'
-              : 'Email atau kata sandi tidak sesuai.')
-        )
-        return
+    try {
+      if (signup) {
+        const result = await authClient.signUp.email({
+          name,
+          email,
+          password,
+          callbackURL: '/sign-in?verified=true',
+        })
+
+        if (result.error) {
+          setError(result.error.message || 'Gagal mendaftar. Pastikan email belum terdaftar.')
+          return
+        }
+
+        // Tampilkan layar konfirmasi verifikasi email
+        setVerificationSent(true)
+      } else {
+        const result = await authClient.signIn.email({
+          email,
+          password,
+          callbackURL: '/',
+        })
+
+        if (result.error) {
+          const msg = result.error.message || ''
+          const isNotVerified =
+            msg.toLowerCase().includes('verify') ||
+            msg.toLowerCase().includes('verification') ||
+            (result.error as any).code === 'EMAIL_NOT_VERIFIED'
+
+          if (isNotVerified) {
+            setIsEmailUnverified(true)
+            setError(
+              'Email Anda belum diverifikasi. Silakan periksa inbox/spam Anda untuk mengonfirmasi akun.'
+            )
+          } else {
+            setError(msg || 'Email atau kata sandi tidak sesuai.')
+          }
+          return
+        }
+
+        router.push('/')
+        router.refresh()
       }
-      router.push('/')
-      router.refresh()
     } catch (err: any) {
       setError(err?.message || 'Terjadi kesalahan saat memproses permintaan.')
     } finally {
@@ -205,142 +277,237 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
             </p>
           </div>
 
-          {/* Google OAuth Button */}
-          <div className="mb-6">
-            <button
-              type="button"
-              id="google-signin-btn"
-              onClick={handleGoogleSignIn}
-              disabled={googleLoading || loading}
-              className="relative flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-700/80 bg-slate-800/80 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700 hover:border-slate-600 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {googleLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin text-teal-400" />
-              ) : (
-                <GoogleIcon className="h-5 w-5" />
-              )}
-              <span>{signup ? 'Daftar dengan Google' : 'Lanjutkan dengan Google'}</span>
-            </button>
-          </div>
-
-          {/* Divider */}
-          <div className="relative mb-6 flex items-center justify-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-800" />
-            </div>
-            <span className="relative bg-slate-900/90 px-3 text-xs font-medium text-slate-500">
-              atau lanjutkan dengan email
-            </span>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={submit} className="space-y-4">
-            {signup && (
+          {/* Success notice if redirected after email verification */}
+          {isVerifiedNotice && (
+            <div className="mb-6 flex items-start gap-2.5 rounded-2xl border border-emerald-500/30 bg-emerald-950/40 p-4 text-xs text-emerald-300 leading-relaxed">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  Nama Lengkap
-                </label>
-                <div className="relative mt-1.5">
-                  <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
-                    <User className="h-4 w-4" />
-                  </span>
-                  <input
-                    id="name-input"
-                    type="text"
-                    placeholder="Nama Lengkap Anda"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    className="w-full rounded-xl border border-slate-800 bg-slate-950/60 py-2.5 pl-10 pr-3.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-                  />
+                <p className="font-bold text-white">Email Berhasil Diverifikasi!</p>
+                <p className="mt-0.5">Akun Anda telah aktif. Silakan masuk dengan email dan kata sandi Anda.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Verification Sent State (When user just signed up) */}
+          {verificationSent ? (
+            <div className="space-y-5 text-center py-4">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-teal-500/10 text-teal-400 border border-teal-500/30">
+                <Mail className="h-7 w-7" />
+              </div>
+
+              <div>
+                <h3 className="text-lg font-bold text-white">Periksa Email Anda</h3>
+                <p className="mt-2 text-xs text-slate-300 leading-relaxed">
+                  Kami telah mengirimkan tautan verifikasi ke email:
+                </p>
+                <p className="mt-1 font-bold text-teal-400 text-sm">{email}</p>
+                <p className="mt-2 text-xs text-slate-400">
+                  Silakan buka inbox atau folder spam email Anda, lalu klik tautan untuk mengaktifkan akun.
+                </p>
+              </div>
+
+              {resendSuccess && (
+                <div className="flex items-center justify-center gap-2 rounded-xl bg-emerald-950/50 p-2.5 text-xs text-emerald-300 border border-emerald-500/30">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                  <span>{resendSuccess}</span>
                 </div>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Email
-              </label>
-              <div className="relative mt-1.5">
-                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
-                  <Mail className="h-4 w-4" />
-                </span>
-                <input
-                  id="email-input"
-                  type="email"
-                  placeholder="nama@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950/60 py-2.5 pl-10 pr-3.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Kata Sandi
-              </label>
-              <div className="relative mt-1.5">
-                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
-                  <Lock className="h-4 w-4" />
-                </span>
-                <input
-                  id="password-input"
-                  type="password"
-                  placeholder="Minimal 8 karakter"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  minLength={8}
-                  required
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950/60 py-2.5 pl-10 pr-3.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-                />
-              </div>
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <div
-                role="alert"
-                className="flex items-start gap-2.5 rounded-xl border border-rose-500/30 bg-rose-950/40 p-3 text-xs text-rose-300 leading-relaxed"
-              >
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <button
-              id="submit-auth-btn"
-              type="submit"
-              disabled={loading || googleLoading}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 py-3 text-sm font-bold text-white shadow-lg shadow-teal-600/25 transition hover:from-teal-400 hover:to-emerald-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Memproses...</span>
-                </>
-              ) : (
-                <>
-                  <span>{signup ? 'Daftar Sekarang' : 'Masuk ke Dashboard'}</span>
-                  <ArrowRight className="h-4 w-4" />
-                </>
               )}
-            </button>
-          </form>
 
-          {/* Switch mode */}
-          <p className="mt-6 text-center text-xs sm:text-sm text-slate-400">
-            {signup ? 'Sudah punya akun? ' : 'Belum punya akun? '}
-            <Link
-              id="switch-auth-mode-link"
-              className="font-bold text-teal-400 hover:text-teal-300 hover:underline"
-              href={signup ? '/sign-in' : '/sign-up'}
-            >
-              {signup ? 'Masuk sekarang' : 'Daftar gratis'}
-            </Link>
-          </p>
+              {error && (
+                <div className="flex items-center justify-center gap-2 rounded-xl bg-rose-950/50 p-2.5 text-xs text-rose-300 border border-rose-500/30">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <div className="pt-2 space-y-3">
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={resendingEmail}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-2.5 text-xs font-semibold text-slate-200 transition hover:bg-slate-700 hover:text-white disabled:opacity-50"
+                >
+                  {resendingEmail ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  <span>Kirim Ulang Email Verifikasi</span>
+                </button>
+
+                <Link
+                  href="/sign-in"
+                  className="block text-xs font-bold text-teal-400 hover:underline"
+                >
+                  Sudah verifikasi? Masuk sekarang
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Google OAuth Button */}
+              <div className="mb-6">
+                <button
+                  type="button"
+                  id="google-signin-btn"
+                  onClick={handleGoogleSignIn}
+                  disabled={googleLoading || loading}
+                  className="relative flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-700/80 bg-slate-800/80 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700 hover:border-slate-600 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {googleLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-teal-400" />
+                  ) : (
+                    <GoogleIcon className="h-5 w-5" />
+                  )}
+                  <span>{signup ? 'Daftar dengan Google' : 'Lanjutkan dengan Google'}</span>
+                </button>
+              </div>
+
+              {/* Divider */}
+              <div className="relative mb-6 flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-800" />
+                </div>
+                <span className="relative bg-slate-900/90 px-3 text-xs font-medium text-slate-500">
+                  atau lanjutkan dengan email
+                </span>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={submit} className="space-y-4">
+                {signup && (
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      Nama Lengkap
+                    </label>
+                    <div className="relative mt-1.5">
+                      <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
+                        <User className="h-4 w-4" />
+                      </span>
+                      <input
+                        id="name-input"
+                        type="text"
+                        placeholder="Nama Lengkap Anda"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
+                        className="w-full rounded-xl border border-slate-800 bg-slate-950/60 py-2.5 pl-10 pr-3.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Email
+                  </label>
+                  <div className="relative mt-1.5">
+                    <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
+                      <Mail className="h-4 w-4" />
+                    </span>
+                    <input
+                      id="email-input"
+                      type="email"
+                      placeholder="nama@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="w-full rounded-xl border border-slate-800 bg-slate-950/60 py-2.5 pl-10 pr-3.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Kata Sandi
+                  </label>
+                  <div className="relative mt-1.5">
+                    <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
+                      <Lock className="h-4 w-4" />
+                    </span>
+                    <input
+                      id="password-input"
+                      type="password"
+                      placeholder="Minimal 8 karakter"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      minLength={8}
+                      required
+                      className="w-full rounded-xl border border-slate-800 bg-slate-950/60 py-2.5 pl-10 pr-3.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+                    />
+                  </div>
+                </div>
+
+                {/* Error Message */}
+                {error && (
+                  <div
+                    role="alert"
+                    className="flex flex-col gap-2 rounded-xl border border-rose-500/30 bg-rose-950/40 p-3 text-xs text-rose-300 leading-relaxed"
+                  >
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
+                      <span>{error}</span>
+                    </div>
+                    {isEmailUnverified && (
+                      <button
+                        type="button"
+                        onClick={handleResendVerification}
+                        disabled={resendingEmail}
+                        className="mt-1 flex items-center justify-center gap-1.5 rounded-lg bg-teal-600/30 border border-teal-500/40 px-3 py-1.5 text-[11px] font-bold text-teal-300 hover:bg-teal-600/40 transition disabled:opacity-50"
+                      >
+                        {resendingEmail ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Send className="h-3 w-3" />
+                        )}
+                        <span>Kirim Ulang Email Verifikasi</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Resend success in signin mode */}
+                {resendSuccess && (
+                  <div className="flex items-center gap-2 rounded-xl bg-emerald-950/50 p-2.5 text-xs text-emerald-300 border border-emerald-500/30">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                    <span>{resendSuccess}</span>
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  id="submit-auth-btn"
+                  type="submit"
+                  disabled={loading || googleLoading}
+                  className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 py-3 text-sm font-bold text-white shadow-lg shadow-teal-600/25 transition hover:from-teal-400 hover:to-emerald-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Memproses...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{signup ? 'Daftar Sekarang' : 'Masuk ke Dashboard'}</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* Switch mode */}
+              <p className="mt-6 text-center text-xs sm:text-sm text-slate-400">
+                {signup ? 'Sudah punya akun? ' : 'Belum punya akun? '}
+                <Link
+                  id="switch-auth-mode-link"
+                  className="font-bold text-teal-400 hover:text-teal-300 hover:underline"
+                  href={signup ? '/sign-in' : '/sign-up'}
+                >
+                  {signup ? 'Masuk sekarang' : 'Daftar gratis'}
+                </Link>
+              </p>
+            </>
+          )}
         </div>
 
         {/* Footer info */}

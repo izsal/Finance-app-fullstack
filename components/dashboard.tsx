@@ -26,7 +26,7 @@ import {
   updateWallet,
   upsertBudget,
 } from '@/app/actions/finance'
-import { signOut } from '@/lib/auth-client'
+import { authClient, signOut } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
 import {
   AlertCircle,
@@ -49,8 +49,10 @@ import {
   ExternalLink,
   FileSpreadsheet,
   Filter,
+  KeyRound,
   Layers,
   LayoutDashboard,
+  Lock,
   LogOut,
   Menu,
   Moon,
@@ -127,9 +129,10 @@ export default function Dashboard({
   user,
   initialData,
 }: {
-  user: { name: string; email: string; image?: string | null }
+  user: { name: string; email: string; image?: string | null; emailVerified?: boolean }
   initialData: Data
 }) {
+  const [currentUser, setCurrentUser] = useState(user)
   const [data, setData] = useState<Data>({
     ...initialData,
     goals: initialData.goals || [],
@@ -145,6 +148,22 @@ export default function Dashboard({
   const [apiTesting, setApiTesting] = useState(false)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
+
+  // Profile update state
+  const [profileName, setProfileName] = useState(user.name)
+  const [isUpdatingName, setIsUpdatingName] = useState(false)
+  const [nameStatus, setNameStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
+  const [passwordStatus, setPasswordStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  // Resend email verification state
+  const [isResendingEmail, setIsResendingEmail] = useState(false)
+  const [emailStatus, setEmailStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   // Initialize and persist theme & sidebar state
   useEffect(() => {
@@ -614,16 +633,16 @@ export default function Dashboard({
         <div className={`rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 p-3 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400 font-bold text-sm overflow-hidden">
-              {user.image ? (
-                <img src={user.image} alt={user.name} className="h-full w-full object-cover" />
+              {currentUser.image ? (
+                <img src={currentUser.image} alt={currentUser.name} className="h-full w-full object-cover" />
               ) : (
-                user.name.charAt(0).toUpperCase()
+                currentUser.name.charAt(0).toUpperCase()
               )}
             </div>
             {!sidebarCollapsed && (
               <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-bold text-slate-800 dark:text-slate-200">{user.name}</p>
-                <p className="truncate text-[11px] text-slate-400">{user.email}</p>
+                <p className="truncate text-xs font-bold text-slate-800 dark:text-slate-200">{currentUser.name}</p>
+                <p className="truncate text-[11px] text-slate-400">{currentUser.email}</p>
               </div>
             )}
             {!sidebarCollapsed && (
@@ -668,7 +687,7 @@ export default function Dashboard({
 
             <div>
               <p className="text-xs font-medium text-slate-400">Halo, selamat datang</p>
-              <h1 className="text-lg font-bold text-slate-900 dark:text-white lg:text-xl">{user.name}</h1>
+              <h1 className="text-lg font-bold text-slate-900 dark:text-white lg:text-xl">{currentUser.name}</h1>
             </div>
           </div>
 
@@ -2168,7 +2187,7 @@ export default function Dashboard({
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <User className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    <span>Profil Pengguna & Keamanan</span>
+                    <span>Profil Pengguna & Status Akun</span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
                     Informasi akun yang sedang aktif masuk.
@@ -2177,19 +2196,55 @@ export default function Dashboard({
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 p-4">
                   <div className="flex items-center gap-3.5">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white font-black text-lg overflow-hidden">
-                      {user.image ? (
-                        <img src={user.image} alt={user.name} className="h-full w-full object-cover" />
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white font-black text-xl overflow-hidden shadow-sm shadow-emerald-600/20">
+                      {currentUser.image ? (
+                        <img src={currentUser.image} alt={currentUser.name} className="h-full w-full object-cover" />
                       ) : (
-                        user.name.charAt(0).toUpperCase()
+                        currentUser.name.charAt(0).toUpperCase()
                       )}
                     </div>
                     <div>
-                      <p className="font-bold text-sm text-slate-900 dark:text-white">{user.name}</p>
-                      <p className="text-xs text-slate-400">{user.email}</p>
-                      <span className="inline-block mt-1 rounded bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
-                        Akun Terverifikasi
-                      </span>
+                      <p className="font-bold text-sm text-slate-900 dark:text-white">{currentUser.name}</p>
+                      <p className="text-xs text-slate-400">{currentUser.email}</p>
+                      {currentUser.emailVerified ? (
+                        <span className="inline-flex items-center gap-1 mt-1 rounded-md bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Akun Terverifikasi
+                        </span>
+                      ) : (
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 dark:bg-amber-950 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-400">
+                            <AlertCircle className="h-3 w-3" />
+                            Email Belum Terverifikasi
+                          </span>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setIsResendingEmail(true)
+                              setEmailStatus(null)
+                              try {
+                                const res = await authClient.sendVerificationEmail({
+                                  email: currentUser.email,
+                                  callbackURL: window.location.origin + '/?verified=true',
+                                })
+                                if (res.error) {
+                                  setEmailStatus({ type: 'error', message: res.error.message || 'Gagal mengirim email verifikasi' })
+                                } else {
+                                  setEmailStatus({ type: 'success', message: 'Email verifikasi baru berhasil dikirim! Silakan periksa inbox Anda.' })
+                                }
+                              } catch (err: any) {
+                                setEmailStatus({ type: 'error', message: err.message || 'Gagal mengirim email' })
+                              } finally {
+                                setIsResendingEmail(false)
+                              }
+                            }}
+                            disabled={isResendingEmail}
+                            className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline disabled:opacity-50"
+                          >
+                            {isResendingEmail ? 'Mengirim...' : 'Kirim Ulang Email Verifikasi'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -2198,12 +2253,233 @@ export default function Dashboard({
                       await signOut()
                       router.push('/sign-in')
                     }}
-                    className="flex items-center gap-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 px-4 py-2.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition"
+                    className="flex items-center justify-center gap-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 px-4 py-2.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition self-start sm:self-center"
                   >
                     <LogOut className="h-4 w-4" />
                     <span>Keluar dari Akun</span>
                   </button>
                 </div>
+
+                {emailStatus && (
+                  <div className={`rounded-xl p-3 text-xs flex items-center gap-2 ${
+                    emailStatus.type === 'success'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                      : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                  }`}>
+                    {emailStatus.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+                    <span>{emailStatus.message}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* 5. Change Profile Name Card */}
+              <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-5">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <User className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                    <span>Ubah Nama Profil</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Nama ini akan muncul pada sapaan dashboard, sidebar, dan laporan keuangan Anda.
+                  </p>
+                </div>
+
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    if (!profileName.trim()) {
+                      setNameStatus({ type: 'error', message: 'Nama tidak boleh kosong' })
+                      return
+                    }
+                    setIsUpdatingName(true)
+                    setNameStatus(null)
+                    try {
+                      const res = await authClient.updateUser({
+                        name: profileName.trim(),
+                      })
+                      if (res.error) {
+                        setNameStatus({ type: 'error', message: res.error.message || 'Gagal memperbarui nama' })
+                      } else {
+                        setCurrentUser((prev) => ({ ...prev, name: profileName.trim() }))
+                        setNameStatus({ type: 'success', message: 'Nama profil berhasil diperbarui!' })
+                        showToast('Nama profil berhasil disimpan!', 'success')
+                        setTimeout(() => setNameStatus(null), 4000)
+                      }
+                    } catch (err: any) {
+                      setNameStatus({ type: 'error', message: err.message || 'Terjadi kesalahan saat memperbarui nama' })
+                    } finally {
+                      setIsUpdatingName(false)
+                    }
+                  }}
+                  className="space-y-4 max-w-lg"
+                >
+                  {nameStatus && (
+                    <div className={`rounded-xl p-3 text-xs flex items-center gap-2 ${
+                      nameStatus.type === 'success'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                        : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                    }`}>
+                      {nameStatus.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+                      <span>{nameStatus.message}</span>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+                      Nama Lengkap
+                    </label>
+                    <input
+                      type="text"
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
+                      placeholder="Masukkan nama lengkap Anda"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/60 px-3.5 py-2.5 text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isUpdatingName || profileName.trim() === currentUser.name || !profileName.trim()}
+                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:hover:bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-emerald-600/20 transition cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    {isUpdatingName ? (
+                      <>
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                        <span>Menyimpan...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-3.5 w-3.5" />
+                        <span>Simpan Perubahan Nama</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+
+              {/* 6. Change Password Card */}
+              <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-5">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <KeyRound className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                    <span>Ubah Kata Sandi</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Ganti kata sandi akun Anda. Jika Anda mendaftar melalui Akun Google, gunakan fitur Masuk dengan Google.
+                  </p>
+                </div>
+
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    setPasswordStatus(null)
+
+                    if (!currentPassword) {
+                      setPasswordStatus({ type: 'error', message: 'Kata sandi saat ini wajib diisi' })
+                      return
+                    }
+                    if (newPassword.length < 8) {
+                      setPasswordStatus({ type: 'error', message: 'Kata sandi baru minimal 8 karakter' })
+                      return
+                    }
+                    if (newPassword !== confirmPassword) {
+                      setPasswordStatus({ type: 'error', message: 'Konfirmasi kata sandi baru tidak cocok' })
+                      return
+                    }
+
+                    setIsUpdatingPassword(true)
+                    try {
+                      const res = await authClient.changePassword({
+                        currentPassword,
+                        newPassword,
+                        revokeOtherSessions: false,
+                      })
+                      if (res.error) {
+                        setPasswordStatus({ type: 'error', message: res.error.message || 'Gagal mengubah kata sandi. Pastikan kata sandi saat ini benar.' })
+                      } else {
+                        setPasswordStatus({ type: 'success', message: 'Kata sandi berhasil diubah!' })
+                        showToast('Kata sandi berhasil diperbarui!', 'success')
+                        setCurrentPassword('')
+                        setNewPassword('')
+                        setConfirmPassword('')
+                        setTimeout(() => setPasswordStatus(null), 5000)
+                      }
+                    } catch (err: any) {
+                      setPasswordStatus({ type: 'error', message: err.message || 'Terjadi kesalahan saat mengubah kata sandi' })
+                    } finally {
+                      setIsUpdatingPassword(false)
+                    }
+                  }}
+                  className="space-y-4 max-w-lg"
+                >
+                  {passwordStatus && (
+                    <div className={`rounded-xl p-3 text-xs flex items-center gap-2 ${
+                      passwordStatus.type === 'success'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                        : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                    }`}>
+                      {passwordStatus.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+                      <span>{passwordStatus.message}</span>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+                      Kata Sandi Saat Ini
+                    </label>
+                    <input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/60 px-3.5 py-2.5 text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+                      Kata Sandi Baru (Min. 8 Karakter)
+                    </label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/60 px-3.5 py-2.5 text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+                      Konfirmasi Kata Sandi Baru
+                    </label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/60 px-3.5 py-2.5 text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isUpdatingPassword || !currentPassword || !newPassword || !confirmPassword}
+                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:hover:bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-emerald-600/20 transition cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    {isUpdatingPassword ? (
+                      <>
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                        <span>Memperbarui Kata Sandi...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="h-3.5 w-3.5" />
+                        <span>Perbarui Kata Sandi</span>
+                      </>
+                    )}
+                  </button>
+                </form>
               </div>
 
               {/* 5. Data Management */}
