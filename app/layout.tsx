@@ -3,8 +3,52 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Dompetku — Dashboard Keuangan Pribadi',
-  description: 'Kelola pemasukan, pengeluaran, dompet, dan budget pribadi dengan lebih mudah.',
+  metadataBase: new URL('https://www.qwarts.my.id'),
+  title: {
+    default: 'Dompetku — Dashboard & Aplikasi Pengelola Keuangan Pribadi',
+    template: '%s | Dompetku',
+  },
+  description:
+    'Kelola transaksi, dompet, rekening bank, anggaran bulanan, tagihan rutin, dan target impian finansial Anda dengan rapi, aman, dan mudah.',
+  applicationName: 'Dompetku',
+  authors: [{ name: 'Dompetku', url: 'https://www.qwarts.my.id' }],
+  keywords: [
+    'aplikasi keuangan pribadi',
+    'catat pengeluaran',
+    'budgeting app indonesia',
+    'financial tracker',
+    'dompet digital',
+    'dompetku',
+    'qwarts',
+  ],
+  alternates: {
+    canonical: 'https://www.qwarts.my.id',
+  },
+  openGraph: {
+    title: 'Dompetku — Dashboard & Aplikasi Pengelola Keuangan Pribadi',
+    description:
+      'Catat transaksi, atur anggaran bulanan, kelola tagihan rutin, dan capai target impian finansialmu dengan mudah, rapi, dan aman.',
+    url: 'https://www.qwarts.my.id',
+    siteName: 'Dompetku',
+    locale: 'id_ID',
+    type: 'website',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 675,
+        alt: 'Dompetku - Personal Finance Dashboard',
+        type: 'image/png',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Dompetku — Dashboard & Aplikasi Pengelola Keuangan Pribadi',
+    description:
+      'Catat transaksi, atur anggaran bulanan, kelola tagihan rutin, dan capai target impian finansialmu dengan mudah.',
+    images: ['/og-image.png'],
+  },
   generator: 'v0.app',
   icons: {
     icon: [
