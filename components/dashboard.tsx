@@ -252,7 +252,7 @@ export default function Dashboard({
             subscriptions: fresh.subscriptions || [],
           })
         )
-        .catch(() => {})
+        .catch(() => { })
     }
     startTransition(() => {
       router.refresh()
@@ -552,9 +552,8 @@ export default function Dashboard({
 
       {/* Desktop Sidebar (Collapsible) */}
       <aside
-        className={`fixed inset-y-0 hidden border-r border-slate-200/80 bg-white/90 dark:bg-slate-900/90 dark:border-slate-800 backdrop-blur-md p-4 lg:flex lg:flex-col lg:justify-between z-30 shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-all duration-300 ${
-          sidebarCollapsed ? 'w-20' : 'w-64'
-        }`}
+        className={`fixed inset-y-0 hidden border-r border-slate-200/80 bg-white/90 dark:bg-slate-900/90 dark:border-slate-800 backdrop-blur-md p-4 lg:flex lg:flex-col lg:justify-between z-30 shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-all duration-300 ${sidebarCollapsed ? 'w-20' : 'w-64'
+          }`}
       >
         <div>
           {/* Brand Logo & Collapse Toggle */}
@@ -617,13 +616,11 @@ export default function Dashboard({
                     setTab(key as any)
                   }}
                   title={sidebarCollapsed ? label : undefined}
-                  className={`flex w-full items-center rounded-xl py-2.5 text-xs font-semibold transition-all ${
-                    sidebarCollapsed ? 'justify-center px-0' : 'justify-between px-3'
-                  } ${
-                    tab === key
+                  className={`flex w-full items-center rounded-xl py-2.5 text-xs font-semibold transition-all ${sidebarCollapsed ? 'justify-center px-0' : 'justify-between px-3'
+                    } ${tab === key
                       ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/25 font-bold'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <Icon className={`h-4 w-4 shrink-0 ${tab === key ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
@@ -631,15 +628,14 @@ export default function Dashboard({
                   </div>
                   {!sidebarCollapsed && badge && (
                     <span
-                      className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold ${
-                        tab === key
+                      className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold ${tab === key
                           ? 'bg-white/20 text-white'
                           : badge.includes('PRO')
-                          ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                          : badge === 'Tahap 2'
-                          ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
-                          : 'bg-rose-500 text-white'
-                      }`}
+                            ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                            : badge === 'Tahap 2'
+                              ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
+                              : 'bg-rose-500 text-white'
+                        }`}
                     >
                       {badge}
                     </span>
@@ -695,9 +691,8 @@ export default function Dashboard({
 
       {/* Main Content Layout */}
       <div
-        className={`flex-1 flex flex-col transition-all duration-300 ${
-          sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        }`}
+        className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+          }`}
       >
         {/* Top Header Navbar */}
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-6 py-4 lg:px-10">
@@ -802,20 +797,18 @@ export default function Dashboard({
                         setTab(key as any)
                         setMobileMenuOpen(false)
                       }}
-                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold ${
-                        tab === key ? 'bg-emerald-600 text-white font-bold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                      }`}
+                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold ${tab === key ? 'bg-emerald-600 text-white font-bold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         <Icon className="h-4 w-4" />
                         <span>{label}</span>
                       </div>
                       {badge && (
-                        <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${
-                          badge.includes('PRO')
+                        <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${badge.includes('PRO')
                             ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
                             : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
-                        }`}>
+                          }`}>
                           {badge}
                         </span>
                       )}
@@ -1276,11 +1269,10 @@ export default function Dashboard({
                       <button
                         key={p.id}
                         onClick={() => setDateFilter(p.id as any)}
-                        className={`rounded-lg px-2.5 py-1 font-semibold transition ${
-                          dateFilter === p.id
+                        className={`rounded-lg px-2.5 py-1 font-semibold transition ${dateFilter === p.id
                             ? 'bg-emerald-600 text-white font-bold'
                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-                        }`}
+                          }`}
                       >
                         {p.label}
                       </button>
@@ -1429,17 +1421,15 @@ export default function Dashboard({
                     return (
                       <div
                         key={g.id}
-                        className={`rounded-3xl border bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between transition hover:shadow-md ${
-                          isDone ? 'border-emerald-300 dark:border-emerald-800 bg-gradient-to-b from-emerald-50/30 to-white dark:from-emerald-950/20 dark:to-slate-900' : 'border-slate-200/80 dark:border-slate-800'
-                        }`}
+                        className={`rounded-3xl border bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between transition hover:shadow-md ${isDone ? 'border-emerald-300 dark:border-emerald-800 bg-gradient-to-b from-emerald-50/30 to-white dark:from-emerald-950/20 dark:to-slate-900' : 'border-slate-200/80 dark:border-slate-800'
+                          }`}
                       >
                         <div>
                           <div className="flex items-start justify-between">
                             <div className="flex items-center gap-2.5">
                               <div
-                                className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
-                                  isDone ? 'bg-emerald-500 text-white' : 'bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400'
-                                }`}
+                                className={`flex h-10 w-10 items-center justify-center rounded-2xl ${isDone ? 'bg-emerald-500 text-white' : 'bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400'
+                                  }`}
                               >
                                 {isDone ? <Award className="h-5 w-5" /> : <Target className="h-5 w-5" />}
                               </div>
@@ -1487,9 +1477,8 @@ export default function Dashboard({
 
                             <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                               <div
-                                className={`h-full rounded-full transition-all duration-700 ${
-                                  isDone ? 'bg-emerald-500' : 'bg-gradient-to-r from-teal-500 to-emerald-500'
-                                }`}
+                                className={`h-full rounded-full transition-all duration-700 ${isDone ? 'bg-emerald-500' : 'bg-gradient-to-r from-teal-500 to-emerald-500'
+                                  }`}
                                 style={{ width: `${pct}%` }}
                               />
                             </div>
@@ -1610,11 +1599,10 @@ export default function Dashboard({
                               <td className="py-4 pl-2 whitespace-nowrap">
                                 <div className="flex items-center gap-2.5">
                                   <div
-                                    className={`flex h-9 w-9 items-center justify-center rounded-xl font-black text-xs ${
-                                      isDueSoon
+                                    className={`flex h-9 w-9 items-center justify-center rounded-xl font-black text-xs ${isDueSoon
                                         ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 ring-2 ring-rose-500/20'
                                         : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
-                                    }`}
+                                      }`}
                                   >
                                     {s.dueDate}
                                   </div>
@@ -1634,11 +1622,10 @@ export default function Dashboard({
                               </td>
                               <td className="py-4 whitespace-nowrap">
                                 <span
-                                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-                                    s.isActive
+                                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${s.isActive
                                       ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400'
                                       : 'bg-slate-100 text-slate-500 dark:bg-slate-800'
-                                  }`}
+                                    }`}
                                 >
                                   <span className={`h-1.5 w-1.5 rounded-full ${s.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                                   {s.isActive ? 'Aktif' : 'Nonaktif'}
@@ -1831,21 +1818,19 @@ export default function Dashboard({
                     return (
                       <div
                         key={b.id}
-                        className={`rounded-3xl border p-6 bg-white dark:bg-slate-900 shadow-sm flex flex-col justify-between ${
-                          isOver ? 'border-rose-200 dark:border-rose-900/60' : isWarning ? 'border-amber-200 dark:border-amber-900/60' : 'border-slate-200/80 dark:border-slate-800'
-                        }`}
+                        className={`rounded-3xl border p-6 bg-white dark:bg-slate-900 shadow-sm flex flex-col justify-between ${isOver ? 'border-rose-200 dark:border-rose-900/60' : isWarning ? 'border-amber-200 dark:border-amber-900/60' : 'border-slate-200/80 dark:border-slate-800'
+                          }`}
                       >
                         <div>
                           <div className="flex items-start justify-between">
                             <div>
                               <span
-                                className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${
-                                  isOver
+                                className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${isOver
                                     ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
                                     : isWarning
-                                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
-                                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                                }`}
+                                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                                      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                  }`}
                               >
                                 {isOver ? 'Overbudget' : isWarning ? 'Waspada' : 'Aman'} ({b.percentage}%)
                               </span>
@@ -1882,9 +1867,8 @@ export default function Dashboard({
 
                             <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                               <div
-                                className={`h-full rounded-full transition-all duration-500 ${
-                                  isOver ? 'bg-rose-500' : isWarning ? 'bg-amber-500' : 'bg-emerald-500'
-                                }`}
+                                className={`h-full rounded-full transition-all duration-500 ${isOver ? 'bg-rose-500' : isWarning ? 'bg-amber-500' : 'bg-emerald-500'
+                                  }`}
                                 style={{ width: `${Math.min(100, b.percentage)}%` }}
                               />
                             </div>
@@ -2125,11 +2109,10 @@ export default function Dashboard({
                     <button
                       key={t.id}
                       onClick={() => handleThemeChange(t.id as any)}
-                      className={`relative flex flex-col items-start rounded-2xl border p-4 text-left transition-all ${
-                        theme === t.id
+                      className={`relative flex flex-col items-start rounded-2xl border p-4 text-left transition-all ${theme === t.id
                           ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
                           : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center justify-between w-full">
                         <t.icon className={`h-5 w-5 ${theme === t.id ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`} />
@@ -2175,11 +2158,10 @@ export default function Dashboard({
 
                   <button
                     onClick={toggleSidebar}
-                    className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
-                      sidebarCollapsed
+                    className={`rounded-xl px-4 py-2 text-xs font-bold transition ${sidebarCollapsed
                         ? 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-300'
                         : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                    }`}
+                      }`}
                   >
                     {sidebarCollapsed ? 'Tampilkan Penuh' : 'Sembunyikan'}
                   </button>
@@ -2331,11 +2313,10 @@ export default function Dashboard({
                 </div>
 
                 {emailStatus && (
-                  <div className={`rounded-xl p-3 text-xs flex items-center gap-2 ${
-                    emailStatus.type === 'success'
+                  <div className={`rounded-xl p-3 text-xs flex items-center gap-2 ${emailStatus.type === 'success'
                       ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
                       : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-                  }`}>
+                    }`}>
                     {emailStatus.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
                     <span>{emailStatus.message}</span>
                   </div>
@@ -2354,11 +2335,10 @@ export default function Dashboard({
                   </p>
                 </div>
 
-                <div className={`rounded-2xl border p-5 transition-all ${
-                  isPro
+                <div className={`rounded-2xl border p-5 transition-all ${isPro
                     ? 'border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-emerald-500/5 to-transparent'
                     : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40'
-                }`}>
+                  }`}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <div className="flex items-center gap-2">
@@ -2442,11 +2422,10 @@ export default function Dashboard({
                   className="space-y-4 max-w-lg"
                 >
                   {nameStatus && (
-                    <div className={`rounded-xl p-3 text-xs flex items-center gap-2 ${
-                      nameStatus.type === 'success'
+                    <div className={`rounded-xl p-3 text-xs flex items-center gap-2 ${nameStatus.type === 'success'
                         ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
                         : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-                    }`}>
+                      }`}>
                       {nameStatus.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
                       <span>{nameStatus.message}</span>
                     </div>
@@ -2541,11 +2520,10 @@ export default function Dashboard({
                   className="space-y-4 max-w-lg"
                 >
                   {passwordStatus && (
-                    <div className={`rounded-xl p-3 text-xs flex items-center gap-2 ${
-                      passwordStatus.type === 'success'
+                    <div className={`rounded-xl p-3 text-xs flex items-center gap-2 ${passwordStatus.type === 'success'
                         ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
                         : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-                    }`}>
+                      }`}>
                       {passwordStatus.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
                       <span>{passwordStatus.message}</span>
                     </div>
@@ -2798,7 +2776,7 @@ export default function Dashboard({
               {/* Action Buttons */}
               <div className="mt-6 flex flex-col gap-2.5">
                 <a
-                  href={`https://wa.me/6281234567890?text=${encodeURIComponent(
+                  href={`https://wa.me/6281776370728?text=${encodeURIComponent(
                     `Halo Admin Dompetku, saya ingin upgrade ke akun Dompetku PRO!\n\nNama: ${currentUser.name}\nEmail: ${currentUser.email}\nPaket: Tahunan (Rp 149.000) / Bulanan (Rp 19.000)\n\nMohon info nomor rekening / QRIS untuk pembayaran.`
                   )}`}
                   target="_blank"
@@ -3007,9 +2985,8 @@ function TransactionModal({
         <button
           type="button"
           onClick={() => handleTypeChange('expense')}
-          className={`flex items-center justify-center gap-2 rounded-xl py-2.5 transition ${
-            type === 'expense' ? 'bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
+          className={`flex items-center justify-center gap-2 rounded-xl py-2.5 transition ${type === 'expense' ? 'bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
         >
           <ArrowUpRight className="h-4 w-4" />
           <span>Pengeluaran</span>
@@ -3017,9 +2994,8 @@ function TransactionModal({
         <button
           type="button"
           onClick={() => handleTypeChange('income')}
-          className={`flex items-center justify-center gap-2 rounded-xl py-2.5 transition ${
-            type === 'income' ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
+          className={`flex items-center justify-center gap-2 rounded-xl py-2.5 transition ${type === 'income' ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
         >
           <ArrowDownRight className="h-4 w-4" />
           <span>Pemasukan</span>
