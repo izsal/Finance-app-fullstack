@@ -27,8 +27,11 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url, token }) => {
-      const resendApiKey = process.env.RESEND_API_KEY
-      const emailFrom = process.env.EMAIL_FROM || 'Dompetku <onboarding@resend.dev>'
+      const resendApiKey = process.env.RESEND_API_KEY?.trim()
+      const rawEmailFrom = process.env.EMAIL_FROM || 'Dompetku <noreply@mail.qwarts.my.id>'
+      // Hapus tanda petik ganda/tunggal yang mungkin terbawa dari .env atau Vercel
+      const emailFrom = rawEmailFrom.replace(/^["']|["']$/g, '').trim()
+
       if (resendApiKey) {
         try {
           const res = await fetch('https://api.resend.com/emails', {
@@ -68,14 +71,21 @@ export const auth = betterAuth({
               `,
             }),
           })
+
           if (!res.ok) {
             const errText = await res.text()
-            console.error('Error sending email via Resend:', errText)
+            console.error('[Resend Email Error]:', res.status, errText)
+            throw new Error(`Gagal mengirim email via Resend (${res.status}): ${errText}`)
+          } else {
+            const resData = await res.json()
+            console.log('[Resend Email Sent Successfully]:', resData)
           }
         } catch (err) {
           console.error('Exception sending verification email:', err)
+          throw err
         }
       } else {
+        console.warn('[Resend Warning]: RESEND_API_KEY tidak ditemukan di environment variables!')
         console.log(`\n========================================\n[DOMPETKU EMAIL VERIFICATION]\nTo: ${user.email}\nVerify URL: ${url}\n========================================\n`)
       }
     },
