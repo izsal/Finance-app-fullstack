@@ -45,8 +45,8 @@ function GoogleIcon({ className = 'h-5 w-5' }: { className?: string }) {
 
 const faqs = [
   {
-    q: 'Apakah Dompetku benar-benar gratis?',
-    a: 'Ya, Dompetku dapat digunakan 100% gratis tanpa batasan waktu dan tanpa biaya tersembunyi untuk seluruh fitur pencatatan keuangan pribadi.',
+    q: 'Apakah Dompetku memiliki versi gratis?',
+    a: 'Ya! Dompetku menyediakan Paket Starter (Free) 100% gratis selamanya untuk pencatatan transaksi harian. Bagi Anda yang ingin fitur tingkat lanjut seperti Target Impian, Budgeting Bulanan, dan Ekspor Excel, Anda dapat upgrade ke Paket PRO yang sangat terjangkau (mulai Rp19.000/bulan).',
   },
   {
     q: 'Apakah saya bisa login langsung dengan akun Google?',
@@ -107,6 +107,9 @@ export default function LandingPage() {
             </a>
             <a href="#cara-kerja" className="transition hover:text-white">
               Cara Kerja
+            </a>
+            <a href="#harga" className="transition hover:text-white">
+              Harga
             </a>
             <a href="#faq" className="transition hover:text-white">
               FAQ
@@ -458,6 +461,164 @@ export default function LandingPage() {
                 Catat setiap transaksi secara rutin dan saksikan tabungan target impian Anda tumbuh
                 secara nyata.
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="harga" className="relative z-10 border-t border-slate-800/80 py-20 sm:py-28">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold text-teal-300 shadow-sm backdrop-blur-md">
+              <Sparkles className="h-3.5 w-3.5 text-teal-400" />
+              <span>Transparan & Sangat Terjangkau</span>
+            </div>
+            <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
+              Pilihan Paket Sesuai Kebutuhan Finansialmu
+            </h2>
+            <p className="mt-4 text-sm sm:text-base text-slate-400">
+              Mulai gratis selamanya untuk pencatatan harian, atau upgrade ke PRO untuk membuka otomatisasi budget, target tabungan, dan ekspor data.
+            </p>
+          </div>
+
+          <div className="mt-14 grid gap-8 lg:grid-cols-2 lg:gap-8 max-w-5xl mx-auto items-stretch">
+            {/* 1. Paket Free */}
+            <div className="relative flex flex-col justify-between rounded-3xl border border-slate-800 bg-slate-900/50 p-8 sm:p-10 backdrop-blur-xl transition hover:border-slate-700">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-bold text-white">Paket Starter (Free)</span>
+                  <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-300">
+                    Gratis Selamanya
+                  </span>
+                </div>
+                <p className="mt-3 text-xs sm:text-sm text-slate-400 leading-relaxed">
+                  Sangat cocok untuk siapa saja yang ingin mulai membiasakan diri mencatat arus kas harian tanpa ribet.
+                </p>
+
+                <div className="mt-6 flex items-baseline gap-1">
+                  <span className="text-4xl sm:text-5xl font-black text-white">Rp 0</span>
+                  <span className="text-xs font-medium text-slate-400">/ selamanya</span>
+                </div>
+
+                <div className="mt-8 space-y-3.5 border-t border-slate-800/80 pt-8 text-xs sm:text-sm text-slate-300">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
+                    <span>Pencatatan Pemasukan & Pengeluaran Unlimited</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
+                    <span>Maksimal 2 Dompet / Rekening Bank</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
+                    <span>Kategori Transaksi Lengkap</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
+                    <span>Grafik Arus Kas & Statistik Bulanan</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-slate-500">
+                    <Lock className="h-4 w-4 shrink-0 text-slate-600" />
+                    <span>Budget Bulanan & Limit Kategori</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-slate-500">
+                    <Lock className="h-4 w-4 shrink-0 text-slate-600" />
+                    <span>Target Impian & Tabungan Masa Depan</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-slate-500">
+                    <Lock className="h-4 w-4 shrink-0 text-slate-600" />
+                    <span>Pelacak Tagihan Rutin & Pengingat</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-slate-500">
+                    <Lock className="h-4 w-4 shrink-0 text-slate-600" />
+                    <span>Ekspor Laporan ke Excel (.xlsx) & CSV</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-4">
+                <Link
+                  href="/sign-up"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-800/80 py-3.5 text-sm font-bold text-white transition hover:bg-slate-700 hover:text-white"
+                >
+                  <span>Mulai Gratis Sekarang</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+
+            {/* 2. Paket PRO */}
+            <div className="relative flex flex-col justify-between rounded-3xl border-2 border-teal-500/60 bg-gradient-to-b from-teal-950/40 via-slate-900/90 to-slate-950 p-8 sm:p-10 shadow-2xl shadow-teal-500/10 backdrop-blur-xl">
+              <div className="absolute -top-3.5 right-8">
+                <span className="rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-3.5 py-1 text-xs font-black text-slate-950 uppercase tracking-wider shadow-md shadow-amber-500/30 flex items-center gap-1">
+                  <Sparkles className="h-3 w-3 fill-slate-950 text-slate-950" />
+                  Paling Populer
+                </span>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-bold text-white flex items-center gap-2">
+                    <span>Paket Dompetku PRO</span>
+                    <span className="rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-extrabold px-2 py-0.5 border border-amber-500/30">PRO</span>
+                  </span>
+                </div>
+                <p className="mt-3 text-xs sm:text-sm text-slate-400 leading-relaxed">
+                  Buka kendali penuh atas finansialmu dengan fitur otomatisasi anggaran, tabungan impian, dan ekspor.
+                </p>
+
+                <div className="mt-6 flex flex-col gap-1">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl sm:text-5xl font-black text-white">Rp 19.000</span>
+                    <span className="text-xs font-medium text-slate-400">/ bulan</span>
+                  </div>
+                  <p className="text-xs text-teal-400 font-semibold">
+                    Atau Rp 149.000 / tahun (Hanya Rp 12.400/bln — Hemat 35%)
+                  </p>
+                </div>
+
+                <div className="mt-8 space-y-3.5 border-t border-teal-500/20 pt-8 text-xs sm:text-sm text-slate-200">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
+                    <span className="font-semibold text-white">Semua Fitur Paket Starter (Free)</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
+                    <span><strong className="text-white">Unlimited Dompet & Rekening</strong> (BCA, Mandiri, GoPay, OVO, Dana)</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
+                    <span><strong className="text-white">Batas Budget Bulanan</strong> per Kategori & Peringatan Overbudget</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
+                    <span><strong className="text-white">Target Impian & Tabungan</strong> dengan Progress Bar Visual</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
+                    <span><strong className="text-white">Pelacak Tagihan Rutin</strong> & Pengingat Jatuh Tempo</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
+                    <span><strong className="text-white">Ekspor Laporan Lengkap</strong> ke Excel (.xlsx) & CSV Otomatis</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
+                    <span><strong className="text-white">Lencana Eksklusif PRO Member ⭐</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-4">
+                <Link
+                  href="/sign-up"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-400 py-3.5 text-sm font-bold text-slate-950 shadow-lg shadow-teal-500/25 transition hover:brightness-110 active:scale-95"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  <span>Dapatkan Akses PRO Sekarang</span>
+                </Link>
+              </div>
             </div>
           </div>
         </div>

@@ -44,6 +44,7 @@ import {
   Clock,
   Code2,
   CreditCard,
+  Crown,
   Download,
   Edit3,
   ExternalLink,
@@ -129,10 +130,12 @@ export default function Dashboard({
   user,
   initialData,
 }: {
-  user: { name: string; email: string; image?: string | null; emailVerified?: boolean }
+  user: { name: string; email: string; image?: string | null; emailVerified?: boolean; plan?: string }
   initialData: Data
 }) {
   const [currentUser, setCurrentUser] = useState(user)
+  const isPro = currentUser.plan === 'pro'
+  const [showUpgradeModal, setShowUpgradeModal] = useState<{ featureName?: string; description?: string } | null>(null)
   const [data, setData] = useState<Data>({
     ...initialData,
     goals: initialData.goals || [],
@@ -457,9 +460,16 @@ export default function Dashboard({
 
   // Export Handlers
   const handleExportExcel = () => {
+    if (!isPro) {
+      setShowUpgradeModal({
+        featureName: 'Ekspor Laporan Excel (.xlsx)',
+        description: 'Unduh seluruh catatan transaksi, buku kas, dan ringkasan anggaran Anda dalam format spreadsheet Excel (.xlsx) rapi dengan formula otomatis di Dompetku PRO.'
+      })
+      return
+    }
     try {
       exportFinanceToExcel({
-        user,
+        user: currentUser,
         wallets: data.wallets,
         categories: data.categories,
         budgets: data.budgets,
@@ -519,9 +529,9 @@ export default function Dashboard({
     { key: 'Overview', label: 'Overview', icon: LayoutDashboard },
     { key: 'Transaksi', label: 'Transaksi', icon: Receipt },
     { key: 'Dompet', label: 'Dompet & Akun', icon: WalletCards },
-    { key: 'Budget', label: 'Budget Bulanan', icon: PiggyBank },
-    { key: 'Target Impian', label: 'Target Impian', icon: Target, badge: 'Tahap 2' },
-    { key: 'Tagihan Rutin', label: 'Tagihan Rutin', icon: CalendarDays, badge: dueSoonSubs.length > 0 ? `${dueSoonSubs.length}` : undefined },
+    { key: 'Budget', label: 'Budget Bulanan', icon: PiggyBank, isProFeature: true, badge: !isPro ? '🔒 PRO' : undefined },
+    { key: 'Target Impian', label: 'Target Impian', icon: Target, isProFeature: true, badge: !isPro ? '🔒 PRO' : 'Tahap 2' },
+    { key: 'Tagihan Rutin', label: 'Tagihan Rutin', icon: CalendarDays, isProFeature: true, badge: !isPro ? '🔒 PRO' : dueSoonSubs.length > 0 ? `${dueSoonSubs.length}` : undefined },
     { key: 'Kategori', label: 'Kategori', icon: Tag },
     { key: 'Analisis', label: 'Laporan & Excel', icon: BarChart3 },
     { key: 'Pengaturan', label: 'Pengaturan', icon: Settings2 },
@@ -593,10 +603,19 @@ export default function Dashboard({
               <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">Menu Utama</p>
             )}
             <nav className="mt-2 space-y-1">
-              {navMenuItems.map(({ key, label, icon: Icon, badge }) => (
+              {navMenuItems.map(({ key, label, icon: Icon, badge, isProFeature }) => (
                 <button
                   key={key}
-                  onClick={() => setTab(key as any)}
+                  onClick={() => {
+                    if (isProFeature && !isPro) {
+                      setShowUpgradeModal({
+                        featureName: label,
+                        description: `Fitur ${label} adalah fitur eksklusif Dompetku PRO. Buka akses tanpa batas untuk mengelola keuangan Anda lebih cerdas.`
+                      })
+                      return
+                    }
+                    setTab(key as any)
+                  }}
                   title={sidebarCollapsed ? label : undefined}
                   className={`flex w-full items-center rounded-xl py-2.5 text-xs font-semibold transition-all ${
                     sidebarCollapsed ? 'justify-center px-0' : 'justify-between px-3'
@@ -615,6 +634,8 @@ export default function Dashboard({
                       className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold ${
                         tab === key
                           ? 'bg-white/20 text-white'
+                          : badge.includes('PRO')
+                          ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
                           : badge === 'Tahap 2'
                           ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
                           : 'bg-rose-500 text-white'
@@ -641,7 +662,18 @@ export default function Dashboard({
             </div>
             {!sidebarCollapsed && (
               <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-bold text-slate-800 dark:text-slate-200">{currentUser.name}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="truncate text-xs font-bold text-slate-800 dark:text-slate-200">{currentUser.name}</p>
+                  {isPro ? (
+                    <span className="shrink-0 rounded bg-gradient-to-r from-amber-500 to-amber-600 px-1.5 py-0.2 text-[8px] font-black text-white shadow-xs">
+                      PRO
+                    </span>
+                  ) : (
+                    <span className="shrink-0 rounded bg-slate-200 dark:bg-slate-700 px-1 py-0.2 text-[8px] font-semibold text-slate-500 dark:text-slate-400">
+                      FREE
+                    </span>
+                  )}
+                </div>
                 <p className="truncate text-[11px] text-slate-400">{currentUser.email}</p>
               </div>
             )}
@@ -687,7 +719,23 @@ export default function Dashboard({
 
             <div>
               <p className="text-xs font-medium text-slate-400">Halo, selamat datang</p>
-              <h1 className="text-lg font-bold text-slate-900 dark:text-white lg:text-xl">{currentUser.name}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-bold text-slate-900 dark:text-white lg:text-xl">{currentUser.name}</h1>
+                {isPro ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500/20 to-emerald-500/20 border border-amber-500/40 px-2.5 py-0.5 text-[10px] font-black text-amber-600 dark:text-amber-400">
+                    <Sparkles className="h-3 w-3 text-amber-500 fill-amber-500" />
+                    PRO
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setShowUpgradeModal({ featureName: 'Dompetku PRO', description: 'Buka semua fitur canggih tanpa batasan.' })}
+                    className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-2.5 py-0.5 text-[10px] font-black text-white hover:brightness-110 shadow-sm shadow-amber-500/30 transition cursor-pointer"
+                  >
+                    <Sparkles className="h-2.5 w-2.5 fill-white" />
+                    Upgrade PRO
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -739,10 +787,18 @@ export default function Dashboard({
                   </button>
                 </div>
                 <nav className="mt-4 space-y-1">
-                  {navMenuItems.map(({ key, label, icon: Icon, badge }) => (
+                  {navMenuItems.map(({ key, label, icon: Icon, badge, isProFeature }) => (
                     <button
                       key={key}
                       onClick={() => {
+                        if (isProFeature && !isPro) {
+                          setShowUpgradeModal({
+                            featureName: label,
+                            description: `Fitur ${label} adalah fitur eksklusif Dompetku PRO. Buka akses tanpa batas untuk mengelola keuangan Anda lebih cerdas.`
+                          })
+                          setMobileMenuOpen(false)
+                          return
+                        }
                         setTab(key as any)
                         setMobileMenuOpen(false)
                       }}
@@ -755,7 +811,11 @@ export default function Dashboard({
                         <span>{label}</span>
                       </div>
                       {badge && (
-                        <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 text-[9px] font-bold text-emerald-800 dark:text-emerald-300">
+                        <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${
+                          badge.includes('PRO')
+                            ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                            : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
+                        }`}>
                           {badge}
                         </span>
                       )}
@@ -814,11 +874,21 @@ export default function Dashboard({
                     <span>Transfer Saldo</span>
                   </button>
                   <button
-                    onClick={() => setShowModal({ type: 'goal' })}
+                    onClick={() => {
+                      if (!isPro) {
+                        setShowUpgradeModal({
+                          featureName: 'Target Impian',
+                          description: 'Fitur Target Impian membantu Anda menabung untuk membeli rumah, kendaraan, atau dana darurat dengan indikator visual otomatis di Dompetku PRO.'
+                        })
+                        return
+                      }
+                      setShowModal({ type: 'goal' })
+                    }}
                     className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                   >
                     <Target className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     <span>Target Impian</span>
+                    {!isPro && <span className="text-[9px] font-bold text-amber-500">PRO</span>}
                   </button>
                 </div>
               </div>
@@ -2272,6 +2342,64 @@ export default function Dashboard({
                 )}
               </div>
 
+              {/* 5. Membership Plan Card */}
+              <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-5">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-amber-500" />
+                    <span>Status Paket & Langganan Akun</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Informasi status tingkatan akses fitur aplikasi Dompetku Anda.
+                  </p>
+                </div>
+
+                <div className={`rounded-2xl border p-5 transition-all ${
+                  isPro
+                    ? 'border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-emerald-500/5 to-transparent'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40'
+                }`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-slate-900 dark:text-white">Paket Saat Ini:</span>
+                        {isPro ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-3 py-0.5 text-xs font-black text-white shadow-sm shadow-amber-500/30">
+                            <Sparkles className="h-3.5 w-3.5" />
+                            DOMPETKU PRO MEMBER
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-slate-200 dark:bg-slate-700 px-2.5 py-0.5 text-xs font-bold text-slate-700 dark:text-slate-200">
+                            Paket Starter (Free)
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                        {isPro
+                          ? 'Selamat! Akun Anda memiliki akses penuh tanpa batas ke seluruh fitur Budget Bulanan, Target Impian, Tagihan Rutin, dan Ekspor Excel.'
+                          : 'Akun Anda saat ini menggunakan paket gratis. Upgrade ke PRO untuk mengaktifkan Target Impian, Budget Bulanan, dan Ekspor Excel.'}
+                      </p>
+                    </div>
+
+                    {!isPro ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowUpgradeModal({ featureName: 'Dompetku PRO', description: 'Buka semua fitur perencanaan finansial eksklusif tanpa batasan.' })}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-5 py-2.5 text-xs font-bold text-white hover:brightness-110 shadow-md shadow-amber-500/25 transition shrink-0 cursor-pointer"
+                      >
+                        <Sparkles className="h-4 w-4 fill-white" />
+                        <span>Upgrade ke PRO Sekarang</span>
+                      </button>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800 shrink-0">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span>Akses PRO Aktif</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* 5. Change Profile Name Card */}
               <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-5">
                 <div>
@@ -2593,6 +2721,103 @@ export default function Dashboard({
               done={handleSuccess}
             />
           )}
+        </ModalContainer>
+      )}
+
+      {/* 10. Upgrade to PRO Paywall Modal */}
+      {showUpgradeModal && (
+        <ModalContainer close={() => setShowUpgradeModal(null)}>
+          <div className="relative overflow-hidden rounded-3xl border border-amber-500/40 bg-slate-950 p-6 sm:p-8 text-white shadow-2xl">
+            {/* Background ambient glow */}
+            <div className="pointer-events-none absolute -top-24 -right-24 h-48 w-48 rounded-full bg-amber-500/20 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-24 h-48 w-48 rounded-full bg-emerald-500/20 blur-3xl" />
+
+            <div className="relative z-10">
+              <div className="flex items-center justify-between">
+                <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/15 px-3 py-1 text-xs font-black text-amber-300">
+                  <Sparkles className="h-3.5 w-3.5 fill-amber-300" />
+                  <span>DOMPETKU PRO EXCLUSIVE</span>
+                </div>
+                <button
+                  onClick={() => setShowUpgradeModal(null)}
+                  className="rounded-full p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <h2 className="mt-4 text-2xl font-black text-white">
+                Tingkatkan ke Dompetku PRO 🚀
+              </h2>
+              <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                {showUpgradeModal.description ||
+                  'Tingkatkan akun Anda ke PRO untuk mengontrol anggaran, mengejar target tabungan, dan mengunduh laporan keuangan tanpa batasan.'}
+              </p>
+
+              {/* Feature Benefits List */}
+              <div className="mt-6 space-y-2.5 rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4 text-xs text-slate-200">
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
+                  <span><strong>Target Impian</strong> — Tabungan rumah, mobil, dan dana darurat</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
+                  <span><strong>Budget Bulanan</strong> — Batas belanja per kategori & alert overbudget</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
+                  <span><strong>Tagihan Rutin</strong> — Pengingat jatuh tempo langganan & utilitas</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
+                  <span><strong>Ekspor Laporan</strong> — Download file Excel (.xlsx) & CSV otomatis</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
+                  <span><strong>Unlimited Dompet</strong> — Catat semua rekening bank & e-wallet</span>
+                </div>
+              </div>
+
+              {/* Pricing Cards */}
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-3.5 text-center">
+                  <span className="text-[11px] font-semibold text-slate-400">Paket Bulanan</span>
+                  <p className="mt-1 text-lg font-black text-white">Rp 19.000</p>
+                  <span className="text-[10px] text-slate-400">per bulan</span>
+                </div>
+                <div className="relative rounded-2xl border border-amber-500/50 bg-gradient-to-b from-amber-500/15 to-slate-900/80 p-3.5 text-center shadow-lg shadow-amber-500/10">
+                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-amber-500 px-2 py-0.2 text-[9px] font-black text-slate-950 uppercase">
+                    Hemat 35%
+                  </span>
+                  <span className="text-[11px] font-bold text-amber-300">Paket Tahunan</span>
+                  <p className="mt-1 text-lg font-black text-white">Rp 149.000</p>
+                  <span className="text-[10px] text-emerald-400 font-semibold">Rp 12.400/bln</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mt-6 flex flex-col gap-2.5">
+                <a
+                  href={`https://wa.me/6281234567890?text=${encodeURIComponent(
+                    `Halo Admin Dompetku, saya ingin upgrade ke akun Dompetku PRO!\n\nNama: ${currentUser.name}\nEmail: ${currentUser.email}\nPaket: Tahunan (Rp 149.000) / Bulanan (Rp 19.000)\n\nMohon info nomor rekening / QRIS untuk pembayaran.`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-400 py-3.5 text-sm font-black text-slate-950 shadow-lg shadow-teal-500/30 transition hover:brightness-110 active:scale-98"
+                >
+                  <Sparkles className="h-4 w-4 fill-slate-950 text-slate-950" />
+                  <span>Upgrade via WhatsApp / QRIS</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setShowUpgradeModal(null)}
+                  className="w-full py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition cursor-pointer"
+                >
+                  Nanti Saja
+                </button>
+              </div>
+            </div>
+          </div>
         </ModalContainer>
       )}
     </div>
