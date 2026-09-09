@@ -12,6 +12,7 @@ interface DatePickerInputProps {
   type?: 'date' | 'month'
   className?: string
   id?: string
+  lang?: 'id' | 'en'
 }
 
 export function DatePickerInput({
@@ -22,6 +23,7 @@ export function DatePickerInput({
   type = 'date',
   className = '',
   id,
+  lang = 'en',
 }: DatePickerInputProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -40,16 +42,16 @@ export function DatePickerInput({
   }
 
   const formatDisplay = (val: string) => {
-    if (!val) return 'Pilih Tanggal'
+    if (!val) return lang === 'en' ? (type === 'month' ? 'Select Month' : 'Select Date') : (type === 'month' ? 'Pilih Bulan' : 'Pilih Tanggal')
     if (type === 'month') {
       const [year, month] = val.split('-')
       if (year && month) {
         const d = new Date(parseInt(year, 10), parseInt(month, 10) - 1, 1)
-        return d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+        return d.toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { month: 'long', year: 'numeric' })
       }
       return val
     }
-    return formatIndoDate(val, true)
+    return formatIndoDate(val, true, lang)
   }
 
   return (

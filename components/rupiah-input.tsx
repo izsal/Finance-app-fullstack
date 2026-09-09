@@ -17,12 +17,13 @@ interface RupiahInputProps {
   name?: string
   disabled?: boolean
   autoFocus?: boolean
+  lang?: 'id' | 'en'
 }
 
 export function RupiahInput({
   value,
   onChange,
-  label = 'Nominal',
+  label,
   placeholder = 'Rp 0',
   required = false,
   showPresets = true,
@@ -32,7 +33,9 @@ export function RupiahInput({
   name,
   disabled = false,
   autoFocus = false,
+  lang = 'en',
 }: RupiahInputProps) {
+  const defaultLabel = label !== undefined ? label : (lang === 'en' ? 'Amount' : 'Nominal')
   const numericValue = typeof value === 'string' ? parseRupiahToNumber(value) : (value || 0)
   const [displayValue, setDisplayValue] = useState<string>(() => (numericValue > 0 ? formatRupiah(numericValue, true) : ''))
 
@@ -65,7 +68,14 @@ export function RupiahInput({
     onChange(0)
   }
 
-  const presets = [
+  const presets = lang === 'en' ? [
+    { label: '+10k', amount: 10000 },
+    { label: '+50k', amount: 50000 },
+    { label: '+100k', amount: 100000 },
+    { label: '+500k', amount: 500000 },
+    { label: '+1M', amount: 1000000 },
+    { label: '+5M', amount: 5000000 },
+  ] : [
     { label: '+10 rb', amount: 10000 },
     { label: '+50 rb', amount: 50000 },
     { label: '+100 rb', amount: 100000 },
@@ -76,10 +86,10 @@ export function RupiahInput({
 
   return (
     <div className={`space-y-1.5 ${className}`}>
-      {label && (
+      {defaultLabel && (
         <div className="flex items-center justify-between">
           <label htmlFor={id} className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-            {label} {required && <span className="text-rose-500">*</span>}
+            {defaultLabel} {required && <span className="text-rose-500">*</span>}
           </label>
           {numericValue > 0 && (
             <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
@@ -112,7 +122,7 @@ export function RupiahInput({
           <button
             type="button"
             onClick={clearInput}
-            aria-label="Bersihkan nominal"
+            aria-label={lang === 'en' ? 'Clear amount' : 'Bersihkan nominal'}
             className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-rose-500 transition-colors"
           >
             <X className="h-4 w-4" />
@@ -120,7 +130,7 @@ export function RupiahInput({
         )}
       </div>
 
-      {showTerbilang && numericValue > 0 && (
+      {showTerbilang && lang === 'id' && numericValue > 0 && (
         <div className="flex items-start gap-1.5 rounded-lg bg-emerald-50/70 p-2 text-xs text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
           <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
           <span className="italic font-medium leading-relaxed">

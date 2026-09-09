@@ -523,21 +523,21 @@ export default function Dashboard({
 
   // Select Options definitions for react-select
   const typeFilterOptions: OptionType<string>[] = [
-    { value: 'all', label: 'Semua Tipe Transaksi' },
-    { value: 'income', label: 'Pemasukan (+)' },
-    { value: 'expense', label: 'Pengeluaran (-)' },
+    { value: 'all', label: t('all_types', lang) },
+    { value: 'income', label: t('type_income', lang) },
+    { value: 'expense', label: t('type_expense', lang) },
   ]
 
   const categoryFilterOptions: OptionType<string>[] = [
-    { value: 'all', label: 'Semua Kategori' },
+    { value: 'all', label: t('all_categories', lang) },
     ...data.categories.map((c) => ({
       value: String(c.id),
-      label: `${c.name} (${c.type === 'income' ? 'Masuk' : 'Keluar'})`,
+      label: `${c.name} (${c.type === 'income' ? (lang === 'en' ? 'Income' : 'Masuk') : (lang === 'en' ? 'Expense' : 'Keluar')})`,
     })),
   ]
 
   const walletFilterOptions: OptionType<string>[] = [
-    { value: 'all', label: 'Semua Dompet / Rekening' },
+    { value: 'all', label: t('all_wallets', lang) },
     ...data.wallets.map((w) => ({
       value: String(w.id),
       label: `${w.name} (${w.type})`,
@@ -596,7 +596,7 @@ export default function Dashboard({
             {!sidebarCollapsed && (
               <button
                 onClick={toggleSidebar}
-                title="Sembunyikan Sidebar"
+                title={t('sidebar_hide', lang)}
                 className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition"
               >
                 <PanelLeftClose className="h-4 w-4" />
@@ -608,7 +608,7 @@ export default function Dashboard({
             <div className="mt-4 flex justify-center">
               <button
                 onClick={toggleSidebar}
-                title="Tampilkan Sidebar Penuh"
+                title={t('sidebar_show', lang)}
                 className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition"
               >
                 <PanelLeftOpen className="h-4 w-4" />
@@ -698,7 +698,7 @@ export default function Dashboard({
                   await signOut()
                   router.push('/sign-in')
                 }}
-                title="Keluar"
+                title={t('logout', lang)}
                 className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 transition"
               >
                 <LogOut className="h-4 w-4" />
@@ -725,14 +725,14 @@ export default function Dashboard({
 
             <button
               onClick={toggleSidebar}
-              title={sidebarCollapsed ? 'Tampilkan Sidebar' : 'Sembunyikan Sidebar'}
+              title={sidebarCollapsed ? t('sidebar_show', lang) : t('sidebar_hide', lang)}
               className="hidden lg:flex rounded-xl border border-slate-200 dark:border-slate-800 p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             >
               {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
             </button>
 
             <div>
-              <p className="text-xs font-medium text-slate-400">{lang === 'en' ? 'Welcome back,' : 'Halo, selamat datang'}</p>
+              <p className="text-xs font-medium text-slate-400">{t('welcome_back', lang)}</p>
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-bold text-slate-900 dark:text-white lg:text-xl">{currentUser.name}</h1>
                 {isPro ? (
@@ -1152,7 +1152,7 @@ export default function Dashboard({
                               </div>
                               <div>
                                 <p className="font-bold text-xs text-slate-900 dark:text-white">{s.name}</p>
-                                <p className="text-[10px] text-slate-400">Jatuh tempo tgl {s.dueDate} ({daysLeft === 0 ? 'Hari ini' : `${daysLeft} hari lagi`})</p>
+                                <p className="text-[10px] text-slate-400">{t('due_date_on', lang)} {s.dueDate} ({daysLeft === 0 ? t('today', lang) : `${daysLeft} ${t('days_left', lang)}`})</p>
                               </div>
                             </div>
                             <span className="font-black text-xs text-slate-900 dark:text-white">{formatRupiah(s.amount)}</span>
@@ -1162,7 +1162,7 @@ export default function Dashboard({
                     </div>
                   ) : (
                     <div className="py-6 text-center text-xs text-slate-400">
-                      Belum ada catatan langganan / tagihan rutin.
+                      {t('no_bills', lang)}
                     </div>
                   )}
                 </div>
@@ -1173,15 +1173,15 @@ export default function Dashboard({
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm lg:col-span-2">
                   <div className="flex items-center justify-between mb-6">
                     <div>
-                      <h3 className="font-bold text-slate-900 dark:text-white text-lg">Tren Arus Kas Transaksi</h3>
-                      <p className="text-xs text-slate-400">Pemasukan vs Pengeluaran berdasarkan tanggal</p>
+                      <h3 className="font-bold text-slate-900 dark:text-white text-lg">{t('cashflow_chart', lang)}</h3>
+                      <p className="text-xs text-slate-400">{t('cashflow_sub', lang)}</p>
                     </div>
                     <div className="flex items-center gap-3 text-xs font-semibold">
                       <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> Masuk
+                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> {t('cashflow_in', lang)}
                       </span>
                       <span className="flex items-center gap-1.5 text-rose-500 dark:text-rose-400">
-                        <span className="h-2.5 w-2.5 rounded-full bg-rose-500" /> Keluar
+                        <span className="h-2.5 w-2.5 rounded-full bg-rose-500" /> {t('cashflow_out', lang)}
                       </span>
                     </div>
                   </div>
@@ -1222,7 +1222,7 @@ export default function Dashboard({
                           <Area
                             type="monotone"
                             dataKey="income"
-                            name="Pemasukan"
+                            name={t('cashflow_in', lang)}
                             stroke="#10b981"
                             strokeWidth={2.5}
                             fillOpacity={1}
@@ -1231,7 +1231,7 @@ export default function Dashboard({
                           <Area
                             type="monotone"
                             dataKey="expense"
-                            name="Pengeluaran"
+                            name={t('cashflow_out', lang)}
                             stroke="#f43f5e"
                             strokeWidth={2.5}
                             fillOpacity={1}
@@ -1241,7 +1241,7 @@ export default function Dashboard({
                       </ResponsiveContainer>
                     ) : (
                       <div className="flex h-full items-center justify-center text-xs text-slate-400">
-                        Belum ada data visualisasi arus kas.
+                        {t('cashflow_empty', lang)}
                       </div>
                     )}
                   </div>
@@ -1249,8 +1249,8 @@ export default function Dashboard({
 
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between">
                   <div>
-                    <h3 className="font-bold text-slate-900 dark:text-white text-lg">Alokasi Pengeluaran</h3>
-                    <p className="text-xs text-slate-400">Distribusi biaya per kategori</p>
+                    <h3 className="font-bold text-slate-900 dark:text-white text-lg">{t('expense_category_chart', lang)}</h3>
+                    <p className="text-xs text-slate-400">{t('expense_category_sub', lang)}</p>
                   </div>
 
                   <div className="h-52 w-full my-2">
@@ -1285,7 +1285,7 @@ export default function Dashboard({
                       </ResponsiveContainer>
                     ) : (
                       <div className="flex h-full items-center justify-center text-xs text-slate-400">
-                        Belum ada transaksi pengeluaran.
+                        {t('expense_empty', lang)}
                       </div>
                     )}
                   </div>
@@ -1353,7 +1353,7 @@ export default function Dashboard({
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Cari deskripsi, kategori, dompet..."
+                      placeholder={t('tx_search_placeholder', lang)}
                       className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2.5 pl-10 pr-4 text-xs font-medium text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 min-h-[42px]"
                     />
                   </div>
@@ -1370,7 +1370,7 @@ export default function Dashboard({
                     onChange={(option) => setCategoryFilter(option?.value || 'all')}
                     options={categoryFilterOptions}
                     isSearchable
-                    placeholder="Semua Kategori"
+                    placeholder={t('all_categories', lang)}
                   />
 
                   <CustomSelect
@@ -1378,19 +1378,19 @@ export default function Dashboard({
                     onChange={(option) => setWalletFilter(option?.value || 'all')}
                     options={walletFilterOptions}
                     isSearchable
-                    placeholder="Semua Dompet"
+                    placeholder={t('all_wallets', lang)}
                   />
                 </div>
 
                 {/* Date presets */}
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-semibold text-slate-400 mr-1">Periode:</span>
+                    <span className="font-semibold text-slate-400 mr-1">{t('period', lang)}</span>
                     {[
-                      { id: 'all', label: 'Semua Waktu' },
-                      { id: '7days', label: '7 Hari Terakhir' },
-                      { id: '30days', label: '30 Hari Terakhir' },
-                      { id: 'month', label: 'Bulan Ini' },
+                      { id: 'all', label: t('period_all', lang) },
+                      { id: '7days', label: t('period_7days', lang) },
+                      { id: '30days', label: t('period_30days', lang) },
+                      { id: 'month', label: t('period_month', lang) },
                     ].map((p) => (
                       <button
                         key={p.id}
@@ -1406,7 +1406,7 @@ export default function Dashboard({
                   </div>
 
                   <span className="text-slate-400 font-medium">
-                    Menampilkan <b className="text-slate-800 dark:text-slate-200">{filteredTransactions.length}</b> transaksi
+                    {t('showing_tx', lang)} <b className="text-slate-800 dark:text-slate-200">{filteredTransactions.length}</b> {t('transactions_count', lang)}
                   </span>
                 </div>
               </div>
@@ -1418,57 +1418,57 @@ export default function Dashboard({
                     <table className="w-full text-left text-xs">
                       <thead>
                         <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
-                          <th className="pb-3 pl-2">Tanggal & Waktu</th>
-                          <th className="pb-3">Deskripsi</th>
-                          <th className="pb-3">Kategori</th>
-                          <th className="pb-3">Dompet</th>
-                          <th className="pb-3 text-right">Nominal</th>
-                          <th className="pb-3 pr-2 text-right">Aksi</th>
+                          <th className="pb-3 pl-2">{t('col_date', lang)}</th>
+                          <th className="pb-3">{t('col_desc', lang)}</th>
+                          <th className="pb-3">{t('col_category', lang)}</th>
+                          <th className="pb-3">{t('col_wallet', lang)}</th>
+                          <th className="pb-3 text-right">{t('col_amount', lang)}</th>
+                          <th className="pb-3 pr-2 text-right">{t('col_actions', lang)}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                        {filteredTransactions.map((t) => {
-                          const cat = categoryMap.get(t.categoryId)
-                          const wal = walletMap.get(t.walletId)
-                          const isInc = t.type === 'income'
+                        {filteredTransactions.map((tRow) => {
+                          const cat = categoryMap.get(tRow.categoryId)
+                          const wal = walletMap.get(tRow.walletId)
+                          const isInc = tRow.type === 'income'
                           return (
-                            <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                            <tr key={tRow.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
                               <td className="py-3.5 pl-2 text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                                <p className="font-semibold text-slate-800 dark:text-slate-200">{formatIndoDate(t.date)}</p>
+                                <p className="font-semibold text-slate-800 dark:text-slate-200">{formatIndoDate(tRow.date, false, lang)}</p>
                                 <p className="text-[10px] text-slate-400">
-                                  {new Date(t.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                  {new Date(tRow.date).toLocaleTimeString(lang === 'en' ? 'en-US' : 'id-ID', { hour: '2-digit', minute: '2-digit' })}
                                 </p>
                               </td>
-                              <td className="py-3.5 font-bold text-slate-900 dark:text-white max-w-xs">{t.description}</td>
+                              <td className="py-3.5 font-bold text-slate-900 dark:text-white max-w-xs">{tRow.description}</td>
                               <td className="py-3.5 whitespace-nowrap">
                                 <span className="inline-flex items-center rounded-lg bg-slate-100 dark:bg-slate-800 px-2.5 py-1 font-semibold text-slate-700 dark:text-slate-300">
-                                  {cat?.name || 'Kategori'}
+                                  {cat?.name || t('col_category', lang)}
                                 </span>
                               </td>
-                              <td className="py-3.5 text-slate-600 dark:text-slate-400 whitespace-nowrap">{wal?.name || 'Dompet'}</td>
+                              <td className="py-3.5 text-slate-600 dark:text-slate-400 whitespace-nowrap">{wal?.name || t('col_wallet', lang)}</td>
                               <td className="py-3.5 text-right whitespace-nowrap">
                                 <span className={`font-black text-sm ${isInc ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                                  {isInc ? '+' : '-'} {formatRupiah(t.amount)}
+                                  {isInc ? '+' : '-'} {formatRupiah(tRow.amount)}
                                 </span>
                               </td>
                               <td className="py-3.5 pr-2 text-right whitespace-nowrap">
                                 <div className="flex items-center justify-end gap-1.5">
                                   <button
-                                    onClick={() => setShowModal({ type: 'transaction', editData: t })}
+                                    onClick={() => setShowModal({ type: 'transaction', editData: tRow })}
                                     className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200"
-                                    title="Edit"
+                                    title={t('edit', lang)}
                                   >
                                     <Edit3 className="h-3.5 w-3.5" />
                                   </button>
                                   <button
                                     onClick={async () => {
-                                      if (confirm('Hapus transaksi ini?')) {
-                                        const fresh = await deleteTransaction(t.id)
-                                        handleSuccess('Transaksi dihapus', fresh)
+                                      if (confirm(t('confirm_delete_tx', lang))) {
+                                        const fresh = await deleteTransaction(tRow.id)
+                                        handleSuccess(lang === 'en' ? 'Transaction deleted' : 'Transaksi dihapus', fresh)
                                       }
                                     }}
                                     className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400"
-                                    title="Hapus"
+                                    title={t('delete', lang)}
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </button>
@@ -1483,8 +1483,8 @@ export default function Dashboard({
                 ) : (
                   <div className="py-16 text-center">
                     <Receipt className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-700" />
-                    <p className="mt-3 font-bold text-slate-700 dark:text-slate-300">Tidak ada transaksi ditemukan</p>
-                    <p className="text-xs text-slate-400 mt-1">Coba ubah kata kunci pencarian atau filter Anda.</p>
+                    <p className="mt-3 font-bold text-slate-700 dark:text-slate-300">{t('no_tx_found', lang)}</p>
+                    <p className="text-xs text-slate-400 mt-1">{t('no_tx_found_sub', lang)}</p>
                   </div>
                 )}
               </div>
@@ -1574,10 +1574,10 @@ export default function Dashboard({
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
                   <p className="text-xs text-slate-400 font-semibold">{t('total_goal_saved', lang)}</p>
                   <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{formatRupiah(totalGoalSaved)}</p>
-                  <p className="text-[11px] text-slate-400 mt-2">Sisa target: {formatRupiah(Math.max(0, totalGoalTarget - totalGoalSaved))}</p>
+                  <p className="text-[11px] text-slate-400 mt-2">{t('goal_remaining', lang)} {formatRupiah(Math.max(0, totalGoalTarget - totalGoalSaved))}</p>
                 </div>
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                  <p className="text-xs text-slate-400 font-semibold">Rata-Rata Pencapaian</p>
+                  <p className="text-xs text-slate-400 font-semibold">{t('goal_average_progress', lang)}</p>
                   <p className="text-xl font-black text-teal-700 dark:text-teal-400 mt-1">{overallGoalPercentage}%</p>
                   <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 mt-2">
                     <div className="h-full rounded-full bg-teal-500 transition-all" style={{ width: `${overallGoalPercentage}%` }} />
@@ -1613,7 +1613,7 @@ export default function Dashboard({
                                 {g.targetDate && (
                                   <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
                                     <Clock className="h-3 w-3" />
-                                    <span>Target: {new Date(g.targetDate).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}</span>
+                                    <span>Target: {new Date(g.targetDate).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { month: 'short', year: 'numeric' })}</span>
                                   </p>
                                 )}
                               </div>
@@ -1623,19 +1623,19 @@ export default function Dashboard({
                               <button
                                 onClick={() => setShowModal({ type: 'goal', editData: g })}
                                 className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-                                title="Edit"
+                                title={t('edit', lang)}
                               >
                                 <Edit3 className="h-3.5 w-3.5" />
                               </button>
                               <button
                                 onClick={async () => {
-                                  if (confirm(`Hapus target "${g.name}"?`)) {
+                                  if (confirm(t('confirm_delete_goal', lang))) {
                                     const fresh = await deleteGoal(g.id)
-                                    handleSuccess('Target impian dihapus', fresh)
+                                    handleSuccess(lang === 'en' ? 'Financial goal deleted' : 'Target impian dihapus', fresh)
                                   }
                                 }}
                                 className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                                title="Hapus"
+                                title={t('delete', lang)}
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
@@ -1644,9 +1644,9 @@ export default function Dashboard({
 
                           <div className="mt-5 space-y-2">
                             <div className="flex items-center justify-between text-xs">
-                              <span className="font-semibold text-slate-500 dark:text-slate-400">Pencapaian:</span>
+                              <span className="font-semibold text-slate-500 dark:text-slate-400">{t('goal_progress', lang)}</span>
                               <span className={`font-black text-sm ${isDone ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
-                                {pct}% {isDone && '🎉 Tercapai!'}
+                                {pct}% {isDone && `🎉 ${t('goal_achieved', lang)}`}
                               </span>
                             </div>
 
@@ -1667,7 +1667,7 @@ export default function Dashboard({
 
                         <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
                           <span className="text-[11px] text-slate-400">
-                            {isDone ? 'Impian telah tercapai!' : `Kurang: ${formatRupiah(remaining)}`}
+                            {isDone ? t('goal_all_done', lang) : `${t('goal_remaining_short', lang)} ${formatRupiah(remaining)}`}
                           </span>
 
                           {!isDone && (
@@ -1676,7 +1676,7 @@ export default function Dashboard({
                               className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
                             >
                               <Plus className="h-3.5 w-3.5" />
-                              <span>+ Setor Tabungan</span>
+                              <span>+ {t('deposit_savings', lang)}</span>
                             </button>
                           )}
                         </div>
@@ -1687,15 +1687,15 @@ export default function Dashboard({
               ) : (
                 <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center">
                   <Target className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />
-                  <p className="mt-3 font-bold text-slate-800 dark:text-slate-200 text-base">Belum ada target tabungan impian</p>
+                  <p className="mt-3 font-bold text-slate-800 dark:text-slate-200 text-base">{t('goal_empty_title', lang)}</p>
                   <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                    Pasang target impian Anda (misal: Beli Mobil, Rumah, Dana Darurat, Liburan) untuk memotivasi menabung.
+                    {t('goal_empty_desc', lang)}
                   </p>
                   <button
                     onClick={() => setShowModal({ type: 'goal' })}
                     className="mt-5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700"
                   >
-                    + Buat Target Tabungan Sekarang
+                    {t('goal_empty_btn', lang)}
                   </button>
                 </div>
               )}
@@ -1785,15 +1785,15 @@ export default function Dashboard({
                 </div>
 
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                  <p className="text-xs text-slate-400 font-semibold">Mendekati Jatuh Tempo (H-3)</p>
-                  <p className="text-xl font-black text-amber-500 mt-1">{dueSoonSubs.length} Tagihan</p>
-                  <p className="text-[11px] text-slate-400 mt-2">Periksa saldo sebelum dipotong</p>
+                  <p className="text-xs text-slate-400 font-semibold">{t('due_soon_alert', lang)}</p>
+                  <p className="text-xl font-black text-amber-500 mt-1">{dueSoonSubs.length} {lang === 'en' ? 'Bills' : 'Tagihan'}</p>
+                  <p className="text-[11px] text-slate-400 mt-2">{t('due_soon_sub', lang)}</p>
                 </div>
 
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                  <p className="text-xs text-slate-400 font-semibold">Sinkronisasi Android Push Notif</p>
+                  <p className="text-xs text-slate-400 font-semibold">{t('api_sync_title', lang)}</p>
                   <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
-                    <Zap className="h-4 w-4" /> Siap Terintegrasi API
+                    <Zap className="h-4 w-4" /> {t('api_sync_desc', lang)}
                   </p>
                   <p className="text-[11px] text-slate-400 mt-2">Endpoint: /api/v1/subscriptions</p>
                 </div>
@@ -1806,12 +1806,12 @@ export default function Dashboard({
                     <table className="w-full text-left text-xs">
                       <thead>
                         <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
-                          <th className="pb-3 pl-2">Tanggal Jatuh Tempo</th>
-                          <th className="pb-3">Nama Layanan / Tagihan</th>
-                          <th className="pb-3">Siklus Pembayaran</th>
-                          <th className="pb-3">Status</th>
-                          <th className="pb-3 text-right">Biaya</th>
-                          <th className="pb-3 pr-2 text-right">Aksi & Bayar</th>
+                          <th className="pb-3 pl-2">{t('sub_col_date', lang)}</th>
+                          <th className="pb-3">{t('sub_col_name', lang)}</th>
+                          <th className="pb-3">{t('sub_col_cycle', lang)}</th>
+                          <th className="pb-3">{t('sub_col_status', lang)}</th>
+                          <th className="pb-3 text-right">{t('sub_col_cost', lang)}</th>
+                          <th className="pb-3 pr-2 text-right">{t('sub_col_action', lang)}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
@@ -1832,9 +1832,9 @@ export default function Dashboard({
                                     {s.dueDate}
                                   </div>
                                   <div>
-                                    <p className="font-bold text-slate-800 dark:text-slate-200">Tgl {s.dueDate} tiap bulan</p>
+                                    <p className="font-bold text-slate-800 dark:text-slate-200">{lang === 'en' ? `${s.dueDate}th each month` : `Tgl ${s.dueDate} tiap bulan`}</p>
                                     <p className={`text-[10px] ${isDueSoon ? 'text-rose-500 font-bold' : 'text-slate-400'}`}>
-                                      {daysLeft === 0 ? 'Hari Ini Jatuh Tempo!' : `${daysLeft} hari lagi`}
+                                      {daysLeft === 0 ? t('sub_due_today', lang) : `${daysLeft} ${t('days_left', lang)}`}
                                     </p>
                                   </div>
                                 </div>
@@ -1842,7 +1842,7 @@ export default function Dashboard({
                               <td className="py-4 font-bold text-slate-900 dark:text-white text-sm">{s.name}</td>
                               <td className="py-4 whitespace-nowrap">
                                 <span className="inline-block rounded-lg bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                                  {s.billingCycle === 'monthly' ? 'Bulanan' : s.billingCycle === 'yearly' ? 'Tahunan' : 'Mingguan'}
+                                  {s.billingCycle === 'monthly' ? t('sub_cycle_monthly', lang) : s.billingCycle === 'yearly' ? t('sub_cycle_yearly', lang) : t('sub_cycle_weekly', lang)}
                                 </span>
                               </td>
                               <td className="py-4 whitespace-nowrap">
@@ -1853,7 +1853,7 @@ export default function Dashboard({
                                     }`}
                                 >
                                   <span className={`h-1.5 w-1.5 rounded-full ${s.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-                                  {s.isActive ? 'Aktif' : 'Nonaktif'}
+                                  {s.isActive ? t('sub_status_active', lang) : t('sub_status_inactive', lang)}
                                 </span>
                               </td>
                               <td className="py-4 text-right font-black text-slate-900 dark:text-white text-sm whitespace-nowrap">
@@ -1864,28 +1864,28 @@ export default function Dashboard({
                                   <button
                                     onClick={() => setShowModal({ type: 'paySubscription', subscription: s })}
                                     className="flex items-center gap-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 transition"
-                                    title="Catat Pembayaran Tagihan Ini"
+                                    title={lang === 'en' ? 'Record Payment' : 'Catat Pembayaran Tagihan Ini'}
                                   >
                                     <Zap className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                                    <span>Bayar</span>
+                                    <span>{t('pay_bill', lang)}</span>
                                   </button>
 
                                   <button
                                     onClick={() => setShowModal({ type: 'subscription', editData: s })}
                                     className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200"
-                                    title="Edit"
+                                    title={t('edit', lang)}
                                   >
                                     <Edit3 className="h-3.5 w-3.5" />
                                   </button>
                                   <button
                                     onClick={async () => {
-                                      if (confirm(`Hapus tagihan "${s.name}"?`)) {
+                                      if (confirm(t('confirm_delete_sub', lang))) {
                                         const fresh = await deleteSubscription(s.id)
-                                        handleSuccess('Tagihan dihapus', fresh)
+                                        handleSuccess(lang === 'en' ? 'Recurring bill deleted' : 'Tagihan dihapus', fresh)
                                       }
                                     }}
                                     className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400"
-                                    title="Hapus"
+                                    title={t('delete', lang)}
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </button>
@@ -1901,15 +1901,15 @@ export default function Dashboard({
               ) : (
                 <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center">
                   <CalendarDays className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />
-                  <p className="mt-3 font-bold text-slate-800 dark:text-slate-200 text-base">Belum ada tagihan atau langganan rutin</p>
+                  <p className="mt-3 font-bold text-slate-800 dark:text-slate-200 text-base">{t('sub_empty_title', lang)}</p>
                   <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                    Catat langganan seperti Netflix, Spotify, WiFi, BPJS agar tidak terlewat dan selalu ingat tanggal jatuh tempo.
+                    {t('sub_empty_desc', lang)}
                   </p>
                   <button
                     onClick={() => setShowModal({ type: 'subscription' })}
                     className="mt-5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700"
                   >
-                    + Tambah Tagihan Baru
+                    {t('sub_empty_btn', lang)}
                   </button>
                 </div>
               )}
@@ -1963,19 +1963,19 @@ export default function Dashboard({
                           <button
                             onClick={() => setShowModal({ type: 'wallet', editData: w })}
                             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200"
-                            title="Edit Dompet"
+                            title={lang === 'en' ? 'Edit Wallet' : 'Edit Dompet'}
                           >
                             <Edit3 className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={async () => {
-                              if (confirm(`Hapus dompet "${w.name}"?`)) {
+                              if (confirm(lang === 'en' ? `Delete wallet "${w.name}"?` : `Hapus dompet "${w.name}"?`)) {
                                 const fresh = await deleteWallet(w.id)
-                                handleSuccess('Dompet dihapus', fresh)
+                                handleSuccess(lang === 'en' ? 'Wallet deleted' : 'Dompet dihapus', fresh)
                               }
                             }}
                             className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400"
-                            title="Hapus Dompet"
+                            title={lang === 'en' ? 'Delete Wallet' : 'Hapus Dompet'}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -1988,16 +1988,16 @@ export default function Dashboard({
 
                     <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-1.5 text-xs text-slate-500 dark:text-slate-400">
                       <div className="flex justify-between">
-                        <span>Pemasukan Masuk:</span>
+                        <span>{t('wallet_income_in', lang)}</span>
                         <span className="font-bold text-emerald-600 dark:text-emerald-400">+{formatRupiah(w.totalIncome)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Pengeluaran Keluar:</span>
+                        <span>{t('wallet_expense_out', lang)}</span>
                         <span className="font-bold text-rose-600 dark:text-rose-400">-{formatRupiah(w.totalExpense)}</span>
                       </div>
                       {w.balance > 0 && (
                         <div className="flex justify-between text-[11px] text-slate-400">
-                          <span>Saldo Awal:</span>
+                          <span>{t('initial_balance', lang)}:</span>
                           <span>{formatRupiah(w.balance)}</span>
                         </div>
                       )}
@@ -2018,22 +2018,22 @@ export default function Dashboard({
                 <div className="space-y-2">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/80 px-3 py-1 text-xs font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
                     <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                    FITUR EKSKLUSIF DOMPETKU PRO
+                    {t('pro_exclusive', lang)}
                   </span>
                   <h2 className="text-2xl font-black text-slate-900 dark:text-white">
-                    Budgeting & Batas Belanja Bulanan
+                    {t('budget_tab_title', lang)}
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
-                    Alokasikan batas pengeluaran per kategori setiap bulan agar keuangan Anda selalu terkontrol dengan peringatan over-budget otomatis.
+                    {t('budget_tab_subtitle', lang)}
                   </p>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2 text-left max-w-lg mx-auto pt-2">
                   {[
-                    'Batas Anggaran Per Kategori Tanpa Batas',
-                    'Visual Tracking Realisasi Budget Real-Time',
-                    'Peringatan Otomatis Saat Budget Mendekati / Melebihi Batas',
-                    'Histori Pemakaian Budget Antar Bulan',
+                    lang === 'en' ? 'Unlimited Category Spending Caps' : 'Batas Anggaran Per Kategori Tanpa Batas',
+                    lang === 'en' ? 'Real-Time Budget Tracking Visuals' : 'Visual Tracking Realisasi Budget Real-Time',
+                    lang === 'en' ? 'Automatic Warning When Approaching / Over Budget' : 'Peringatan Otomatis Saat Budget Mendekati / Melebihi Batas',
+                    lang === 'en' ? 'Historical Budget Usage Across Months' : 'Histori Pemakaian Budget Antar Bulan',
                   ].map((item, idx) => (
                     <div key={idx} className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200">
                       <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -2045,13 +2045,15 @@ export default function Dashboard({
                 <div className="pt-4">
                   <button
                     onClick={() => setShowUpgradeModal({
-                      featureName: 'Budget Bulanan',
-                      description: 'Kendalikan pengeluaran dengan batas anggaran bulanan per kategori dan notifikasi over-budget otomatis di Dompetku PRO.'
+                      featureName: lang === 'en' ? 'Monthly Budget' : 'Budget Bulanan',
+                      description: lang === 'en'
+                        ? 'Control spending with category monthly limits and automatic overbudget alerts in Dompetku PRO.'
+                        : 'Kendalikan pengeluaran dengan batas anggaran bulanan per kategori dan notifikasi over-budget otomatis di Dompetku PRO.'
                     })}
                     className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 py-3.5 text-xs font-black text-white shadow-xl shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700 transition active:scale-95"
                   >
                     <Sparkles className="h-4 w-4 text-amber-300" />
-                    <span>Buka Akses Budget Bulanan (Upgrade PRO)</span>
+                    <span>{lang === 'en' ? 'Unlock Monthly Budget (Upgrade PRO)' : 'Buka Akses Budget Bulanan (Upgrade PRO)'}</span>
                   </button>
                 </div>
               </div>
@@ -2072,6 +2074,7 @@ export default function Dashboard({
                       type="month"
                       value={selectedMonth}
                       onChange={setSelectedMonth}
+                      lang={lang}
                     />
                   </div>
 
@@ -2108,7 +2111,7 @@ export default function Dashboard({
                                     : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
                                   }`}
                               >
-                                {isOver ? 'Overbudget' : isWarning ? 'Waspada' : 'Aman'} ({b.percentage}%)
+                                {isOver ? t('budget_overbudget', lang) : isWarning ? t('budget_warning', lang) : t('budget_safe', lang)} ({b.percentage}%)
                               </span>
                               <h3 className="mt-3 text-lg font-bold text-slate-900 dark:text-white">{b.categoryName}</h3>
                             </div>
@@ -2116,19 +2119,19 @@ export default function Dashboard({
                               <button
                                 onClick={() => setShowModal({ type: 'budget', editData: b })}
                                 className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-                                title="Edit"
+                                title={t('edit', lang)}
                               >
                                 <Edit3 className="h-3.5 w-3.5" />
                               </button>
                               <button
                                 onClick={async () => {
-                                  if (confirm('Hapus budget ini?')) {
+                                  if (confirm(t('confirm_delete_budget', lang))) {
                                     const fresh = await deleteBudget(b.id)
-                                    handleSuccess('Budget dihapus', fresh)
+                                    handleSuccess(lang === 'en' ? 'Budget deleted' : 'Budget dihapus', fresh)
                                   }
                                 }}
                                 className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                                title="Hapus"
+                                title={t('delete', lang)}
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
@@ -2137,8 +2140,8 @@ export default function Dashboard({
 
                           <div className="mt-4">
                             <div className="flex justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-                              <span>Terpakai: {formatRupiah(b.spent)}</span>
-                              <span>Limit: {formatRupiah(b.amount)}</span>
+                              <span>{t('budget_spent', lang)} {formatRupiah(b.spent)}</span>
+                              <span>{t('budget_limit', lang)} {formatRupiah(b.amount)}</span>
                             </div>
 
                             <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
@@ -2152,7 +2155,7 @@ export default function Dashboard({
                         </div>
 
                         <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                          <span className="text-slate-400">Sisa Kuota:</span>
+                          <span className="text-slate-400">{t('budget_remaining', lang)}</span>
                           <span className={`font-black ${isOver ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}`}>
                             {b.remaining >= 0 ? formatRupiah(b.remaining) : `- ${formatRupiah(Math.abs(b.remaining))}`}
                           </span>
@@ -2164,15 +2167,15 @@ export default function Dashboard({
               ) : (
                 <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center">
                   <PiggyBank className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />
-                  <p className="mt-3 font-bold text-slate-800 dark:text-slate-200 text-base">Belum ada budget untuk bulan ini</p>
+                  <p className="mt-3 font-bold text-slate-800 dark:text-slate-200 text-base">{t('budget_empty', lang)}</p>
                   <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                    Buat budget untuk membatasi belanja makanan, tagihan, atau kebutuhan bulanan Anda.
+                    {t('budget_empty_sub', lang)}
                   </p>
                   <button
                     onClick={() => setShowModal({ type: 'budget' })}
                     className="mt-5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700"
                   >
-                    + Buat Budget Sekarang
+                    {t('create_budget_now', lang)}
                   </button>
                 </div>
               )}
@@ -2205,7 +2208,7 @@ export default function Dashboard({
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-4">
                   <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
                     <span className="h-3 w-3 rounded-full bg-rose-500" />
-                    <span>Kategori Pengeluaran</span>
+                    <span>{t('cat_expense', lang)}</span>
                   </h3>
 
                   <div className="space-y-2">
@@ -2224,19 +2227,19 @@ export default function Dashboard({
                             <button
                               onClick={() => setShowModal({ type: 'category', editData: c })}
                               className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-white dark:hover:bg-slate-700"
-                              title="Edit"
+                              title={t('edit', lang)}
                             >
                               <Edit3 className="h-3.5 w-3.5" />
                             </button>
                             <button
                               onClick={async () => {
-                                if (confirm(`Hapus kategori "${c.name}"?`)) {
+                                if (confirm(lang === 'en' ? `Delete category "${c.name}"?` : `Hapus kategori "${c.name}"?`)) {
                                   const fresh = await deleteCategory(c.id)
-                                  handleSuccess('Kategori dihapus', fresh)
+                                  handleSuccess(lang === 'en' ? 'Category deleted' : 'Kategori dihapus', fresh)
                                 }
                               }}
                               className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-white dark:hover:bg-slate-700"
-                              title="Hapus"
+                              title={t('delete', lang)}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
@@ -2249,7 +2252,7 @@ export default function Dashboard({
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-4">
                   <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
                     <span className="h-3 w-3 rounded-full bg-emerald-500" />
-                    <span>Kategori Pemasukan</span>
+                    <span>{t('cat_income', lang)}</span>
                   </h3>
 
                   <div className="space-y-2">
@@ -2268,19 +2271,19 @@ export default function Dashboard({
                             <button
                               onClick={() => setShowModal({ type: 'category', editData: c })}
                               className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-white dark:hover:bg-slate-700"
-                              title="Edit"
+                              title={t('edit', lang)}
                             >
                               <Edit3 className="h-3.5 w-3.5" />
                             </button>
                             <button
                               onClick={async () => {
-                                if (confirm(`Hapus kategori "${c.name}"?`)) {
+                                if (confirm(lang === 'en' ? `Delete category "${c.name}"?` : `Hapus kategori "${c.name}"?`)) {
                                   const fresh = await deleteCategory(c.id)
-                                  handleSuccess('Kategori dihapus', fresh)
+                                  handleSuccess(lang === 'en' ? 'Category deleted' : 'Kategori dihapus', fresh)
                                 }
                               }}
                               className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-white dark:hover:bg-slate-700"
-                              title="Hapus"
+                              title={t('delete', lang)}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
@@ -2303,23 +2306,25 @@ export default function Dashboard({
                 <div className="space-y-2">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/80 px-3 py-1 text-xs font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
                     <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                    FITUR EKSKLUSIF DOMPETKU PRO
+                    {t('pro_exclusive', lang)}
                   </span>
                   <h2 className="text-2xl font-black text-slate-900 dark:text-white">
-                    Laporan Lengkap & Ekspor Excel (.xlsx) Multi-Sheet
+                    {lang === 'en' ? 'Full Reports & Multi-Sheet Excel (.xlsx) Export' : 'Laporan Lengkap & Ekspor Excel (.xlsx) Multi-Sheet'}
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
-                    Unduh file spreadsheet Excel komprehensif 5 Sheet terpisah (Ringkasan, Transaksi, Budget, Rekening, dan Kategori) dengan format rapi dan formula saldo siap pakai untuk Microsoft Excel & Google Sheets.
+                    {lang === 'en'
+                      ? 'Download a comprehensive 5-sheet Excel workbook (Summary, Transactions, Budget, Wallets, and Categories) with clean formatting and balance formulas ready for Microsoft Excel & Google Sheets.'
+                      : 'Unduh file spreadsheet Excel komprehensif 5 Sheet terpisah (Ringkasan, Transaksi, Budget, Rekening, dan Kategori) dengan format rapi dan formula saldo siap pakai untuk Microsoft Excel & Google Sheets.'}
                   </p>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2 text-left max-w-lg mx-auto pt-2">
                   {[
-                    'Sheet 1: Ringkasan Finansial & Net Savings',
-                    'Sheet 2: Riwayat Lengkap Seluruh Transaksi',
-                    'Sheet 3: Analisis Realisasi Budget Bulanan',
-                    'Sheet 4: Saldo & Mutasi Seluruh Dompet / Akun',
-                    'Sheet 5: Rekapitulasi Nominal Per Kategori',
+                    lang === 'en' ? 'Sheet 1: Financial Summary & Net Savings' : 'Sheet 1: Ringkasan Finansial & Net Savings',
+                    lang === 'en' ? 'Sheet 2: Complete Transaction History' : 'Sheet 2: Riwayat Lengkap Seluruh Transaksi',
+                    lang === 'en' ? 'Sheet 3: Monthly Budget Realization Analysis' : 'Sheet 3: Analisis Realisasi Budget Bulanan',
+                    lang === 'en' ? 'Sheet 4: Balances & Transfers Across All Wallets' : 'Sheet 4: Saldo & Mutasi Seluruh Dompet / Akun',
+                    lang === 'en' ? 'Sheet 5: Expense Recapitulation by Category' : 'Sheet 5: Rekapitulasi Nominal Per Kategori',
                   ].map((item, idx) => (
                     <div key={idx} className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200">
                       <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -2331,13 +2336,15 @@ export default function Dashboard({
                 <div className="pt-4">
                   <button
                     onClick={() => setShowUpgradeModal({
-                      featureName: 'Laporan & Ekspor Excel (.xlsx)',
-                      description: 'Unduh seluruh catatan transaksi, buku kas, dan ringkasan anggaran Anda dalam format spreadsheet Excel (.xlsx) rapi dengan formula otomatis di Dompetku PRO.'
+                      featureName: lang === 'en' ? 'Reports & Excel (.xlsx) Export' : 'Laporan & Ekspor Excel (.xlsx)',
+                      description: lang === 'en'
+                        ? 'Download all your transactions, cashbooks, and budget summaries in formatted Excel (.xlsx) sheets with automated formulas in Dompetku PRO.'
+                        : 'Unduh seluruh catatan transaksi, buku kas, dan ringkasan anggaran Anda dalam format spreadsheet Excel (.xlsx) rapi dengan formula otomatis di Dompetku PRO.'
                     })}
                     className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 py-3.5 text-xs font-black text-white shadow-xl shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700 transition active:scale-95"
                   >
                     <Sparkles className="h-4 w-4 text-amber-300" />
-                    <span>Buka Akses Laporan & Excel (Upgrade PRO)</span>
+                    <span>{lang === 'en' ? 'Unlock Reports & Excel (Upgrade PRO)' : 'Buka Akses Laporan & Excel (Upgrade PRO)'}</span>
                   </button>
                 </div>
               </div>
@@ -2378,11 +2385,11 @@ export default function Dashboard({
 
                     <div className="grid gap-3 pt-4 sm:grid-cols-2">
                       {[
-                        'Sheet 1: Ringkasan Finansial & Net Savings',
-                        'Sheet 2: Riwayat Lengkap Seluruh Transaksi',
-                        'Sheet 3: Analisis Realisasi Budget Bulanan',
-                        'Sheet 4: Saldo & Mutasi Seluruh Dompet / Akun',
-                        'Sheet 5: Rekapitulasi Nominal Per Kategori',
+                        lang === 'en' ? 'Sheet 1: Financial Summary & Net Savings' : 'Sheet 1: Ringkasan Finansial & Net Savings',
+                        lang === 'en' ? 'Sheet 2: Complete Transaction History' : 'Sheet 2: Riwayat Lengkap Seluruh Transaksi',
+                        lang === 'en' ? 'Sheet 3: Monthly Budget Realization Analysis' : 'Sheet 3: Analisis Realisasi Budget Bulanan',
+                        lang === 'en' ? 'Sheet 4: Balances & Transfers Across All Wallets' : 'Sheet 4: Saldo & Mutasi Seluruh Dompet / Akun',
+                        lang === 'en' ? 'Sheet 5: Expense Recapitulation by Category' : 'Sheet 5: Rekapitulasi Nominal Per Kategori',
                       ].map((item, idx) => (
                         <div key={idx} className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200">
                           <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -2396,7 +2403,7 @@ export default function Dashboard({
                         onClick={handleExportExcel}
                         className="rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
                       >
-                        Klik Di Sini Untuk Download (.xlsx)
+                        {lang === 'en' ? 'Click Here to Download (.xlsx)' : 'Klik Di Sini Untuk Download (.xlsx)'}
                       </button>
                     </div>
                   </div>
@@ -2504,10 +2511,10 @@ export default function Dashboard({
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <PanelLeftClose className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    <span>Tata Letak Sidebar Desktop</span>
+                    <span>{t('sidebar_layout_title', lang)}</span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
-                    Atur apakah sidebar utama ingin disembunyikan (collapsed mode) untuk ruang kerja yang lebih luas.
+                    {t('sidebar_layout_desc', lang)}
                   </p>
                 </div>
 
@@ -2518,10 +2525,10 @@ export default function Dashboard({
                     </div>
                     <div>
                       <p className="font-bold text-xs text-slate-900 dark:text-white">
-                        {sidebarCollapsed ? 'Sidebar Tertutup (Collapsed Icon Mode)' : 'Sidebar Terbuka Penuh (Expanded Mode)'}
+                        {sidebarCollapsed ? t('sidebar_collapsed_mode', lang) : t('sidebar_expanded_mode', lang)}
                       </p>
                       <p className="text-[11px] text-slate-400">
-                        {sidebarCollapsed ? 'Hanya menampilkan icon menu' : 'Menampilkan teks dan logo lengkap'}
+                        {sidebarCollapsed ? t('sidebar_collapsed_sub', lang) : t('sidebar_expanded_sub', lang)}
                       </p>
                     </div>
                   </div>
@@ -2533,7 +2540,7 @@ export default function Dashboard({
                       : 'bg-emerald-600 text-white hover:bg-emerald-700'
                       }`}
                   >
-                    {sidebarCollapsed ? 'Tampilkan Penuh' : 'Sembunyikan'}
+                    {sidebarCollapsed ? t('btn_show_full', lang) : t('btn_collapse', lang)}
                   </button>
                 </div>
               </div>
@@ -2545,7 +2552,7 @@ export default function Dashboard({
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <Smartphone className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                        <span>Integrasi REST API Aplikasi Android (Tahap 1 & 2)</span>
+                        <span>{t('rest_api_title', lang)}</span>
                       </h3>
                       {isPro ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 text-[10px] font-black tracking-wider text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
@@ -2558,7 +2565,7 @@ export default function Dashboard({
                       )}
                     </div>
                     <p className="text-xs text-slate-400 mt-1">
-                      Backend REST API v1 siap digunakan untuk menghubungkan aplikasi Android / Flutter / Kotlin.
+                      {t('rest_api_desc', lang)}
                     </p>
                   </div>
                   {isPro ? (
@@ -2569,19 +2576,21 @@ export default function Dashboard({
                       className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 transition self-start"
                     >
                       <Code2 className="h-4 w-4 text-emerald-600" />
-                      <span>Lihat Spesifikasi JSON</span>
+                      <span>{t('view_json_spec', lang)}</span>
                       <ExternalLink className="h-3 w-3" />
                     </a>
                   ) : (
                     <button
                       onClick={() => setShowUpgradeModal({
-                        featureName: 'Integrasi Mobile REST API Android',
-                        description: 'Akses spesifikasi dan endpoint REST API v1 eksklusif untuk pengguna Dompetku PRO.'
+                        featureName: lang === 'en' ? 'Android Mobile REST API Integration' : 'Integrasi Mobile REST API Android',
+                        description: lang === 'en'
+                          ? 'Access REST API v1 endpoints and specifications exclusively for Dompetku PRO members.'
+                          : 'Akses spesifikasi dan endpoint REST API v1 eksklusif untuk pengguna Dompetku PRO.'
                       })}
                       className="flex items-center gap-1.5 rounded-xl border border-amber-200 dark:border-amber-800/80 bg-amber-50 dark:bg-amber-950/50 px-3 py-1.5 text-xs font-bold text-amber-700 dark:text-amber-300 hover:bg-amber-100 transition self-start"
                     >
                       <Lock className="h-3.5 w-3.5 text-amber-600" />
-                      <span>Spesifikasi PRO 🔒</span>
+                      <span>{lang === 'en' ? 'PRO Specs 🔒' : 'Spesifikasi PRO 🔒'}</span>
                     </button>
                   )}
                 </div>
@@ -2593,18 +2602,26 @@ export default function Dashboard({
                         <Lock className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-amber-900 dark:text-amber-200">Akses REST API Android Terkunci</p>
-                        <p className="text-[11px] text-amber-700 dark:text-amber-400">Upgrade ke Dompetku PRO untuk membuka Bearer token autentikasi & seluruh endpoint REST API v1.</p>
+                        <p className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                          {lang === 'en' ? 'Android REST API Access Locked' : 'Akses REST API Android Terkunci'}
+                        </p>
+                        <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                          {lang === 'en'
+                            ? 'Upgrade to Dompetku PRO to unlock Bearer token authentication & full REST API v1 endpoints.'
+                            : 'Upgrade ke Dompetku PRO untuk membuka Bearer token autentikasi & seluruh endpoint REST API v1.'}
+                        </p>
                       </div>
                     </div>
                     <button
                       onClick={() => setShowUpgradeModal({
-                        featureName: 'Integrasi Mobile REST API Android',
-                        description: 'Akses API v1 untuk menghubungkan aplikasi Android, iOS, atau automasi finansial kustom adalah fitur eksklusif Dompetku PRO.'
+                        featureName: lang === 'en' ? 'Android Mobile REST API Integration' : 'Integrasi Mobile REST API Android',
+                        description: lang === 'en'
+                          ? 'API v1 access to connect Android, iOS, or custom financial automation apps is an exclusive Dompetku PRO feature.'
+                          : 'Akses API v1 untuk menghubungkan aplikasi Android, iOS, atau automasi finansial kustom adalah fitur eksklusif Dompetku PRO.'
                       })}
                       className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 px-4 py-2 text-xs font-black text-white shadow-md shadow-amber-500/20 transition shrink-0"
                     >
-                      Upgrade ke PRO
+                      {lang === 'en' ? 'Upgrade to PRO' : 'Upgrade ke PRO'}
                     </button>
                   </div>
                 )}
@@ -2612,12 +2629,12 @@ export default function Dashboard({
                 <div className="space-y-3">
                   <div className="grid gap-2.5 sm:grid-cols-2">
                     {[
-                      { method: 'GET', path: '/api/v1/summary', desc: 'Ringkasan finansial utama untuk home Android' },
-                      { method: 'GET / POST', path: '/api/v1/transactions', desc: 'Daftar transaksi, pagination, filter & catat baru' },
-                      { method: 'GET / POST', path: '/api/v1/goals', desc: 'Tahap 2: Target tabungan impian & setor saldo' },
-                      { method: 'GET / POST', path: '/api/v1/subscriptions', desc: 'Tahap 2: Manajemen tagihan rutin & bayar 1-click' },
-                      { method: 'GET / POST', path: '/api/v1/wallets', desc: 'Kelola dompet & mutasi saldo real-time' },
-                      { method: 'POST', path: '/api/v1/wallets/transfer', desc: 'Transfer saldo antar dompet / rekening' },
+                      { method: 'GET', path: '/api/v1/summary', desc: lang === 'en' ? 'Core financial summary for Android home' : 'Ringkasan finansial utama untuk home Android' },
+                      { method: 'GET / POST', path: '/api/v1/transactions', desc: lang === 'en' ? 'Transaction records, pagination, filters & creation' : 'Daftar transaksi, pagination, filter & catat baru' },
+                      { method: 'GET / POST', path: '/api/v1/goals', desc: lang === 'en' ? 'Phase 2: Financial dream goals & deposits' : 'Tahap 2: Target tabungan impian & setor saldo' },
+                      { method: 'GET / POST', path: '/api/v1/subscriptions', desc: lang === 'en' ? 'Phase 2: Recurring bills & 1-click payment' : 'Tahap 2: Manajemen tagihan rutin & bayar 1-click' },
+                      { method: 'GET / POST', path: '/api/v1/wallets', desc: lang === 'en' ? 'Manage wallets & real-time balance mutation' : 'Kelola dompet & mutasi saldo real-time' },
+                      { method: 'POST', path: '/api/v1/wallets/transfer', desc: lang === 'en' ? 'Transfer balance between wallets / accounts' : 'Transfer saldo antar dompet / rekening' },
                     ].map((ep, idx) => (
                       <div key={idx} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-3 flex flex-col justify-between">
                         <div className="flex items-center justify-between">
@@ -2643,7 +2660,13 @@ export default function Dashboard({
                       ) : (
                         <Lock className="h-4 w-4 text-amber-400" />
                       )}
-                      <span>{apiTesting ? 'Menguji API...' : !isPro ? 'Test Request API (Perlu PRO 🔒)' : 'Test Request API (/api/v1/summary)'}</span>
+                      <span>
+                        {apiTesting
+                          ? (lang === 'en' ? 'Testing API...' : 'Menguji API...')
+                          : !isPro
+                            ? (lang === 'en' ? 'Test API Request (Requires PRO 🔒)' : 'Test Request API (Perlu PRO 🔒)')
+                            : t('test_api_button', lang)}
+                      </span>
                     </button>
 
                     {apiTestResult && (
@@ -2660,10 +2683,10 @@ export default function Dashboard({
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <User className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    <span>Profil Pengguna & Status Akun</span>
+                    <span>{t('profile_card_title', lang)}</span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
-                    Informasi akun yang sedang aktif masuk.
+                    {t('profile_card_desc', lang)}
                   </p>
                 </div>
 
@@ -2682,13 +2705,13 @@ export default function Dashboard({
                       {currentUser.emailVerified ? (
                         <span className="inline-flex items-center gap-1 mt-1 rounded-md bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
                           <CheckCircle2 className="h-3 w-3" />
-                          Akun Terverifikasi
+                          {t('account_verified', lang)}
                         </span>
                       ) : (
                         <div className="mt-1.5 flex flex-wrap items-center gap-2">
                           <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 dark:bg-amber-950 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-400">
                             <AlertCircle className="h-3 w-3" />
-                            Email Belum Terverifikasi
+                            {t('email_unverified', lang)}
                           </span>
                           <button
                             type="button"
@@ -2701,12 +2724,12 @@ export default function Dashboard({
                                   callbackURL: window.location.origin + '/?verified=true',
                                 })
                                 if (res.error) {
-                                  setEmailStatus({ type: 'error', message: res.error.message || 'Gagal mengirim email verifikasi' })
+                                  setEmailStatus({ type: 'error', message: res.error.message || (lang === 'en' ? 'Failed to send verification email' : 'Gagal mengirim email verifikasi') })
                                 } else {
-                                  setEmailStatus({ type: 'success', message: 'Email verifikasi baru berhasil dikirim! Silakan periksa inbox Anda.' })
+                                  setEmailStatus({ type: 'success', message: lang === 'en' ? 'New verification email successfully sent! Please check your inbox.' : 'Email verifikasi baru berhasil dikirim! Silakan periksa inbox Anda.' })
                                 }
                               } catch (err: any) {
-                                setEmailStatus({ type: 'error', message: err.message || 'Gagal mengirim email' })
+                                setEmailStatus({ type: 'error', message: err.message || (lang === 'en' ? 'Failed to send email' : 'Gagal mengirim email') })
                               } finally {
                                 setIsResendingEmail(false)
                               }
@@ -2714,7 +2737,7 @@ export default function Dashboard({
                             disabled={isResendingEmail}
                             className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline disabled:opacity-50"
                           >
-                            {isResendingEmail ? 'Mengirim...' : 'Kirim Ulang Email Verifikasi'}
+                            {isResendingEmail ? t('sending_verification', lang) : t('resend_verification', lang)}
                           </button>
                         </div>
                       )}
@@ -2729,7 +2752,7 @@ export default function Dashboard({
                     className="flex items-center justify-center gap-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 px-4 py-2.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition self-start sm:self-center"
                   >
                     <LogOut className="h-4 w-4" />
-                    <span>Keluar dari Akun</span>
+                    <span>{t('btn_sign_out', lang)}</span>
                   </button>
                 </div>
 
@@ -2749,10 +2772,10 @@ export default function Dashboard({
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Sparkles className="h-5 w-5 text-amber-500" />
-                    <span>Status Paket & Langganan Akun</span>
+                    <span>{t('plan_status_title', lang)}</span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
-                    Informasi status tingkatan akses fitur aplikasi Dompetku Anda.
+                    {t('plan_status_desc', lang)}
                   </p>
                 </div>
 
@@ -2763,38 +2786,36 @@ export default function Dashboard({
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-slate-900 dark:text-white">Paket Saat Ini:</span>
+                        <span className="text-sm font-bold text-slate-900 dark:text-white">{t('current_plan_label', lang)}</span>
                         {isPro ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-3 py-0.5 text-xs font-black text-white shadow-sm shadow-amber-500/30">
                             <Sparkles className="h-3.5 w-3.5" />
-                            DOMPETKU PRO MEMBER
+                            {t('pro_member_badge', lang)}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 rounded-md bg-slate-200 dark:bg-slate-700 px-2.5 py-0.5 text-xs font-bold text-slate-700 dark:text-slate-200">
-                            Paket Starter (Free)
+                            {t('plan_starter_free', lang)}
                           </span>
                         )}
                       </div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
-                        {isPro
-                          ? 'Selamat! Akun Anda memiliki akses penuh tanpa batas ke seluruh fitur Budget Bulanan, Target Impian, Tagihan Rutin, dan Ekspor Excel.'
-                          : 'Akun Anda saat ini menggunakan paket gratis. Upgrade ke PRO untuk mengaktifkan Target Impian, Budget Bulanan, dan Ekspor Excel.'}
+                        {isPro ? t('pro_active_text', lang) : t('free_active_text', lang)}
                       </p>
                     </div>
 
                     {!isPro ? (
                       <button
                         type="button"
-                        onClick={() => setShowUpgradeModal({ featureName: 'Dompetku PRO', description: 'Buka semua fitur perencanaan finansial eksklusif tanpa batasan.' })}
+                        onClick={() => setShowUpgradeModal({ featureName: 'Dompetku PRO', description: lang === 'en' ? 'Unlock all exclusive financial planning features without limitations.' : 'Buka semua fitur perencanaan finansial eksklusif tanpa batasan.' })}
                         className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-5 py-2.5 text-xs font-bold text-white hover:brightness-110 shadow-md shadow-amber-500/25 transition shrink-0 cursor-pointer"
                       >
                         <Sparkles className="h-4 w-4 fill-white" />
-                        <span>Upgrade ke PRO Sekarang</span>
+                        <span>{t('btn_upgrade_now', lang)}</span>
                       </button>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800 shrink-0">
                         <CheckCircle2 className="h-4 w-4" />
-                        <span>Akses PRO Aktif</span>
+                        <span>{t('pro_access_active', lang)}</span>
                       </span>
                     )}
                   </div>
@@ -2806,10 +2827,10 @@ export default function Dashboard({
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <User className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    <span>Ubah Nama Profil</span>
+                    <span>{t('edit_profile_name_title', lang)}</span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
-                    Nama ini akan muncul pada sapaan dashboard, sidebar, dan laporan keuangan Anda.
+                    {t('edit_profile_name_desc', lang)}
                   </p>
                 </div>
 
@@ -2817,7 +2838,7 @@ export default function Dashboard({
                   onSubmit={async (e) => {
                     e.preventDefault()
                     if (!profileName.trim()) {
-                      setNameStatus({ type: 'error', message: 'Nama tidak boleh kosong' })
+                      setNameStatus({ type: 'error', message: lang === 'en' ? 'Name cannot be empty' : 'Nama tidak boleh kosong' })
                       return
                     }
                     setIsUpdatingName(true)
@@ -2827,15 +2848,15 @@ export default function Dashboard({
                         name: profileName.trim(),
                       })
                       if (res.error) {
-                        setNameStatus({ type: 'error', message: res.error.message || 'Gagal memperbarui nama' })
+                        setNameStatus({ type: 'error', message: res.error.message || (lang === 'en' ? 'Failed to update name' : 'Gagal memperbarui nama') })
                       } else {
                         setCurrentUser((prev) => ({ ...prev, name: profileName.trim() }))
-                        setNameStatus({ type: 'success', message: 'Nama profil berhasil diperbarui!' })
-                        showToast('Nama profil berhasil disimpan!', 'success')
+                        setNameStatus({ type: 'success', message: lang === 'en' ? 'Profile name successfully updated!' : 'Nama profil berhasil diperbarui!' })
+                        showToast(lang === 'en' ? 'Profile name successfully saved!' : 'Nama profil berhasil disimpan!', 'success')
                         setTimeout(() => setNameStatus(null), 4000)
                       }
                     } catch (err: any) {
-                      setNameStatus({ type: 'error', message: err.message || 'Terjadi kesalahan saat memperbarui nama' })
+                      setNameStatus({ type: 'error', message: err.message || (lang === 'en' ? 'An error occurred while updating name' : 'Terjadi kesalahan saat memperbarui nama') })
                     } finally {
                       setIsUpdatingName(false)
                     }
@@ -2854,13 +2875,13 @@ export default function Dashboard({
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
-                      Nama Lengkap
+                      {t('full_name_label', lang)}
                     </label>
                     <input
                       type="text"
                       value={profileName}
                       onChange={(e) => setProfileName(e.target.value)}
-                      placeholder="Masukkan nama lengkap Anda"
+                      placeholder={lang === 'en' ? 'Enter your full name' : 'Masukkan nama lengkap Anda'}
                       className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/60 px-3.5 py-2.5 text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
                     />
                   </div>
@@ -2873,12 +2894,12 @@ export default function Dashboard({
                     {isUpdatingName ? (
                       <>
                         <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                        <span>Menyimpan...</span>
+                        <span>{t('saving_name', lang)}</span>
                       </>
                     ) : (
                       <>
                         <Check className="h-3.5 w-3.5" />
-                        <span>Simpan Perubahan Nama</span>
+                        <span>{t('btn_save_profile_name', lang)}</span>
                       </>
                     )}
                   </button>
@@ -2890,10 +2911,10 @@ export default function Dashboard({
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <KeyRound className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    <span>Ubah Kata Sandi</span>
+                    <span>{t('security_card_title', lang)}</span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
-                    Ganti kata sandi akun Anda. Jika Anda mendaftar melalui Akun Google, gunakan fitur Masuk dengan Google.
+                    {t('security_card_desc', lang)}
                   </p>
                 </div>
 
@@ -2903,15 +2924,15 @@ export default function Dashboard({
                     setPasswordStatus(null)
 
                     if (!currentPassword) {
-                      setPasswordStatus({ type: 'error', message: 'Kata sandi saat ini wajib diisi' })
+                      setPasswordStatus({ type: 'error', message: lang === 'en' ? 'Current password is required' : 'Kata sandi saat ini wajib diisi' })
                       return
                     }
                     if (newPassword.length < 8) {
-                      setPasswordStatus({ type: 'error', message: 'Kata sandi baru minimal 8 karakter' })
+                      setPasswordStatus({ type: 'error', message: lang === 'en' ? 'New password must be at least 8 characters' : 'Kata sandi baru minimal 8 karakter' })
                       return
                     }
                     if (newPassword !== confirmPassword) {
-                      setPasswordStatus({ type: 'error', message: 'Konfirmasi kata sandi baru tidak cocok' })
+                      setPasswordStatus({ type: 'error', message: lang === 'en' ? 'New password confirmation does not match' : 'Konfirmasi kata sandi baru tidak cocok' })
                       return
                     }
 
@@ -2923,17 +2944,17 @@ export default function Dashboard({
                         revokeOtherSessions: false,
                       })
                       if (res.error) {
-                        setPasswordStatus({ type: 'error', message: res.error.message || 'Gagal mengubah kata sandi. Pastikan kata sandi saat ini benar.' })
+                        setPasswordStatus({ type: 'error', message: res.error.message || (lang === 'en' ? 'Failed to change password. Make sure current password is correct.' : 'Gagal mengubah kata sandi. Pastikan kata sandi saat ini benar.') })
                       } else {
-                        setPasswordStatus({ type: 'success', message: 'Kata sandi berhasil diubah!' })
-                        showToast('Kata sandi berhasil diperbarui!', 'success')
+                        setPasswordStatus({ type: 'success', message: lang === 'en' ? 'Password changed successfully!' : 'Kata sandi berhasil diubah!' })
+                        showToast(lang === 'en' ? 'Password updated successfully!' : 'Kata sandi berhasil diperbarui!', 'success')
                         setCurrentPassword('')
                         setNewPassword('')
                         setConfirmPassword('')
                         setTimeout(() => setPasswordStatus(null), 5000)
                       }
                     } catch (err: any) {
-                      setPasswordStatus({ type: 'error', message: err.message || 'Terjadi kesalahan saat mengubah kata sandi' })
+                      setPasswordStatus({ type: 'error', message: err.message || (lang === 'en' ? 'An error occurred while changing password' : 'Terjadi kesalahan saat mengubah kata sandi') })
                     } finally {
                       setIsUpdatingPassword(false)
                     }
@@ -2952,7 +2973,7 @@ export default function Dashboard({
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
-                      Kata Sandi Saat Ini
+                      {t('current_password_label', lang)}
                     </label>
                     <input
                       type="password"
@@ -2965,7 +2986,7 @@ export default function Dashboard({
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
-                      Kata Sandi Baru (Min. 8 Karakter)
+                      {t('new_password_label', lang)}
                     </label>
                     <input
                       type="password"
@@ -2978,7 +2999,7 @@ export default function Dashboard({
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
-                      Konfirmasi Kata Sandi Baru
+                      {t('confirm_password_label', lang)}
                     </label>
                     <input
                       type="password"
@@ -2997,12 +3018,12 @@ export default function Dashboard({
                     {isUpdatingPassword ? (
                       <>
                         <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                        <span>Memperbarui Kata Sandi...</span>
+                        <span>{t('updating_password', lang)}</span>
                       </>
                     ) : (
                       <>
                         <Lock className="h-3.5 w-3.5" />
-                        <span>Perbarui Kata Sandi</span>
+                        <span>{t('btn_update_password', lang)}</span>
                       </>
                     )}
                   </button>
@@ -3014,25 +3035,27 @@ export default function Dashboard({
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <RefreshCw className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    <span>Inisialisasi Data Default</span>
+                    <span>{lang === 'en' ? 'Initialize Default Data' : 'Inisialisasi Data Default'}</span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
-                    Jika Anda membutuhkan data awal (dompet & kategori default), klik tombol di bawah.
+                    {lang === 'en'
+                      ? 'If you need initial starter sample data (default wallets & categories), click the button below.'
+                      : 'Jika Anda membutuhkan data awal (dompet & kategori default), klik tombol di bawah.'}
                   </p>
                 </div>
 
                 <div className="flex items-center justify-between pt-2">
                   <button
                     onClick={async () => {
-                      if (confirm('Tambahkan dompet dan kategori default jika belum ada?')) {
+                      if (confirm(lang === 'en' ? 'Add default wallets and categories if not present?' : 'Tambahkan dompet dan kategori default jika belum ada?')) {
                         const fresh = await seedDefaults()
-                        handleSuccess('Data default berhasil dicek/ditambahkan!', fresh)
+                        handleSuccess(lang === 'en' ? 'Default data verified/added!' : 'Data default berhasil dicek/ditambahkan!', fresh)
                       }
                     }}
                     className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
                   >
                     <RefreshCw className="h-4 w-4 text-emerald-600" />
-                    <span>Seed / Tambah Kategori Default</span>
+                    <span>{lang === 'en' ? 'Seed / Add Default Categories' : 'Seed / Tambah Kategori Default'}</span>
                   </button>
                 </div>
               </div>
@@ -3052,34 +3075,46 @@ export default function Dashboard({
               </div>
               <div className="space-y-1.5">
                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-black px-2.5 py-0.5">
-                  ⭐ FITUR DOMPETKU PRO
+                  ⭐ {t('pro_exclusive', lang)}
                 </span>
                 <h3 className="text-lg font-bold text-white">
-                  {showModal.type.includes('goal') ? 'Target Impian Eksklusif PRO' : showModal.type.includes('sub') ? 'Tagihan Rutin Eksklusif PRO' : 'Budget Bulanan Eksklusif PRO'}
+                  {showModal.type.includes('goal')
+                    ? (lang === 'en' ? 'PRO Exclusive Financial Goals' : 'Target Impian Eksklusif PRO')
+                    : showModal.type.includes('sub')
+                      ? (lang === 'en' ? 'PRO Exclusive Recurring Bills' : 'Tagihan Rutin Eksklusif PRO')
+                      : (lang === 'en' ? 'PRO Exclusive Monthly Budget' : 'Budget Bulanan Eksklusif PRO')}
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Fitur ini hanya dapat digunakan oleh pengguna dengan paket Dompetku PRO aktif. Nikmati pengelolaan finansial tanpa batasan.
+                  {lang === 'en'
+                    ? 'This feature is exclusively available for active Dompetku PRO members. Enjoy limitless financial management.'
+                    : 'Fitur ini hanya dapat digunakan oleh pengguna dengan paket Dompetku PRO aktif. Nikmati pengelolaan finansial tanpa batasan.'}
                 </p>
               </div>
               <div className="pt-2 flex flex-col gap-2">
                 <button
                   onClick={() => {
-                    const feat = showModal.type.includes('goal') ? 'Target Impian' : showModal.type.includes('sub') ? 'Tagihan Rutin' : 'Budget Bulanan'
+                    const feat = showModal.type.includes('goal')
+                      ? (lang === 'en' ? 'Financial Goals' : 'Target Impian')
+                      : showModal.type.includes('sub')
+                        ? (lang === 'en' ? 'Recurring Bills' : 'Tagihan Rutin')
+                        : (lang === 'en' ? 'Monthly Budget' : 'Budget Bulanan')
                     setShowModal(null)
                     setShowUpgradeModal({
                       featureName: feat,
-                      description: `Buka akses penuh fitur ${feat} dan semua fitur eksklusif lainnya di Dompetku PRO.`
+                      description: lang === 'en'
+                        ? `Unlock full access to ${feat} and all other exclusive features in Dompetku PRO.`
+                        : `Buka akses penuh fitur ${feat} dan semua fitur eksklusif lainnya di Dompetku PRO.`
                     })
                   }}
                   className="w-full rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/20 hover:from-emerald-700 hover:to-teal-700 transition"
                 >
-                  Lihat Paket & Upgrade PRO
+                  {lang === 'en' ? 'View Plans & Upgrade PRO' : 'Lihat Paket & Upgrade PRO'}
                 </button>
                 <button
                   onClick={() => setShowModal(null)}
                   className="w-full rounded-xl border border-slate-700 bg-slate-900 py-2.5 text-xs font-semibold text-slate-400 hover:bg-slate-800 transition"
                 >
-                  Kembali
+                  {lang === 'en' ? 'Back' : 'Kembali'}
                 </button>
               </div>
             </div>
@@ -3090,6 +3125,7 @@ export default function Dashboard({
             <TransactionModal
               data={data}
               editData={showModal.editData}
+              lang={lang}
               close={() => setShowModal(null)}
               done={handleSuccess}
               onWalletCreated={(fresh) => setData(fresh)}
@@ -3099,17 +3135,17 @@ export default function Dashboard({
 
           {/* 2. Transfer Form Modal */}
           {showModal.type === 'transfer' && (
-            <TransferModal data={data} close={() => setShowModal(null)} done={handleSuccess} />
+            <TransferModal data={data} lang={lang} close={() => setShowModal(null)} done={handleSuccess} />
           )}
 
           {/* 3. Wallet Form Modal */}
           {showModal.type === 'wallet' && (
-            <WalletModal editData={showModal.editData} close={() => setShowModal(null)} done={handleSuccess} />
+            <WalletModal editData={showModal.editData} lang={lang} close={() => setShowModal(null)} done={handleSuccess} />
           )}
 
           {/* 4. Category Form Modal */}
           {showModal.type === 'category' && (
-            <CategoryModal editData={showModal.editData} close={() => setShowModal(null)} done={handleSuccess} />
+            <CategoryModal editData={showModal.editData} lang={lang} close={() => setShowModal(null)} done={handleSuccess} />
           )}
 
           {/* 5. Budget Form Modal */}
@@ -3118,6 +3154,7 @@ export default function Dashboard({
               data={data}
               editData={showModal.editData}
               defaultMonth={selectedMonth}
+              lang={lang}
               close={() => setShowModal(null)}
               done={handleSuccess}
             />
@@ -3127,6 +3164,7 @@ export default function Dashboard({
           {showModal.type === 'goal' && (
             <GoalModal
               editData={showModal.editData}
+              lang={lang}
               close={() => setShowModal(null)}
               done={handleSuccess}
             />
@@ -3137,6 +3175,7 @@ export default function Dashboard({
             <GoalDepositModal
               goal={showModal.goal}
               wallets={data.wallets}
+              lang={lang}
               close={() => setShowModal(null)}
               done={handleSuccess}
             />
@@ -3147,6 +3186,7 @@ export default function Dashboard({
             <SubscriptionModal
               data={data}
               editData={showModal.editData}
+              lang={lang}
               close={() => setShowModal(null)}
               done={handleSuccess}
             />
@@ -3157,6 +3197,7 @@ export default function Dashboard({
             <PaySubscriptionModal
               subscription={showModal.subscription}
               wallets={data.wallets}
+              lang={lang}
               close={() => setShowModal(null)}
               done={handleSuccess}
             />
@@ -3178,7 +3219,7 @@ export default function Dashboard({
               <div className="flex items-center justify-between">
                 <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/15 px-3 py-1 text-xs font-black text-amber-300">
                   <Sparkles className="h-3.5 w-3.5 fill-amber-300" />
-                  <span>DOMPETKU PRO EXCLUSIVE</span>
+                  <span>{t('pro_exclusive', lang)}</span>
                 </div>
                 <button
                   onClick={() => setShowUpgradeModal(null)}
@@ -3189,51 +3230,50 @@ export default function Dashboard({
               </div>
 
               <h2 className="mt-4 text-2xl font-black text-white">
-                Tingkatkan ke Dompetku PRO 🚀
+                {t('paywall_title', lang)}
               </h2>
               <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
-                {showUpgradeModal.description ||
-                  'Tingkatkan akun Anda ke PRO untuk mengontrol anggaran, mengejar target tabungan, dan mengunduh laporan keuangan tanpa batasan.'}
+                {showUpgradeModal.description || t('paywall_default_desc', lang)}
               </p>
 
               {/* Feature Benefits List */}
               <div className="mt-6 space-y-2.5 rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4 text-xs text-slate-200">
                 <div className="flex items-center gap-2.5">
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
-                  <span><strong>Target Impian</strong> — Tabungan rumah, mobil, dan dana darurat</span>
+                  <span><strong>{t('benefit_1_title', lang)}</strong> — {t('benefit_1_desc', lang)}</span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
-                  <span><strong>Budget Bulanan</strong> — Batas belanja per kategori & alert overbudget</span>
+                  <span><strong>{t('benefit_2_title', lang)}</strong> — {t('benefit_2_desc', lang)}</span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
-                  <span><strong>Tagihan Rutin</strong> — Pengingat jatuh tempo langganan & utilitas</span>
+                  <span><strong>{t('benefit_3_title', lang)}</strong> — {t('benefit_3_desc', lang)}</span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
-                  <span><strong>Ekspor Laporan</strong> — Download file Excel (.xlsx) & CSV otomatis</span>
+                  <span><strong>{t('benefit_4_title', lang)}</strong> — {t('benefit_4_desc', lang)}</span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
-                  <span><strong>Unlimited Dompet</strong> — Catat semua rekening bank & e-wallet</span>
+                  <span><strong>{t('benefit_5_title', lang)}</strong> — {t('benefit_5_desc', lang)}</span>
                 </div>
               </div>
 
               {/* Pricing Cards */}
               <div className="mt-5 grid grid-cols-2 gap-3">
                 <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-3.5 text-center">
-                  <span className="text-[11px] font-semibold text-slate-400">Paket Bulanan</span>
-                  <p className="mt-1 text-lg font-black text-white">Rp 19.000</p>
-                  <span className="text-[10px] text-slate-400">per bulan</span>
+                  <span className="text-[11px] font-semibold text-slate-400">{t('pkg_monthly', lang)}</span>
+                  <p className="mt-1 text-lg font-black text-white">{t('pkg_monthly_price', lang)}</p>
+                  <span className="text-[10px] text-slate-400">{t('pkg_per_month', lang)}</span>
                 </div>
                 <div className="relative rounded-2xl border border-amber-500/50 bg-gradient-to-b from-amber-500/15 to-slate-900/80 p-3.5 text-center shadow-lg shadow-amber-500/10">
                   <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-amber-500 px-2 py-0.2 text-[9px] font-black text-slate-950 uppercase">
-                    Hemat 35%
+                    {t('pkg_save_badge', lang)}
                   </span>
-                  <span className="text-[11px] font-bold text-amber-300">Paket Tahunan</span>
-                  <p className="mt-1 text-lg font-black text-white">Rp 149.000</p>
-                  <span className="text-[10px] text-emerald-400 font-semibold">Rp 12.400/bln</span>
+                  <span className="text-[11px] font-bold text-amber-300">{t('pkg_yearly', lang)}</span>
+                  <p className="mt-1 text-lg font-black text-white">{t('pkg_yearly_price', lang)}</p>
+                  <span className="text-[10px] text-emerald-400 font-semibold">{t('pkg_yearly_monthly_rate', lang)}</span>
                 </div>
               </div>
 
@@ -3241,21 +3281,23 @@ export default function Dashboard({
               <div className="mt-6 flex flex-col gap-2.5">
                 <a
                   href={`https://wa.me/6281776370728?text=${encodeURIComponent(
-                    `Halo Admin Dompetku, saya ingin upgrade ke akun Dompetku PRO!\n\nNama: ${currentUser.name}\nEmail: ${currentUser.email}\nPaket: Tahunan (Rp 149.000) / Bulanan (Rp 19.000)\n\nMohon info nomor rekening / QRIS untuk pembayaran.`
+                    lang === 'en'
+                      ? `Hello Dompetku Admin, I would like to upgrade to Dompetku PRO!\n\nName: ${currentUser.name}\nEmail: ${currentUser.email}\nPlan: Yearly (Rp 149.000) / Monthly (Rp 19.000)\n\nPlease provide payment information (Bank Transfer / QRIS).`
+                      : `Halo Admin Dompetku, saya ingin upgrade ke akun Dompetku PRO!\n\nNama: ${currentUser.name}\nEmail: ${currentUser.email}\nPaket: Tahunan (Rp 149.000) / Bulanan (Rp 19.000)\n\nMohon info nomor rekening / QRIS untuk pembayaran.`
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-400 py-3.5 text-sm font-black text-slate-950 shadow-lg shadow-teal-500/30 transition hover:brightness-110 active:scale-98"
                 >
                   <Sparkles className="h-4 w-4 fill-slate-950 text-slate-950" />
-                  <span>Upgrade via WhatsApp / QRIS</span>
+                  <span>{t('btn_upgrade_whatsapp', lang)}</span>
                 </a>
                 <button
                   type="button"
                   onClick={() => setShowUpgradeModal(null)}
                   className="w-full py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition cursor-pointer"
                 >
-                  Nanti Saja
+                  {lang === 'en' ? 'Maybe Later' : 'Nanti Saja'}
                 </button>
               </div>
             </div>
@@ -3280,6 +3322,7 @@ function ModalContainer({ children, close }: { children: React.ReactNode; close:
 function TransactionModal({
   data,
   editData,
+  lang = 'en',
   close,
   done,
   onWalletCreated,
@@ -3287,6 +3330,7 @@ function TransactionModal({
 }: {
   data: Data
   editData?: Transaction
+  lang?: Language
   close: () => void
   done: (msg: string, freshData?: Data) => void
   onWalletCreated?: (freshData: Data) => void
@@ -3352,7 +3396,7 @@ function TransactionModal({
         }
       }
     } catch (err: any) {
-      alert(err?.message || 'Gagal membuat dompet baru')
+      alert(err?.message || (lang === 'en' ? 'Failed to create new wallet' : 'Gagal membuat dompet baru'))
     } finally {
       setIsCreatingWallet(false)
     }
@@ -3379,7 +3423,7 @@ function TransactionModal({
         }
       }
     } catch (err: any) {
-      alert(err?.message || 'Gagal membuat kategori baru')
+      alert(err?.message || (lang === 'en' ? 'Failed to create new category' : 'Gagal membuat kategori baru'))
     } finally {
       setIsCreatingCategory(false)
     }
@@ -3398,7 +3442,7 @@ function TransactionModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!amount || amount <= 0) {
-      alert('Mohon masukkan nominal transaksi yang valid')
+      alert(lang === 'en' ? 'Please enter a valid transaction amount' : 'Mohon masukkan nominal transaksi yang valid')
       return
     }
     setSubmitting(true)
@@ -3413,7 +3457,7 @@ function TransactionModal({
           description,
           date,
         })
-        done('Transaksi berhasil diperbarui!', fresh)
+        done(lang === 'en' ? 'Transaction updated successfully!' : 'Transaksi berhasil diperbarui!', fresh)
       } else {
         const fresh = await addTransaction({
           walletId: Number(walletId),
@@ -3423,11 +3467,11 @@ function TransactionModal({
           description,
           date,
         })
-        done('Transaksi baru berhasil ditambahkan!', fresh)
+        done(lang === 'en' ? 'New transaction added successfully!' : 'Transaksi baru berhasil ditambahkan!', fresh)
       }
       close()
     } catch (err: any) {
-      alert(err?.message || 'Gagal menyimpan transaksi')
+      alert(err?.message || (lang === 'en' ? 'Failed to save transaction' : 'Gagal menyimpan transaksi'))
     } finally {
       setSubmitting(false)
     }
@@ -3437,7 +3481,7 @@ function TransactionModal({
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
         <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-          {editData ? 'Edit Transaksi' : 'Catat Transaksi Baru'}
+          {editData ? (lang === 'en' ? 'Edit Transaction' : 'Edit Transaksi') : (lang === 'en' ? 'Record New Transaction' : 'Catat Transaksi Baru')}
         </h3>
         <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
           <X className="h-5 w-5" />
@@ -3453,7 +3497,7 @@ function TransactionModal({
             }`}
         >
           <ArrowUpRight className="h-4 w-4" />
-          <span>Pengeluaran</span>
+          <span>{lang === 'en' ? 'Expense' : 'Pengeluaran'}</span>
         </button>
         <button
           type="button"
@@ -3462,7 +3506,7 @@ function TransactionModal({
             }`}
         >
           <ArrowDownRight className="h-4 w-4" />
-          <span>Pemasukan</span>
+          <span>{lang === 'en' ? 'Income' : 'Pemasukan'}</span>
         </button>
       </div>
 
@@ -3470,7 +3514,8 @@ function TransactionModal({
       <RupiahInput
         value={amount}
         onChange={setAmount}
-        label="Nominal Transaksi (Auto Rupiah)"
+        lang={lang}
+        label={lang === 'en' ? 'Transaction Amount (Auto Rupiah)' : 'Nominal Transaksi (Auto Rupiah)'}
         placeholder="Rp 0"
         required
         showPresets
@@ -3479,13 +3524,15 @@ function TransactionModal({
 
       {/* Description */}
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">Deskripsi / Catatan *</label>
+        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+          {lang === 'en' ? 'Description / Notes *' : 'Deskripsi / Catatan *'}
+        </label>
         <input
           type="text"
           required
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="cth: Makan siang, Gaji bulanan, Bensin..."
+          placeholder={lang === 'en' ? 'e.g. Lunch, Monthly Salary, Fuel...' : 'cth: Makan siang, Gaji bulanan, Bensin...'}
           className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
         />
       </div>
@@ -3493,7 +3540,7 @@ function TransactionModal({
       {/* React-Select: Wallet & Category Selection */}
       <div className="grid gap-3 sm:grid-cols-2">
         <CustomCreatableSelect
-          label="Pilih Dompet / Rekening"
+          label={lang === 'en' ? 'Select Wallet / Account' : 'Pilih Dompet / Rekening'}
           required
           isLoading={isCreatingWallet}
           isDisabled={isCreatingWallet}
@@ -3502,12 +3549,12 @@ function TransactionModal({
           onCreateOption={handleCreateWallet}
           options={walletOptions}
           isSearchable
-          placeholder="Pilih atau ketik untuk buat baru..."
-          formatCreateLabel={(inputValue) => `+ Buat dompet baru: "${inputValue}"`}
+          placeholder={lang === 'en' ? 'Select or type to create new...' : 'Pilih atau ketik untuk buat baru...'}
+          formatCreateLabel={(inputValue) => lang === 'en' ? `+ Create new wallet: "${inputValue}"` : `+ Buat dompet baru: "${inputValue}"`}
         />
 
         <CustomCreatableSelect
-          label="Kategori Transaksi"
+          label={lang === 'en' ? 'Transaction Category' : 'Kategori Transaksi'}
           required
           isLoading={isCreatingCategory}
           isDisabled={isCreatingCategory}
@@ -3516,17 +3563,18 @@ function TransactionModal({
           onCreateOption={handleCreateCategory}
           options={categoryOptions}
           isSearchable
-          placeholder="Pilih atau ketik untuk buat baru..."
-          formatCreateLabel={(inputValue) => `+ Buat kategori: "${inputValue}"`}
+          placeholder={lang === 'en' ? 'Select or type to create new...' : 'Pilih atau ketik untuk buat baru...'}
+          formatCreateLabel={(inputValue) => lang === 'en' ? `+ Create category: "${inputValue}"` : `+ Buat kategori: "${inputValue}"`}
         />
       </div>
 
       {/* Clickable Date Picker Popup */}
       <DatePickerInput
-        label="Tanggal Transaksi (Klik untuk Memilih)"
+        label={lang === 'en' ? 'Transaction Date (Click to Select)' : 'Tanggal Transaksi (Klik untuk Memilih)'}
         required
         value={date}
         onChange={setDate}
+        lang={lang}
       />
 
       <div className="pt-2">
@@ -3535,7 +3583,11 @@ function TransactionModal({
           disabled={submitting}
           className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition disabled:opacity-50"
         >
-          {submitting ? 'Menyimpan...' : editData ? 'Perbarui Transaksi' : 'Simpan Transaksi'}
+          {submitting
+            ? (lang === 'en' ? 'Saving...' : 'Menyimpan...')
+            : editData
+              ? (lang === 'en' ? 'Update Transaction' : 'Perbarui Transaksi')
+              : (lang === 'en' ? 'Save Transaction' : 'Simpan Transaksi')}
         </button>
       </div>
     </form>
@@ -3545,10 +3597,12 @@ function TransactionModal({
 // 2. Transfer Modal Between Wallets
 function TransferModal({
   data,
+  lang = 'en',
   close,
   done,
 }: {
   data: Data
+  lang?: Language
   close: () => void
   done: (msg: string, freshData?: Data) => void
 }) {
@@ -3567,11 +3621,11 @@ function TransferModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (fromWalletId === toWalletId) {
-      alert('Dompet asal dan tujuan tidak boleh sama')
+      alert(lang === 'en' ? 'Source and destination wallets cannot be the same' : 'Dompet asal dan tujuan tidak boleh sama')
       return
     }
     if (!amount || amount <= 0) {
-      alert('Mohon masukkan nominal transfer')
+      alert(lang === 'en' ? 'Please enter a valid transfer amount' : 'Mohon masukkan nominal transfer')
       return
     }
     setSubmitting(true)
@@ -3583,10 +3637,10 @@ function TransferModal({
         description,
         date,
       })
-      done('Transfer saldo antar dompet berhasil!', fresh)
+      done(lang === 'en' ? 'Fund transfer between wallets successful!' : 'Transfer saldo antar dompet berhasil!', fresh)
       close()
     } catch (err: any) {
-      alert(err?.message || 'Gagal melakukan transfer')
+      alert(err?.message || (lang === 'en' ? 'Failed to process transfer' : 'Gagal melakukan transfer'))
     } finally {
       setSubmitting(false)
     }
@@ -3595,7 +3649,9 @@ function TransferModal({
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Transfer Antar Dompet</h3>
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+          {lang === 'en' ? 'Transfer Between Wallets' : 'Transfer Antar Dompet'}
+        </h3>
         <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
           <X className="h-5 w-5" />
         </button>
@@ -3603,7 +3659,7 @@ function TransferModal({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <CustomSelect
-          label="Dari Dompet (Sumber)"
+          label={lang === 'en' ? 'From Wallet (Source)' : 'Dari Dompet (Sumber)'}
           required
           value={walletOptions.find((o) => o.value === fromWalletId)}
           onChange={(opt) => opt && setFromWalletId(opt.value)}
@@ -3611,7 +3667,7 @@ function TransferModal({
         />
 
         <CustomSelect
-          label="Ke Dompet (Tujuan)"
+          label={lang === 'en' ? 'To Wallet (Destination)' : 'Ke Dompet (Tujuan)'}
           required
           value={walletOptions.find((o) => o.value === toWalletId)}
           onChange={(opt) => opt && setToWalletId(opt.value)}
@@ -3622,7 +3678,8 @@ function TransferModal({
       <RupiahInput
         value={amount}
         onChange={setAmount}
-        label="Nominal Transfer (Auto Rupiah)"
+        lang={lang}
+        label={lang === 'en' ? 'Transfer Amount (Auto Rupiah)' : 'Nominal Transfer (Auto Rupiah)'}
         placeholder="Rp 0"
         required
         showPresets
@@ -3630,21 +3687,24 @@ function TransferModal({
       />
 
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">Catatan Transfer (Opsional)</label>
+        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+          {lang === 'en' ? 'Transfer Note (Optional)' : 'Catatan Transfer (Opsional)'}
+        </label>
         <input
           type="text"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="cth: Top-up Gopay, Tarik Tunai..."
+          placeholder={lang === 'en' ? 'e.g. Gopay Top-up, Cash withdrawal...' : 'cth: Top-up Gopay, Tarik Tunai...'}
           className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-100 focus:border-emerald-500 focus:outline-none"
         />
       </div>
 
       <DatePickerInput
-        label="Tanggal Transfer (Klik untuk Memilih)"
+        label={lang === 'en' ? 'Transfer Date (Click to Select)' : 'Tanggal Transfer (Klik untuk Memilih)'}
         required
         value={date}
         onChange={setDate}
+        lang={lang}
       />
 
       <div className="pt-2">
@@ -3653,7 +3713,9 @@ function TransferModal({
           disabled={submitting}
           className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
         >
-          {submitting ? 'Memproses Transfer...' : 'Kirim Transfer Saldo'}
+          {submitting
+            ? (lang === 'en' ? 'Processing Transfer...' : 'Memproses Transfer...')
+            : (lang === 'en' ? 'Send Fund Transfer' : 'Kirim Transfer Saldo')}
         </button>
       </div>
     </form>
@@ -3663,10 +3725,12 @@ function TransferModal({
 // 3. Wallet Modal with React-Select
 function WalletModal({
   editData,
+  lang = 'en',
   close,
   done,
 }: {
   editData?: WalletType
+  lang?: Language
   close: () => void
   done: (msg: string, freshData?: Data) => void
 }) {
@@ -3676,12 +3740,12 @@ function WalletModal({
   const [submitting, setSubmitting] = useState(false)
 
   const walletTypeOptions: OptionType<string>[] = [
-    { value: 'Bank', label: 'Rekening Bank' },
-    { value: 'E-wallet', label: 'E-Wallet (GoPay, OVO, Dana, dll)' },
-    { value: 'Tunai', label: 'Uang Tunai / Cash' },
-    { value: 'Kartu Kredit', label: 'Kartu Kredit' },
-    { value: 'Investasi', label: 'Investasi / Saham / Reksadana' },
-    { value: 'Lainnya', label: 'Lainnya' },
+    { value: 'Bank', label: lang === 'en' ? 'Bank Account' : 'Rekening Bank' },
+    { value: 'E-wallet', label: lang === 'en' ? 'E-Wallet (GoPay, OVO, Dana, etc)' : 'E-Wallet (GoPay, OVO, Dana, dll)' },
+    { value: 'Tunai', label: lang === 'en' ? 'Cash' : 'Uang Tunai / Cash' },
+    { value: 'Kartu Kredit', label: lang === 'en' ? 'Credit Card' : 'Kartu Kredit' },
+    { value: 'Investasi', label: lang === 'en' ? 'Investment / Stocks' : 'Investasi / Saham / Reksadana' },
+    { value: 'Lainnya', label: lang === 'en' ? 'Other' : 'Lainnya' },
   ]
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -3694,18 +3758,18 @@ function WalletModal({
           name,
           type,
         })
-        done('Dompet berhasil diperbarui!', fresh)
+        done(lang === 'en' ? 'Wallet updated successfully!' : 'Dompet berhasil diperbarui!', fresh)
       } else {
         const fresh = await addWallet({
           name,
           type,
           balance,
         })
-        done('Dompet baru berhasil ditambahkan!', fresh)
+        done(lang === 'en' ? 'New wallet added successfully!' : 'Dompet baru berhasil ditambahkan!', fresh)
       }
       close()
     } catch (err: any) {
-      alert(err?.message || 'Gagal menyimpan dompet')
+      alert(err?.message || (lang === 'en' ? 'Failed to save wallet' : 'Gagal menyimpan dompet'))
     } finally {
       setSubmitting(false)
     }
@@ -3714,26 +3778,30 @@ function WalletModal({
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white">{editData ? 'Edit Dompet' : 'Tambah Dompet / Rekening'}</h3>
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+          {editData ? (lang === 'en' ? 'Edit Wallet' : 'Edit Dompet') : (lang === 'en' ? 'Add Wallet / Account' : 'Tambah Dompet / Rekening')}
+        </h3>
         <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
           <X className="h-5 w-5" />
         </button>
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">Nama Dompet / Rekening *</label>
+        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+          {lang === 'en' ? 'Wallet / Account Name *' : 'Nama Dompet / Rekening *'}
+        </label>
         <input
           type="text"
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="cth: BCA Utama, Mandiri Tabungan, GoPay, Tunai..."
+          placeholder={lang === 'en' ? 'e.g. Main Bank, Savings, Digital Wallet, Cash...' : 'cth: BCA Utama, Mandiri Tabungan, GoPay, Tunai...'}
           className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-100 focus:border-emerald-500 focus:outline-none"
         />
       </div>
 
       <CustomSelect
-        label="Tipe / Jenis Dompet"
+        label={lang === 'en' ? 'Wallet Type' : 'Tipe / Jenis Dompet'}
         required
         value={walletTypeOptions.find((o) => o.value === type)}
         onChange={(opt) => opt && setType(opt.value)}
@@ -3745,7 +3813,8 @@ function WalletModal({
         <RupiahInput
           value={balance}
           onChange={setBalance}
-          label="Saldo Awal (Opsional)"
+          lang={lang}
+          label={lang === 'en' ? 'Initial Balance (Optional)' : 'Saldo Awal (Opsional)'}
           placeholder="Rp 0"
           showPresets
         />
@@ -3757,7 +3826,11 @@ function WalletModal({
           disabled={submitting}
           className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
         >
-          {submitting ? 'Menyimpan...' : editData ? 'Perbarui Dompet' : 'Simpan Dompet'}
+          {submitting
+            ? (lang === 'en' ? 'Saving...' : 'Menyimpan...')
+            : editData
+              ? (lang === 'en' ? 'Update Wallet' : 'Perbarui Dompet')
+              : (lang === 'en' ? 'Save Wallet' : 'Simpan Dompet')}
         </button>
       </div>
     </form>
@@ -3767,10 +3840,12 @@ function WalletModal({
 // 4. Category Modal with React-Select
 function CategoryModal({
   editData,
+  lang = 'en',
   close,
   done,
 }: {
   editData?: Category
+  lang?: Language
   close: () => void
   done: (msg: string, freshData?: Data) => void
 }) {
@@ -3779,8 +3854,8 @@ function CategoryModal({
   const [submitting, setSubmitting] = useState(false)
 
   const categoryTypeOptions: OptionType<string>[] = [
-    { value: 'expense', label: 'Pengeluaran (Expense)' },
-    { value: 'income', label: 'Pemasukan (Income)' },
+    { value: 'expense', label: lang === 'en' ? 'Expense' : 'Pengeluaran (Expense)' },
+    { value: 'income', label: lang === 'en' ? 'Income' : 'Pemasukan (Income)' },
   ]
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -3793,17 +3868,17 @@ function CategoryModal({
           name,
           type,
         })
-        done('Kategori berhasil diperbarui!', fresh)
+        done(lang === 'en' ? 'Category updated successfully!' : 'Kategori berhasil diperbarui!', fresh)
       } else {
         const fresh = await addCategory({
           name,
           type,
         })
-        done('Kategori baru berhasil ditambahkan!', fresh)
+        done(lang === 'en' ? 'New category added successfully!' : 'Kategori baru berhasil ditambahkan!', fresh)
       }
       close()
     } catch (err: any) {
-      alert(err?.message || 'Gagal menyimpan kategori')
+      alert(err?.message || (lang === 'en' ? 'Failed to save category' : 'Gagal menyimpan kategori'))
     } finally {
       setSubmitting(false)
     }
@@ -3812,26 +3887,30 @@ function CategoryModal({
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white">{editData ? 'Edit Kategori' : 'Tambah Kategori Baru'}</h3>
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+          {editData ? (lang === 'en' ? 'Edit Category' : 'Edit Kategori') : (lang === 'en' ? 'Add New Category' : 'Tambah Kategori Baru')}
+        </h3>
         <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
           <X className="h-5 w-5" />
         </button>
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">Nama Kategori *</label>
+        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+          {lang === 'en' ? 'Category Name *' : 'Nama Kategori *'}
+        </label>
         <input
           type="text"
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="cth: Belanja Bulanan, Kopi & Nongkrong, Bonus..."
+          placeholder={lang === 'en' ? 'e.g. Groceries, Dining out, Bonus...' : 'cth: Belanja Bulanan, Kopi & Nongkrong, Bonus...'}
           className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-100 focus:border-emerald-500 focus:outline-none"
         />
       </div>
 
       <CustomSelect
-        label="Tipe Kategori"
+        label={lang === 'en' ? 'Category Type' : 'Tipe Kategori'}
         required
         value={categoryTypeOptions.find((o) => o.value === type)}
         onChange={(opt) => opt && setType(opt.value)}
@@ -3845,7 +3924,11 @@ function CategoryModal({
           disabled={submitting}
           className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
         >
-          {submitting ? 'Menyimpan...' : editData ? 'Perbarui Kategori' : 'Simpan Kategori'}
+          {submitting
+            ? (lang === 'en' ? 'Saving...' : 'Menyimpan...')
+            : editData
+              ? (lang === 'en' ? 'Update Category' : 'Perbarui Kategori')
+              : (lang === 'en' ? 'Save Category' : 'Simpan Kategori')}
         </button>
       </div>
     </form>
@@ -3857,12 +3940,14 @@ function BudgetModal({
   data,
   editData,
   defaultMonth,
+  lang = 'en',
   close,
   done,
 }: {
   data: Data
   editData?: Budget
   defaultMonth: string
+  lang?: Language
   close: () => void
   done: (msg: string, freshData?: Data) => void
 }) {
@@ -3883,7 +3968,7 @@ function BudgetModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!amount || amount <= 0) {
-      alert('Mohon masukkan batas budget yang valid')
+      alert(lang === 'en' ? 'Please enter a valid budget limit' : 'Mohon masukkan batas budget yang valid')
       return
     }
     setSubmitting(true)
@@ -3893,10 +3978,10 @@ function BudgetModal({
         amount,
         month,
       })
-      done('Budget bulanan berhasil disimpan!', fresh)
+      done(lang === 'en' ? 'Monthly budget saved successfully!' : 'Budget bulanan berhasil disimpan!', fresh)
       close()
     } catch (err: any) {
-      alert(err?.message || 'Gagal menyimpan budget')
+      alert(err?.message || (lang === 'en' ? 'Failed to save budget' : 'Gagal menyimpan budget'))
     } finally {
       setSubmitting(false)
     }
@@ -3906,7 +3991,7 @@ function BudgetModal({
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
         <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-          {editData ? 'Edit Budget Kategori' : 'Atur Budget Bulanan'}
+          {editData ? (lang === 'en' ? 'Edit Category Budget' : 'Edit Budget Kategori') : (lang === 'en' ? 'Set Monthly Budget' : 'Atur Budget Bulanan')}
         </h3>
         <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
           <X className="h-5 w-5" />
@@ -3914,7 +3999,7 @@ function BudgetModal({
       </div>
 
       <CustomSelect
-        label="Pilih Kategori Pengeluaran"
+        label={lang === 'en' ? 'Select Expense Category' : 'Pilih Kategori Pengeluaran'}
         required
         value={categoryOptions.find((o) => o.value === categoryId)}
         onChange={(opt) => opt && setCategoryId(opt.value)}
@@ -3923,17 +4008,19 @@ function BudgetModal({
       />
 
       <DatePickerInput
-        label="Bulan Budget (Klik untuk Memilih)"
+        label={lang === 'en' ? 'Budget Month (Click to Select)' : 'Bulan Budget (Klik untuk Memilih)'}
         type="month"
         required
         value={month}
         onChange={setMonth}
+        lang={lang}
       />
 
       <RupiahInput
         value={amount}
         onChange={setAmount}
-        label="Batas Alokasi Budget (Auto Rupiah)"
+        lang={lang}
+        label={lang === 'en' ? 'Budget Allocation Limit (Auto Rupiah)' : 'Batas Alokasi Budget (Auto Rupiah)'}
         placeholder="Rp 0"
         required
         showPresets
@@ -3946,7 +4033,7 @@ function BudgetModal({
           disabled={submitting}
           className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
         >
-          {submitting ? 'Menyimpan...' : 'Simpan Budget'}
+          {submitting ? (lang === 'en' ? 'Saving...' : 'Menyimpan...') : (lang === 'en' ? 'Save Budget' : 'Simpan Budget')}
         </button>
       </div>
     </form>
@@ -3956,10 +4043,12 @@ function BudgetModal({
 // 6. Goal Modal (Tahap 2: Target Tabungan)
 function GoalModal({
   editData,
+  lang = 'en',
   close,
   done,
 }: {
   editData?: Goal
+  lang?: Language
   close: () => void
   done: (msg: string, freshData?: Data) => void
 }) {
@@ -3974,11 +4063,11 @@ function GoalModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) {
-      alert('Nama target tabungan wajib diisi')
+      alert(lang === 'en' ? 'Goal name is required' : 'Nama target tabungan wajib diisi')
       return
     }
     if (!targetAmount || targetAmount <= 0) {
-      alert('Target nominal tabungan harus lebih dari 0')
+      alert(lang === 'en' ? 'Target amount must be greater than 0' : 'Target nominal tabungan harus lebih dari 0')
       return
     }
     setSubmitting(true)
@@ -3991,7 +4080,7 @@ function GoalModal({
           currentAmount,
           targetDate: targetDate || undefined,
         })
-        done('Target tabungan berhasil diperbarui!', fresh)
+        done(lang === 'en' ? 'Goal updated successfully!' : 'Target tabungan berhasil diperbarui!', fresh)
       } else {
         const fresh = await addGoal({
           name,
@@ -3999,11 +4088,11 @@ function GoalModal({
           currentAmount,
           targetDate: targetDate || undefined,
         })
-        done('Target impian baru berhasil dibuat!', fresh)
+        done(lang === 'en' ? 'New financial goal created!' : 'Target impian baru berhasil dibuat!', fresh)
       }
       close()
     } catch (err: any) {
-      alert(err?.message || 'Gagal menyimpan target')
+      alert(err?.message || (lang === 'en' ? 'Failed to save goal' : 'Gagal menyimpan target'))
     } finally {
       setSubmitting(false)
     }
@@ -4015,7 +4104,7 @@ function GoalModal({
         <div className="flex items-center gap-2">
           <Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
           <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-            {editData ? 'Edit Target Tabungan' : 'Buat Target Impian Baru'}
+            {editData ? (lang === 'en' ? 'Edit Financial Goal' : 'Edit Target Tabungan') : (lang === 'en' ? 'Create New Financial Goal' : 'Buat Target Impian Baru')}
           </h3>
         </div>
         <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
@@ -4024,13 +4113,15 @@ function GoalModal({
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">Nama Impian / Sasaran Target *</label>
+        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+          {lang === 'en' ? 'Goal Name / Purpose *' : 'Nama Impian / Sasaran Target *'}
+        </label>
         <input
           type="text"
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="cth: DP Rumah, Dana Darurat 6 Bulan, Liburan Jepang..."
+          placeholder={lang === 'en' ? 'e.g. Home Down Payment, Emergency Fund, Tokyo Trip...' : 'cth: DP Rumah, Dana Darurat 6 Bulan, Liburan Jepang...'}
           className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-100 focus:border-emerald-500 focus:outline-none"
         />
       </div>
@@ -4038,7 +4129,8 @@ function GoalModal({
       <RupiahInput
         value={targetAmount}
         onChange={setTargetAmount}
-        label="Target Nominal yang Ingin Dicapai *"
+        lang={lang}
+        label={lang === 'en' ? 'Target Amount to Reach *' : 'Target Nominal yang Ingin Dicapai *'}
         placeholder="Rp 0"
         required
         showPresets
@@ -4048,15 +4140,17 @@ function GoalModal({
       <RupiahInput
         value={currentAmount}
         onChange={setCurrentAmount}
-        label="Saldo yang Sudah Terkumpul Saat Ini (Opsional)"
+        lang={lang}
+        label={lang === 'en' ? 'Currently Saved Amount (Optional)' : 'Saldo yang Sudah Terkumpul Saat Ini (Opsional)'}
         placeholder="Rp 0"
         showPresets
       />
 
       <DatePickerInput
-        label="Target Tanggal Tercapai (Opsional)"
+        label={lang === 'en' ? 'Target Completion Date (Optional)' : 'Target Tanggal Tercapai (Opsional)'}
         value={targetDate}
         onChange={setTargetDate}
+        lang={lang}
       />
 
       <div className="pt-2">
@@ -4065,7 +4159,7 @@ function GoalModal({
           disabled={submitting}
           className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
         >
-          {submitting ? 'Menyimpan...' : editData ? 'Perbarui Target' : 'Simpan Target Impian'}
+          {submitting ? (lang === 'en' ? 'Saving...' : 'Menyimpan...') : editData ? (lang === 'en' ? 'Update Goal' : 'Perbarui Target') : (lang === 'en' ? 'Save Goal' : 'Simpan Target Impian')}
         </button>
       </div>
     </form>
@@ -4076,11 +4170,13 @@ function GoalModal({
 function GoalDepositModal({
   goal,
   wallets,
+  lang = 'en',
   close,
   done,
 }: {
   goal: Goal
   wallets: WalletType[]
+  lang?: Language
   close: () => void
   done: (msg: string, freshData?: Data) => void
 }) {
@@ -4096,7 +4192,7 @@ function GoalDepositModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!amount || amount <= 0) {
-      alert('Mohon masukkan nominal setoran yang valid')
+      alert(lang === 'en' ? 'Please enter a valid deposit amount' : 'Mohon masukkan nominal setoran yang valid')
       return
     }
     setSubmitting(true)
@@ -4106,10 +4202,15 @@ function GoalDepositModal({
         amount,
         walletId: walletId || undefined,
       })
-      done(`Berhasil menyetor ${formatRupiah(amount)} ke target "${goal.name}"!`, fresh)
+      done(
+        lang === 'en'
+          ? `Successfully deposited ${formatRupiah(amount)} to "${goal.name}"!`
+          : `Berhasil menyetor ${formatRupiah(amount)} ke target "${goal.name}"!`,
+        fresh
+      )
       close()
     } catch (err: any) {
-      alert(err?.message || 'Gagal menyetor tabungan')
+      alert(err?.message || (lang === 'en' ? 'Failed to deposit savings' : 'Gagal menyetor tabungan'))
     } finally {
       setSubmitting(false)
     }
@@ -4121,7 +4222,9 @@ function GoalDepositModal({
         <div className="flex items-center gap-2">
           <PiggyBank className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
           <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Setor Saldo Tabungan</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+              {lang === 'en' ? 'Deposit Savings' : 'Setor Saldo Tabungan'}
+            </h3>
             <p className="text-xs text-slate-400">{goal.name}</p>
           </div>
         </div>
@@ -4133,7 +4236,8 @@ function GoalDepositModal({
       <RupiahInput
         value={amount}
         onChange={setAmount}
-        label="Nominal yang Disetor (Auto Rupiah) *"
+        lang={lang}
+        label={lang === 'en' ? 'Deposit Amount (Auto Rupiah) *' : 'Nominal yang Disetor (Auto Rupiah) *'}
         placeholder="Rp 0"
         required
         showPresets
@@ -4141,7 +4245,7 @@ function GoalDepositModal({
       />
 
       <CustomSelect
-        label="Potong dari Dompet / Rekening (Opsional)"
+        label={lang === 'en' ? 'Deduct from Wallet / Account (Optional)' : 'Potong dari Dompet / Rekening (Opsional)'}
         value={walletOptions.find((o) => o.value === walletId)}
         onChange={(opt) => opt && setWalletId(opt.value)}
         options={walletOptions}
@@ -4153,7 +4257,7 @@ function GoalDepositModal({
           disabled={submitting}
           className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
         >
-          {submitting ? 'Memproses...' : 'Setor Sekarang'}
+          {submitting ? (lang === 'en' ? 'Processing...' : 'Memproses...') : (lang === 'en' ? 'Deposit Now' : 'Setor Sekarang')}
         </button>
       </div>
     </form>
@@ -4164,11 +4268,13 @@ function GoalDepositModal({
 function SubscriptionModal({
   data,
   editData,
+  lang = 'en',
   close,
   done,
 }: {
   data: Data
   editData?: Subscription
+  lang?: Language
   close: () => void
   done: (msg: string, freshData?: Data) => void
 }) {
@@ -4183,9 +4289,9 @@ function SubscriptionModal({
   const [submitting, setSubmitting] = useState(false)
 
   const cycleOptions: OptionType<string>[] = [
-    { value: 'monthly', label: 'Bulanan (Tiap Bulan)' },
-    { value: 'yearly', label: 'Tahunan (Tiap Tahun)' },
-    { value: 'weekly', label: 'Mingguan (Tiap Minggu)' },
+    { value: 'monthly', label: lang === 'en' ? 'Monthly (Every Month)' : 'Bulanan (Tiap Bulan)' },
+    { value: 'yearly', label: lang === 'en' ? 'Yearly (Every Year)' : 'Tahunan (Tiap Tahun)' },
+    { value: 'weekly', label: lang === 'en' ? 'Weekly (Every Week)' : 'Mingguan (Tiap Minggu)' },
   ]
 
   const categoryOptions: OptionType<number>[] = data.categories
@@ -4200,11 +4306,11 @@ function SubscriptionModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) {
-      alert('Nama tagihan wajib diisi')
+      alert(lang === 'en' ? 'Bill name is required' : 'Nama tagihan wajib diisi')
       return
     }
     if (!amount || amount <= 0) {
-      alert('Nominal tagihan harus lebih dari 0')
+      alert(lang === 'en' ? 'Bill cost must be greater than 0' : 'Nominal tagihan harus lebih dari 0')
       return
     }
     setSubmitting(true)
@@ -4221,7 +4327,7 @@ function SubscriptionModal({
           isActive,
           reminderDaysBefore,
         })
-        done('Tagihan rutin berhasil diperbarui!', fresh)
+        done(lang === 'en' ? 'Recurring bill updated successfully!' : 'Tagihan rutin berhasil diperbarui!', fresh)
       } else {
         const fresh = await addSubscription({
           name,
@@ -4232,11 +4338,11 @@ function SubscriptionModal({
           walletId,
           reminderDaysBefore,
         })
-        done('Tagihan baru berhasil ditambahkan!', fresh)
+        done(lang === 'en' ? 'New recurring bill added!' : 'Tagihan baru berhasil ditambahkan!', fresh)
       }
       close()
     } catch (err: any) {
-      alert(err?.message || 'Gagal menyimpan tagihan')
+      alert(err?.message || (lang === 'en' ? 'Failed to save bill' : 'Gagal menyimpan tagihan'))
     } finally {
       setSubmitting(false)
     }
@@ -4248,7 +4354,7 @@ function SubscriptionModal({
         <div className="flex items-center gap-2">
           <CalendarDays className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
           <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-            {editData ? 'Edit Tagihan Rutin' : 'Catat Tagihan & Langganan Rutin'}
+            {editData ? (lang === 'en' ? 'Edit Recurring Bill' : 'Edit Tagihan Rutin') : (lang === 'en' ? 'Record Recurring Bill & Subscription' : 'Catat Tagihan & Langganan Rutin')}
           </h3>
         </div>
         <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
@@ -4257,13 +4363,15 @@ function SubscriptionModal({
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">Nama Tagihan / Langganan *</label>
+        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+          {lang === 'en' ? 'Bill / Subscription Name *' : 'Nama Tagihan / Langganan *'}
+        </label>
         <input
           type="text"
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="cth: Netflix Premium, Spotify Family, WiFi Indihome, BPJS, PLN..."
+          placeholder={lang === 'en' ? 'e.g. Netflix Premium, Spotify, Internet WiFi, Insurance...' : 'cth: Netflix Premium, Spotify Family, WiFi Indihome, BPJS, PLN...'}
           className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-100 focus:border-emerald-500 focus:outline-none"
         />
       </div>
@@ -4271,7 +4379,8 @@ function SubscriptionModal({
       <RupiahInput
         value={amount}
         onChange={setAmount}
-        label="Biaya Tagihan (Auto Rupiah) *"
+        lang={lang}
+        label={lang === 'en' ? 'Billing Cost (Auto Rupiah) *' : 'Biaya Tagihan (Auto Rupiah) *'}
         placeholder="Rp 0"
         required
         showPresets
@@ -4280,7 +4389,7 @@ function SubscriptionModal({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <CustomSelect
-          label="Siklus Tagihan"
+          label={lang === 'en' ? 'Billing Cycle' : 'Siklus Tagihan'}
           value={cycleOptions.find((o) => o.value === billingCycle)}
           onChange={(opt) => opt && setBillingCycle(opt.value)}
           options={cycleOptions}
@@ -4288,7 +4397,9 @@ function SubscriptionModal({
         />
 
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">Tanggal Jatuh Tempo (1 - 31) *</label>
+          <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+            {lang === 'en' ? 'Due Day of Month (1 - 31) *' : 'Tanggal Jatuh Tempo (1 - 31) *'}
+          </label>
           <input
             type="number"
             min={1}
@@ -4303,19 +4414,19 @@ function SubscriptionModal({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <CustomSelect
-          label="Kategori Biaya (Opsional)"
+          label={lang === 'en' ? 'Expense Category (Optional)' : 'Kategori Biaya (Opsional)'}
           value={categoryOptions.find((o) => o.value === categoryId)}
           onChange={(opt) => setCategoryId(opt?.value)}
           options={categoryOptions}
-          placeholder="Pilih Kategori"
+          placeholder={lang === 'en' ? 'Select Category' : 'Pilih Kategori'}
         />
 
         <CustomSelect
-          label="Dompet Default (Opsional)"
+          label={lang === 'en' ? 'Default Wallet (Optional)' : 'Dompet Default (Opsional)'}
           value={walletOptions.find((o) => o.value === walletId)}
           onChange={(opt) => setWalletId(opt?.value)}
           options={walletOptions}
-          placeholder="Pilih Dompet"
+          placeholder={lang === 'en' ? 'Select Wallet' : 'Pilih Dompet'}
         />
       </div>
 
@@ -4325,7 +4436,11 @@ function SubscriptionModal({
           disabled={submitting}
           className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
         >
-          {submitting ? 'Menyimpan...' : editData ? 'Perbarui Tagihan' : 'Simpan Tagihan Rutin'}
+          {submitting
+            ? (lang === 'en' ? 'Saving...' : 'Menyimpan...')
+            : editData
+              ? (lang === 'en' ? 'Update Bill' : 'Perbarui Tagihan')
+              : (lang === 'en' ? 'Save Recurring Bill' : 'Simpan Tagihan Rutin')}
         </button>
       </div>
     </form>
@@ -4336,11 +4451,13 @@ function SubscriptionModal({
 function PaySubscriptionModal({
   subscription,
   wallets,
+  lang = 'en',
   close,
   done,
 }: {
   subscription: Subscription
   wallets: WalletType[]
+  lang?: Language
   close: () => void
   done: (msg: string, freshData?: Data) => void
 }) {
@@ -4356,7 +4473,7 @@ function PaySubscriptionModal({
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!walletId) {
-      alert('Pilih dompet untuk pembayaran')
+      alert(lang === 'en' ? 'Select a wallet for payment' : 'Pilih dompet untuk pembayaran')
       return
     }
     setSubmitting(true)
@@ -4366,10 +4483,15 @@ function PaySubscriptionModal({
         walletId,
         date,
       })
-      done(`Pembayaran tagihan "${subscription.name}" sebesar ${formatRupiah(subscription.amount)} berhasil dicatat!`, fresh)
+      done(
+        lang === 'en'
+          ? `Payment of ${formatRupiah(subscription.amount)} for "${subscription.name}" recorded!`
+          : `Pembayaran tagihan "${subscription.name}" sebesar ${formatRupiah(subscription.amount)} berhasil dicatat!`,
+        fresh
+      )
       close()
     } catch (err: any) {
-      alert(err?.message || 'Gagal memproses pembayaran')
+      alert(err?.message || (lang === 'en' ? 'Failed to process payment' : 'Gagal memproses pembayaran'))
     } finally {
       setSubmitting(false)
     }
@@ -4381,7 +4503,9 @@ function PaySubscriptionModal({
         <div className="flex items-center gap-2">
           <Zap className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
           <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Bayar Tagihan</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+              {lang === 'en' ? 'Pay Bill' : 'Bayar Tagihan'}
+            </h3>
             <p className="text-xs text-slate-400">{subscription.name}</p>
           </div>
         </div>
@@ -4391,12 +4515,14 @@ function PaySubscriptionModal({
       </div>
 
       <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-4 text-center">
-        <p className="text-xs text-slate-400">Total yang akan dicatat sebagai pengeluaran:</p>
+        <p className="text-xs text-slate-400">
+          {lang === 'en' ? 'Total to be recorded as expense:' : 'Total yang akan dicatat sebagai pengeluaran:'}
+        </p>
         <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{formatRupiah(subscription.amount)}</p>
       </div>
 
       <CustomSelect
-        label="Bayar Menggunakan Dompet / Rekening *"
+        label={lang === 'en' ? 'Pay Using Wallet / Account *' : 'Bayar Menggunakan Dompet / Rekening *'}
         required
         value={walletOptions.find((o) => o.value === walletId)}
         onChange={(opt) => opt && setWalletId(opt.value)}
@@ -4404,10 +4530,11 @@ function PaySubscriptionModal({
       />
 
       <DatePickerInput
-        label="Tanggal Pembayaran *"
+        label={lang === 'en' ? 'Payment Date *' : 'Tanggal Pembayaran *'}
         required
         value={date}
         onChange={setDate}
+        lang={lang}
       />
 
       <div className="pt-2">
@@ -4416,7 +4543,9 @@ function PaySubscriptionModal({
           disabled={submitting}
           className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
         >
-          {submitting ? 'Memproses Transaksi...' : 'Konfirmasi & Catat Pembayaran'}
+          {submitting
+            ? (lang === 'en' ? 'Processing Transaction...' : 'Memproses Transaksi...')
+            : (lang === 'en' ? 'Confirm & Record Payment' : 'Konfirmasi & Catat Pembayaran')}
         </button>
       </div>
     </form>
