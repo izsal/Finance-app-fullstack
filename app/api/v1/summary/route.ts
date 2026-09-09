@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { apiError, apiSuccess, getAuthUser } from '@/lib/api-auth'
+import { apiError, apiSuccess, getAuthUser, requireProUser } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { budgets, categories, transactions, wallets } from '@/lib/schema'
 import { desc, eq } from 'drizzle-orm'
@@ -7,6 +7,7 @@ import { desc, eq } from 'drizzle-orm'
 export async function GET(req: NextRequest) {
   try {
     const user = await getAuthUser(req)
+    requireProUser(user)
 
     const [allWallets, allCategories, allBudgets, allTransactions] = await Promise.all([
       db.select().from(wallets).where(eq(wallets.userId, user.id)),
@@ -95,6 +96,9 @@ export async function GET(req: NextRequest) {
   } catch (err: any) {
     if (err?.message === 'UNAUTHORIZED') {
       return apiError('Unauthorized. Silakan sertakan header Authorization: Bearer <token>', 401)
+    }
+    if (err?.message === 'PRO_REQUIRED') {
+      return apiError('Fitur REST API eksklusif untuk pengguna Dompetku PRO. Silakan upgrade paket akun Anda di dashboard.', 403)
     }
     return apiError(err?.message || 'Gagal memuat ringkasan', 500)
   }

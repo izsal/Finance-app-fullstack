@@ -260,6 +260,13 @@ export default function Dashboard({
   }
 
   const testMobileApi = async () => {
+    if (!isPro) {
+      setShowUpgradeModal({
+        featureName: 'Integrasi Mobile REST API Android',
+        description: 'Akses API v1 untuk menghubungkan aplikasi Android, Flutter, atau automasi finansial kustom adalah fitur eksklusif Dompetku PRO.'
+      })
+      return
+    }
     setApiTesting(true)
     setApiTestResult(null)
     try {
@@ -533,7 +540,7 @@ export default function Dashboard({
     { key: 'Target Impian', label: 'Target Impian', icon: Target, isProFeature: true, badge: !isPro ? '🔒 PRO' : 'Tahap 2' },
     { key: 'Tagihan Rutin', label: 'Tagihan Rutin', icon: CalendarDays, isProFeature: true, badge: !isPro ? '🔒 PRO' : dueSoonSubs.length > 0 ? `${dueSoonSubs.length}` : undefined },
     { key: 'Kategori', label: 'Kategori', icon: Tag },
-    { key: 'Analisis', label: 'Laporan & Excel', icon: BarChart3 },
+    { key: 'Analisis', label: 'Laporan & Excel', icon: BarChart3, isProFeature: true, badge: !isPro ? '🔒 PRO' : undefined },
     { key: 'Pengaturan', label: 'Pengaturan', icon: Settings2 },
   ]
 
@@ -629,12 +636,12 @@ export default function Dashboard({
                   {!sidebarCollapsed && badge && (
                     <span
                       className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold ${tab === key
-                          ? 'bg-white/20 text-white'
-                          : badge.includes('PRO')
-                            ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                            : badge === 'Tahap 2'
-                              ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
-                              : 'bg-rose-500 text-white'
+                        ? 'bg-white/20 text-white'
+                        : badge.includes('PRO')
+                          ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                          : badge === 'Tahap 2'
+                            ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
+                            : 'bg-rose-500 text-white'
                         }`}
                     >
                       {badge}
@@ -751,6 +758,7 @@ export default function Dashboard({
             >
               <FileSpreadsheet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               <span className="hidden sm:inline">Export Excel</span>
+              {!isPro && <span className="rounded bg-amber-500/20 text-amber-700 dark:text-amber-400 text-[10px] px-1.5 py-0.5 font-black">PRO 🔒</span>}
             </button>
 
             {/* Quick Add Transaction Button */}
@@ -806,8 +814,8 @@ export default function Dashboard({
                       </div>
                       {badge && (
                         <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${badge.includes('PRO')
-                            ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                            : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
+                          ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                          : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
                           }`}>
                           {badge}
                         </span>
@@ -1200,6 +1208,7 @@ export default function Dashboard({
                   >
                     <FileSpreadsheet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     <span>Download Excel (.xlsx)</span>
+                    {!isPro && <span className="rounded bg-amber-500/20 text-amber-700 dark:text-amber-400 text-[10px] px-1.5 py-0.5 font-black">PRO 🔒</span>}
                   </button>
                   <button
                     onClick={handleExportCSV}
@@ -1270,8 +1279,8 @@ export default function Dashboard({
                         key={p.id}
                         onClick={() => setDateFilter(p.id as any)}
                         className={`rounded-lg px-2.5 py-1 font-semibold transition ${dateFilter === p.id
-                            ? 'bg-emerald-600 text-white font-bold'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                          ? 'bg-emerald-600 text-white font-bold'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                           }`}
                       >
                         {p.label}
@@ -1600,8 +1609,8 @@ export default function Dashboard({
                                 <div className="flex items-center gap-2.5">
                                   <div
                                     className={`flex h-9 w-9 items-center justify-center rounded-xl font-black text-xs ${isDueSoon
-                                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 ring-2 ring-rose-500/20'
-                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
+                                      ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 ring-2 ring-rose-500/20'
+                                      : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
                                       }`}
                                   >
                                     {s.dueDate}
@@ -1623,8 +1632,8 @@ export default function Dashboard({
                               <td className="py-4 whitespace-nowrap">
                                 <span
                                   className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${s.isActive
-                                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400'
-                                      : 'bg-slate-100 text-slate-500 dark:bg-slate-800'
+                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400'
+                                    : 'bg-slate-100 text-slate-500 dark:bg-slate-800'
                                     }`}
                                 >
                                   <span className={`h-1.5 w-1.5 rounded-full ${s.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
@@ -1826,10 +1835,10 @@ export default function Dashboard({
                             <div>
                               <span
                                 className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${isOver
-                                    ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
-                                    : isWarning
-                                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
-                                      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                  ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
+                                  : isWarning
+                                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
                                   }`}
                               >
                                 {isOver ? 'Overbudget' : isWarning ? 'Waspada' : 'Aman'} ({b.percentage}%)
@@ -2016,66 +2025,114 @@ export default function Dashboard({
 
           {/* TAB 6: ANALISIS & LAPORAN EXCEL */}
           {tab === 'Analisis' && (
-            <div className="space-y-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Laporan & Ekspor Finansial</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Unduh file spreadsheet Excel (.xlsx) komprehensif berisi ringkasan, riwayat, dompet, dan budget.
+            !isPro ? (
+              <div className="rounded-3xl border border-amber-200/80 dark:border-amber-900/60 bg-gradient-to-br from-amber-50/60 via-white to-amber-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/30 p-8 sm:p-12 text-center shadow-sm max-w-3xl mx-auto space-y-6">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                  <Lock className="h-8 w-8" />
+                </div>
+                <div className="space-y-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/80 px-3 py-1 text-xs font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                    <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                    FITUR EKSKLUSIF DOMPETKU PRO
+                  </span>
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+                    Laporan Lengkap & Ekspor Excel (.xlsx) Multi-Sheet
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
+                    Unduh file spreadsheet Excel komprehensif 5 Sheet terpisah (Ringkasan, Transaksi, Budget, Rekening, dan Kategori) dengan format rapi dan formula saldo siap pakai untuk Microsoft Excel & Google Sheets.
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+
+                <div className="grid gap-3 sm:grid-cols-2 text-left max-w-lg mx-auto pt-2">
+                  {[
+                    'Sheet 1: Ringkasan Finansial & Net Savings',
+                    'Sheet 2: Riwayat Lengkap Seluruh Transaksi',
+                    'Sheet 3: Analisis Realisasi Budget Bulanan',
+                    'Sheet 4: Saldo & Mutasi Seluruh Dompet / Akun',
+                    'Sheet 5: Rekapitulasi Nominal Per Kategori',
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-4">
                   <button
-                    onClick={handleExportExcel}
-                    className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700 transition active:scale-95"
+                    onClick={() => setShowUpgradeModal({
+                      featureName: 'Laporan & Ekspor Excel (.xlsx)',
+                      description: 'Unduh seluruh catatan transaksi, buku kas, dan ringkasan anggaran Anda dalam format spreadsheet Excel (.xlsx) rapi dengan formula otomatis di Dompetku PRO.'
+                    })}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 py-3.5 text-xs font-black text-white shadow-xl shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700 transition active:scale-95"
                   >
-                    <FileSpreadsheet className="h-4 w-4" />
-                    <span>Download Excel Komprehensif (.xlsx)</span>
+                    <Sparkles className="h-4 w-4 text-amber-300" />
+                    <span>Buka Akses Laporan & Excel (Upgrade PRO)</span>
                   </button>
                 </div>
               </div>
-
-              <div className="rounded-3xl border border-emerald-200/80 dark:border-emerald-900/60 bg-gradient-to-br from-emerald-50/70 via-white to-teal-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-emerald-950/30 p-8 shadow-sm">
-                <div className="max-w-2xl space-y-3">
-                  <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                    <Sparkles className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                    Fitur Ekspor Excel Multi-Sheet
-                  </span>
-                  <h3 className="text-xl font-black text-slate-900 dark:text-white">
-                    Laporan Lengkap Siap Pakai untuk Pembukuan & Akuntansi
-                  </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                    Format Excel yang di-generate sudah otomatis terbagi ke dalam 5 Sheet terpisah dengan kolom rapi,
-                    perhitungan formula saldo, dan format angka Rupiah Indonesia yang siap diprint atau dianalisis
-                    lebih lanjut di Microsoft Excel, Google Sheets, atau Apple Numbers.
-                  </p>
-
-                  <div className="grid gap-3 pt-4 sm:grid-cols-2">
-                    {[
-                      'Sheet 1: Ringkasan Finansial & Net Savings',
-                      'Sheet 2: Riwayat Lengkap Seluruh Transaksi',
-                      'Sheet 3: Analisis Realisasi Budget Bulanan',
-                      'Sheet 4: Saldo & Mutasi Seluruh Dompet / Akun',
-                      'Sheet 5: Rekapitulasi Nominal Per Kategori',
-                    ].map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                        <span>{item}</span>
-                      </div>
-                    ))}
+            ) : (
+              <div className="space-y-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Laporan & Ekspor Finansial</h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Unduh file spreadsheet Excel (.xlsx) komprehensif berisi ringkasan, riwayat, dompet, dan budget.
+                    </p>
                   </div>
-
-                  <div className="pt-6">
+                  <div className="flex items-center gap-3">
                     <button
                       onClick={handleExportExcel}
-                      className="rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
+                      className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700 transition active:scale-95"
                     >
-                      Klik Di Sini Untuk Download (.xlsx)
+                      <FileSpreadsheet className="h-4 w-4" />
+                      <span>Download Excel Komprehensif (.xlsx)</span>
                     </button>
                   </div>
                 </div>
+
+                <div className="rounded-3xl border border-emerald-200/80 dark:border-emerald-900/60 bg-gradient-to-br from-emerald-50/70 via-white to-teal-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-emerald-950/30 p-8 shadow-sm">
+                  <div className="max-w-2xl space-y-3">
+                    <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                      <Sparkles className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                      Fitur Ekspor Excel Multi-Sheet
+                    </span>
+                    <h3 className="text-xl font-black text-slate-900 dark:text-white">
+                      Laporan Lengkap Siap Pakai untuk Pembukuan & Akuntansi
+                    </h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                      Format Excel yang di-generate sudah otomatis terbagi ke dalam 5 Sheet terpisah dengan kolom rapi,
+                      perhitungan formula saldo, dan format angka Rupiah Indonesia yang siap diprint atau dianalisis
+                      lebih lanjut di Microsoft Excel, Google Sheets, atau Apple Numbers.
+                    </p>
+
+                    <div className="grid gap-3 pt-4 sm:grid-cols-2">
+                      {[
+                        'Sheet 1: Ringkasan Finansial & Net Savings',
+                        'Sheet 2: Riwayat Lengkap Seluruh Transaksi',
+                        'Sheet 3: Analisis Realisasi Budget Bulanan',
+                        'Sheet 4: Saldo & Mutasi Seluruh Dompet / Akun',
+                        'Sheet 5: Rekapitulasi Nominal Per Kategori',
+                      ].map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="pt-6">
+                      <button
+                        onClick={handleExportExcel}
+                        className="rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
+                      >
+                        Klik Di Sini Untuk Download (.xlsx)
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            )
           )}
 
           {/* TAB 7: PENGATURAN (SETTINGS) */}
@@ -2110,8 +2167,8 @@ export default function Dashboard({
                       key={t.id}
                       onClick={() => handleThemeChange(t.id as any)}
                       className={`relative flex flex-col items-start rounded-2xl border p-4 text-left transition-all ${theme === t.id
-                          ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
-                          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+                        ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
+                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
                         }`}
                     >
                       <div className="flex items-center justify-between w-full">
@@ -2159,8 +2216,8 @@ export default function Dashboard({
                   <button
                     onClick={toggleSidebar}
                     className={`rounded-xl px-4 py-2 text-xs font-bold transition ${sidebarCollapsed
-                        ? 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-300'
-                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                      ? 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-300'
+                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
                       }`}
                   >
                     {sidebarCollapsed ? 'Tampilkan Penuh' : 'Sembunyikan'}
@@ -2169,28 +2226,75 @@ export default function Dashboard({
               </div>
 
               {/* 3. Mobile REST API & Android Integration Card (Tahap 1 & Tahap 2) */}
-              <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-6">
-                <div className="flex items-start justify-between">
+              <div className={`rounded-3xl border ${!isPro ? 'border-amber-200/80 dark:border-amber-900/60 bg-gradient-to-br from-amber-50/40 via-white to-slate-50 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20' : 'border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900'} p-6 sm:p-8 shadow-sm space-y-6 relative`}>
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                      <Smartphone className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                      <span>Integrasi REST API Aplikasi Android (Tahap 1 & 2)</span>
-                    </h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <Smartphone className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                        <span>Integrasi REST API Aplikasi Android (Tahap 1 & 2)</span>
+                      </h3>
+                      {isPro ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 text-[10px] font-black tracking-wider text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                          PRO ACTIVE ⭐
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950/80 px-2.5 py-0.5 text-[10px] font-black tracking-wider text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                          🔒 PRO EXCLUSIVE
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-slate-400 mt-1">
                       Backend REST API v1 siap digunakan untuk menghubungkan aplikasi Android / Flutter / Kotlin.
                     </p>
                   </div>
-                  <a
-                    href="/api/v1"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100"
-                  >
-                    <Code2 className="h-4 w-4 text-emerald-600" />
-                    <span>Lihat Spesifikasi JSON</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
+                  {isPro ? (
+                    <a
+                      href="/api/v1"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 transition self-start"
+                    >
+                      <Code2 className="h-4 w-4 text-emerald-600" />
+                      <span>Lihat Spesifikasi JSON</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  ) : (
+                    <button
+                      onClick={() => setShowUpgradeModal({
+                        featureName: 'Integrasi Mobile REST API Android',
+                        description: 'Akses spesifikasi dan endpoint REST API v1 eksklusif untuk pengguna Dompetku PRO.'
+                      })}
+                      className="flex items-center gap-1.5 rounded-xl border border-amber-200 dark:border-amber-800/80 bg-amber-50 dark:bg-amber-950/50 px-3 py-1.5 text-xs font-bold text-amber-700 dark:text-amber-300 hover:bg-amber-100 transition self-start"
+                    >
+                      <Lock className="h-3.5 w-3.5 text-amber-600" />
+                      <span>Spesifikasi PRO 🔒</span>
+                    </button>
+                  )}
                 </div>
+
+                {!isPro && (
+                  <div className="rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-500/10 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400">
+                        <Lock className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-amber-900 dark:text-amber-200">Akses REST API Android Terkunci</p>
+                        <p className="text-[11px] text-amber-700 dark:text-amber-400">Upgrade ke Dompetku PRO untuk membuka Bearer token autentikasi & seluruh endpoint REST API v1.</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowUpgradeModal({
+                        featureName: 'Integrasi Mobile REST API Android',
+                        description: 'Akses API v1 untuk menghubungkan aplikasi Android, iOS, atau automasi finansial kustom adalah fitur eksklusif Dompetku PRO.'
+                      })}
+                      className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 px-4 py-2 text-xs font-black text-white shadow-md shadow-amber-500/20 transition shrink-0"
+                    >
+                      Upgrade ke PRO
+                    </button>
+                  </div>
+                )}
 
                 <div className="space-y-3">
                   <div className="grid gap-2.5 sm:grid-cols-2">
@@ -2221,8 +2325,12 @@ export default function Dashboard({
                       disabled={apiTesting}
                       className="flex items-center gap-2 rounded-xl bg-slate-900 dark:bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-slate-800 dark:hover:bg-emerald-700 transition disabled:opacity-50"
                     >
-                      <Terminal className="h-4 w-4 text-emerald-400 dark:text-white" />
-                      <span>{apiTesting ? 'Menguji API...' : 'Test Request API (/api/v1/summary)'}</span>
+                      {isPro ? (
+                        <Terminal className="h-4 w-4 text-emerald-400 dark:text-white" />
+                      ) : (
+                        <Lock className="h-4 w-4 text-amber-400" />
+                      )}
+                      <span>{apiTesting ? 'Menguji API...' : !isPro ? 'Test Request API (Perlu PRO 🔒)' : 'Test Request API (/api/v1/summary)'}</span>
                     </button>
 
                     {apiTestResult && (
@@ -2314,8 +2422,8 @@ export default function Dashboard({
 
                 {emailStatus && (
                   <div className={`rounded-xl p-3 text-xs flex items-center gap-2 ${emailStatus.type === 'success'
-                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                      : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                    : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
                     }`}>
                     {emailStatus.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
                     <span>{emailStatus.message}</span>
@@ -2336,8 +2444,8 @@ export default function Dashboard({
                 </div>
 
                 <div className={`rounded-2xl border p-5 transition-all ${isPro
-                    ? 'border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-emerald-500/5 to-transparent'
-                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40'
+                  ? 'border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-emerald-500/5 to-transparent'
+                  : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40'
                   }`}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
@@ -2423,8 +2531,8 @@ export default function Dashboard({
                 >
                   {nameStatus && (
                     <div className={`rounded-xl p-3 text-xs flex items-center gap-2 ${nameStatus.type === 'success'
-                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                        : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                      : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
                       }`}>
                       {nameStatus.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
                       <span>{nameStatus.message}</span>
@@ -2521,8 +2629,8 @@ export default function Dashboard({
                 >
                   {passwordStatus && (
                     <div className={`rounded-xl p-3 text-xs flex items-center gap-2 ${passwordStatus.type === 'success'
-                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                        : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                      : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
                       }`}>
                       {passwordStatus.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
                       <span>{passwordStatus.message}</span>

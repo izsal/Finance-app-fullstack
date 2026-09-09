@@ -9,6 +9,7 @@ export interface AuthUser {
   name: string
   email: string
   emailVerified: boolean
+  plan?: string
   image?: string | null
 }
 
@@ -34,6 +35,12 @@ export function apiError(message = 'Terjadi kesalahan', status = 400, errors: an
     },
     { status }
   )
+}
+
+export function requireProUser(user: AuthUser) {
+  if (user.plan !== 'pro') {
+    throw new Error('PRO_REQUIRED')
+  }
 }
 
 export async function getAuthUser(req: NextRequest): Promise<AuthUser> {
@@ -62,6 +69,7 @@ export async function getAuthUser(req: NextRequest): Promise<AuthUser> {
             name: foundUser[0].name,
             email: foundUser[0].email,
             emailVerified: foundUser[0].emailVerified,
+            plan: foundUser[0].plan || 'free',
             image: foundUser[0].image,
           }
         }
@@ -73,11 +81,18 @@ export async function getAuthUser(req: NextRequest): Promise<AuthUser> {
   try {
     const session = await auth.api.getSession({ headers: req.headers })
     if (session?.user) {
+      const userRecord = await db
+        .select()
+        .from(userTable)
+        .where(eq(userTable.id, session.user.id))
+        .limit(1)
+
       return {
         id: session.user.id,
         name: session.user.name,
         email: session.user.email,
         emailVerified: session.user.emailVerified,
+        plan: userRecord[0]?.plan || 'free',
         image: session.user.image,
       }
     }

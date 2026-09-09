@@ -4,7 +4,9 @@ export async function GET() {
   return NextResponse.json({
     name: 'Dompetku Mobile REST API',
     version: '1.2.0',
-    description: 'API backend untuk integrasi aplikasi Android, iOS, dan web clients.',
+    tier: 'PRO Exclusive',
+    planRequired: 'Dompetku PRO',
+    description: 'API backend untuk integrasi aplikasi Android, iOS, dan web clients. Memerlukan paket Dompetku PRO.',
     baseUrl: '/api/v1',
     authentication: {
       type: 'Bearer Token',
