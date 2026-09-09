@@ -50,7 +50,9 @@ import {
   ExternalLink,
   FileSpreadsheet,
   Filter,
+  Globe,
   KeyRound,
+  Languages,
   Layers,
   LayoutDashboard,
   Lock,
@@ -89,6 +91,7 @@ import { RupiahInput } from '@/components/rupiah-input'
 import { CustomSelect, CustomCreatableSelect, type OptionType } from '@/components/custom-select'
 import { DatePickerInput } from '@/components/date-picker-input'
 import { exportFinanceToExcel } from '@/lib/excel-export'
+import { t, type Language } from '@/lib/i18n'
 import {
   Area,
   AreaChart,
@@ -147,6 +150,7 @@ export default function Dashboard({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('light')
+  const [lang, setLang] = useState<Language>('en')
   const [apiTestResult, setApiTestResult] = useState<string | null>(null)
   const [apiTesting, setApiTesting] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -168,12 +172,14 @@ export default function Dashboard({
   const [isResendingEmail, setIsResendingEmail] = useState(false)
   const [emailStatus, setEmailStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
-  // Initialize and persist theme & sidebar state
+  // Initialize and persist theme, language & sidebar state
   useEffect(() => {
     const savedTheme = (localStorage.getItem('dompetku-theme') as 'light' | 'dark' | 'system') || 'light'
     const savedSidebar = localStorage.getItem('dompetku-sidebar') === 'true'
+    const savedLang = (localStorage.getItem('dompetku-lang') as Language) || 'en'
     setTheme(savedTheme)
     setSidebarCollapsed(savedSidebar)
+    setLang(savedLang)
 
     applyTheme(savedTheme)
   }, [])
@@ -192,7 +198,13 @@ export default function Dashboard({
     setTheme(newTheme)
     localStorage.setItem('dompetku-theme', newTheme)
     applyTheme(newTheme)
-    showToast(`Tema diganti ke mode ${newTheme === 'dark' ? 'Gelap' : newTheme === 'light' ? 'Terang' : 'Sistem'}`)
+    showToast(lang === 'en' ? `Theme switched to ${newTheme} mode` : `Tema diganti ke mode ${newTheme === 'dark' ? 'Gelap' : newTheme === 'light' ? 'Terang' : 'Sistem'}`)
+  }
+
+  const handleLanguageChange = (newLang: Language) => {
+    setLang(newLang)
+    localStorage.setItem('dompetku-lang', newLang)
+    showToast(newLang === 'en' ? 'Language switched to English (US)!' : 'Bahasa dialihkan ke Bahasa Indonesia!', 'success')
   }
 
   const toggleSidebar = () => {
@@ -533,15 +545,15 @@ export default function Dashboard({
   ]
 
   const navMenuItems = [
-    { key: 'Overview', label: 'Overview', icon: LayoutDashboard },
-    { key: 'Transaksi', label: 'Transaksi', icon: Receipt },
-    { key: 'Dompet', label: 'Dompet & Akun', icon: WalletCards },
-    { key: 'Budget', label: 'Budget Bulanan', icon: PiggyBank, isProFeature: true, badge: !isPro ? '🔒 PRO' : undefined },
-    { key: 'Target Impian', label: 'Target Impian', icon: Target, isProFeature: true, badge: !isPro ? '🔒 PRO' : 'Tahap 2' },
-    { key: 'Tagihan Rutin', label: 'Tagihan Rutin', icon: CalendarDays, isProFeature: true, badge: !isPro ? '🔒 PRO' : dueSoonSubs.length > 0 ? `${dueSoonSubs.length}` : undefined },
-    { key: 'Kategori', label: 'Kategori', icon: Tag },
-    { key: 'Analisis', label: 'Laporan & Excel', icon: BarChart3, isProFeature: true, badge: !isPro ? '🔒 PRO' : undefined },
-    { key: 'Pengaturan', label: 'Pengaturan', icon: Settings2 },
+    { key: 'Overview', label: t('nav_overview', lang), icon: LayoutDashboard },
+    { key: 'Transaksi', label: t('nav_transactions', lang), icon: Receipt },
+    { key: 'Dompet', label: t('nav_wallets', lang), icon: WalletCards },
+    { key: 'Budget', label: t('nav_budget', lang), icon: PiggyBank, isProFeature: true, badge: !isPro ? '🔒 PRO' : undefined },
+    { key: 'Target Impian', label: t('nav_goals', lang), icon: Target, isProFeature: true, badge: !isPro ? '🔒 PRO' : lang === 'en' ? 'Phase 2' : 'Tahap 2' },
+    { key: 'Tagihan Rutin', label: t('nav_subscriptions', lang), icon: CalendarDays, isProFeature: true, badge: !isPro ? '🔒 PRO' : dueSoonSubs.length > 0 ? `${dueSoonSubs.length}` : undefined },
+    { key: 'Kategori', label: t('nav_categories', lang), icon: Tag },
+    { key: 'Analisis', label: t('nav_reports', lang), icon: BarChart3, isProFeature: true, badge: !isPro ? '🔒 PRO' : undefined },
+    { key: 'Pengaturan', label: t('nav_settings', lang), icon: Settings2 },
   ]
 
   return (
@@ -606,7 +618,7 @@ export default function Dashboard({
 
           <div className="mt-6">
             {!sidebarCollapsed && (
-              <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">Menu Utama</p>
+              <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">{t('nav_main_menu', lang)}</p>
             )}
             <nav className="mt-2 space-y-1">
               {navMenuItems.map(({ key, label, icon: Icon, badge, isProFeature }) => (
@@ -720,7 +732,7 @@ export default function Dashboard({
             </button>
 
             <div>
-              <p className="text-xs font-medium text-slate-400">Halo, selamat datang</p>
+              <p className="text-xs font-medium text-slate-400">{lang === 'en' ? 'Welcome back,' : 'Halo, selamat datang'}</p>
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-bold text-slate-900 dark:text-white lg:text-xl">{currentUser.name}</h1>
                 {isPro ? (
@@ -741,11 +753,21 @@ export default function Dashboard({
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
+            {/* Quick Language Switcher in Header */}
+            <button
+              onClick={() => handleLanguageChange(lang === 'en' ? 'id' : 'en')}
+              title={lang === 'en' ? 'Beralih ke Bahasa Indonesia' : 'Switch to English'}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-sm"
+            >
+              <Languages className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <span>{lang === 'en' ? '🇺🇸 EN' : '🇮🇩 ID'}</span>
+            </button>
+
             {/* Quick Dark Mode Switcher in Header */}
             <button
               onClick={() => handleThemeChange(theme === 'dark' ? 'light' : 'dark')}
-              title={`Beralih ke mode ${theme === 'dark' ? 'Terang' : 'Gelap'}`}
+              title={theme === 'dark' ? t('switch_theme_light', lang) : t('switch_theme_dark', lang)}
               className="flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-sm"
             >
               {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-600" />}
@@ -757,7 +779,7 @@ export default function Dashboard({
               className="flex items-center gap-2 rounded-xl border border-emerald-600/30 bg-emerald-50/70 dark:bg-emerald-950/40 px-3.5 py-2.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-950 transition shadow-sm"
             >
               <FileSpreadsheet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              <span className="hidden sm:inline">Export Excel</span>
+              <span className="hidden sm:inline">{t('export_excel', lang)}</span>
               {!isPro && <span className="rounded bg-amber-500/20 text-amber-700 dark:text-amber-400 text-[10px] px-1.5 py-0.5 font-black">PRO 🔒</span>}
             </button>
 
@@ -767,7 +789,7 @@ export default function Dashboard({
               className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition active:scale-95"
             >
               <Plus className="h-4 w-4" />
-              <span>Tambah Transaksi</span>
+              <span>{t('add_transaction', lang)}</span>
             </button>
           </div>
         </header>
@@ -827,14 +849,25 @@ export default function Dashboard({
 
               <div className="pt-4 border-t dark:border-slate-800 space-y-2">
                 <button
+                  onClick={() => handleLanguageChange(lang === 'en' ? 'id' : 'en')}
+                  className="flex w-full items-center justify-between rounded-xl bg-slate-100 dark:bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                >
+                  <span className="flex items-center gap-2">
+                    <Languages className="h-4 w-4 text-emerald-500" />
+                    <span>Language ({lang === 'en' ? 'English 🇺🇸' : 'Indonesia 🇮🇩'})</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400">Switch</span>
+                </button>
+
+                <button
                   onClick={() => handleThemeChange(theme === 'dark' ? 'light' : 'dark')}
                   className="flex w-full items-center justify-between rounded-xl bg-slate-100 dark:bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300"
                 >
                   <span className="flex items-center gap-2">
                     {theme === 'dark' ? <Moon className="h-4 w-4 text-emerald-400" /> : <Sun className="h-4 w-4 text-amber-500" />}
-                    <span>Mode {theme === 'dark' ? 'Gelap' : 'Terang'}</span>
+                    <span>{lang === 'en' ? `Mode: ${theme === 'dark' ? 'Dark' : 'Light'}` : `Mode ${theme === 'dark' ? 'Gelap' : 'Terang'}`}</span>
                   </span>
-                  <span className="text-[10px] text-slate-400">Ubah</span>
+                  <span className="text-[10px] text-slate-400">{lang === 'en' ? 'Change' : 'Ubah'}</span>
                 </button>
                 <button
                   onClick={async () => {
@@ -860,10 +893,10 @@ export default function Dashboard({
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                    Ringkasan Keuangan
+                    {t('overview_title', lang)}
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                    Pantau arus kas, target tabungan, tagihan rutin, dan alokasi budget Anda secara real-time.
+                    {t('overview_subtitle', lang)}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -872,7 +905,7 @@ export default function Dashboard({
                     className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                   >
                     <ArrowLeftRight className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>Transfer Saldo</span>
+                    <span>{t('transfer_balance', lang)}</span>
                   </button>
                   <button
                     onClick={() => {
@@ -888,7 +921,7 @@ export default function Dashboard({
                     className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                   >
                     <Target className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>Target Impian</span>
+                    <span>{t('nav_goals', lang)}</span>
                     {!isPro && <span className="text-[9px] font-bold text-amber-500">PRO</span>}
                   </button>
                 </div>
@@ -898,21 +931,21 @@ export default function Dashboard({
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-900 dark:to-slate-950 p-6 text-white shadow-xl shadow-slate-900/10">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-300">Total Seluruh Saldo</span>
+                    <span className="text-xs font-semibold text-slate-300">{t('total_balance', lang)}</span>
                     <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 backdrop-blur-md">
                       <WalletCards className="h-4 w-4 text-emerald-400" />
                     </div>
                   </div>
                   <p className="mt-4 text-2xl font-black tracking-tight">{formatRupiah(totalBalance)}</p>
                   <div className="mt-3 flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-white/10">
-                    <span>{calculatedWallets.length} Akun / Dompet</span>
-                    <span className="text-emerald-400 font-semibold">Terkonsolidasi</span>
+                    <span>{calculatedWallets.length} {t('accounts_consolidated', lang)}</span>
+                    <span className="text-emerald-400 font-semibold">{t('consolidated', lang)}</span>
                   </div>
                 </div>
 
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Pemasukan</span>
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('total_income', lang)}</span>
                     <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
                       <ArrowDownRight className="h-4 w-4" />
                     </div>
@@ -921,13 +954,13 @@ export default function Dashboard({
                     {formatRupiah(totalIncome)}
                   </p>
                   <p className="mt-3 text-xs text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
-                    Akumulasi arus kas masuk
+                    {t('accumulated_income', lang)}
                   </p>
                 </div>
 
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Pengeluaran</span>
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('total_expense', lang)}</span>
                     <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
                       <ArrowUpRight className="h-4 w-4" />
                     </div>
@@ -936,13 +969,13 @@ export default function Dashboard({
                     {formatRupiah(totalExpense)}
                   </p>
                   <p className="mt-3 text-xs text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
-                    Akumulasi biaya tercatat
+                    {t('accumulated_expense', lang)}
                   </p>
                 </div>
 
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Net Tabungan</span>
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('net_savings', lang)}</span>
                     <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400 font-bold text-xs">
                       {savingsRate}%
                     </div>
@@ -951,7 +984,7 @@ export default function Dashboard({
                     {formatRupiah(netSavings)}
                   </p>
                   <p className="mt-3 text-xs text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
-                    Rasio Tabungan: <span className="font-semibold text-teal-700 dark:text-teal-400">{savingsRate}%</span>
+                    {t('savings_rate', lang)}: <span className="font-semibold text-teal-700 dark:text-teal-400">{savingsRate}%</span>
                   </p>
                 </div>
               </div>
@@ -967,14 +1000,14 @@ export default function Dashboard({
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-slate-900 dark:text-white text-base">Target Tabungan Impian</h3>
+                          <h3 className="font-bold text-slate-900 dark:text-white text-base">{t('goals_tracker', lang)}</h3>
                           {!isPro && (
                             <span className="rounded-full bg-amber-100 dark:bg-amber-950/80 px-2 py-0.5 text-[9px] font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
                               🔒 PRO
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] text-slate-400">Pencapaian: {overallGoalPercentage}% dari {formatRupiah(totalGoalTarget)}</p>
+                        <p className="text-[11px] text-slate-400">{t('goals_progress', lang)}: {overallGoalPercentage}% / {formatRupiah(totalGoalTarget)}</p>
                       </div>
                     </div>
                     <button
@@ -990,7 +1023,7 @@ export default function Dashboard({
                       }}
                       className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1.5"
                     >
-                      <span>Buka Goals</span>
+                      <span>{t('open_goals', lang)}</span>
                       {!isPro && <span className="rounded bg-amber-500/20 text-amber-700 dark:text-amber-400 text-[10px] px-1.5 py-0.5 font-black">PRO 🔒</span>}
                       <ChevronRight className="h-3.5 w-3.5" />
                     </button>
@@ -1002,9 +1035,9 @@ export default function Dashboard({
                         <Lock className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Target Impian Terkunci (Eksklusif PRO)</p>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{t('goals_locked_title', lang)}</p>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
-                          Pasang target menabung untuk membeli rumah, mobil, liburan, atau dana darurat dengan progress bar & kalkulator otomatis.
+                          {t('goals_locked_desc', lang)}
                         </p>
                       </div>
                       <button
@@ -1015,7 +1048,7 @@ export default function Dashboard({
                         className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-xs font-black text-white shadow hover:from-emerald-700 hover:to-teal-700 transition"
                       >
                         <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-                        <span>Buka Akses Target Impian</span>
+                        <span>{t('open_pro_goals', lang)}</span>
                       </button>
                     </div>
                   ) : goalsList.length > 0 ? (
@@ -1032,8 +1065,8 @@ export default function Dashboard({
                               <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
                             </div>
                             <div className="flex items-center justify-between text-[11px] text-slate-400 mt-2">
-                              <span>Terkumpul: {formatRupiah(g.currentAmount)}</span>
-                              <span>Target: {formatRupiah(g.targetAmount)}</span>
+                              <span>{t('collected', lang)}: {formatRupiah(g.currentAmount)}</span>
+                              <span>{t('target', lang)}: {formatRupiah(g.targetAmount)}</span>
                             </div>
                           </div>
                         )
@@ -1041,7 +1074,7 @@ export default function Dashboard({
                     </div>
                   ) : (
                     <div className="py-6 text-center text-xs text-slate-400">
-                      Belum ada target tabungan impian. Pasang target pertama Anda!
+                      {t('no_goals', lang)}
                     </div>
                   )}
                 </div>
@@ -1055,14 +1088,14 @@ export default function Dashboard({
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-slate-900 dark:text-white text-base">Tagihan Rutin & Langganan</h3>
+                          <h3 className="font-bold text-slate-900 dark:text-white text-base">{t('bills_tracker', lang)}</h3>
                           {!isPro && (
                             <span className="rounded-full bg-amber-100 dark:bg-amber-950/80 px-2 py-0.5 text-[9px] font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
                               🔒 PRO
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] text-slate-400">Estimasi bulanan: {formatRupiah(totalMonthlyBills)}</p>
+                        <p className="text-[11px] text-slate-400">{t('monthly_est', lang)}: {formatRupiah(totalMonthlyBills)}</p>
                       </div>
                     </div>
                     <button
@@ -1078,7 +1111,7 @@ export default function Dashboard({
                       }}
                       className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1.5"
                     >
-                      <span>Buka Tagihan</span>
+                      <span>{t('open_bills', lang)}</span>
                       {!isPro && <span className="rounded bg-amber-500/20 text-amber-700 dark:text-amber-400 text-[10px] px-1.5 py-0.5 font-black">PRO 🔒</span>}
                       <ChevronRight className="h-3.5 w-3.5" />
                     </button>
@@ -1090,9 +1123,9 @@ export default function Dashboard({
                         <Lock className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Tagihan Rutin Terkunci (Eksklusif PRO)</p>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{t('bills_locked_title', lang)}</p>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
-                          Kelola langganan berkala (Netflix, Spotify, listrik, WiFi) dan hindari denda keterlambatan dengan alarm pengingat H-3.
+                          {t('bills_locked_desc', lang)}
                         </p>
                       </div>
                       <button
@@ -1103,7 +1136,7 @@ export default function Dashboard({
                         className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-xs font-black text-white shadow hover:from-emerald-700 hover:to-teal-700 transition"
                       >
                         <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-                        <span>Buka Akses Tagihan Rutin</span>
+                        <span>{t('open_pro_bills', lang)}</span>
                       </button>
                     </div>
                   ) : subsList.length > 0 ? (
@@ -1278,8 +1311,12 @@ export default function Dashboard({
             <div className="space-y-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Riwayat & Daftar Transaksi</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Kelola dan telusuri seluruh transaksi Anda dengan filter lengkap.</p>
+                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                    {t('tx_title', lang)}
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {t('tx_subtitle', lang)}
+                  </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button
@@ -1287,7 +1324,7 @@ export default function Dashboard({
                     className="flex items-center gap-2 rounded-xl border border-emerald-600/30 bg-emerald-50 dark:bg-emerald-950/40 px-3.5 py-2.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-950 transition shadow-sm"
                   >
                     <FileSpreadsheet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>Download Excel (.xlsx)</span>
+                    <span>{t('download_excel', lang)}</span>
                     {!isPro && <span className="rounded bg-amber-500/20 text-amber-700 dark:text-amber-400 text-[10px] px-1.5 py-0.5 font-black">PRO 🔒</span>}
                   </button>
                   <button
@@ -1295,14 +1332,14 @@ export default function Dashboard({
                     className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                   >
                     <Download className="h-4 w-4 text-slate-500" />
-                    <span>Export CSV</span>
+                    <span>{t('export_csv', lang)}</span>
                   </button>
                   <button
                     onClick={() => setShowModal({ type: 'transaction' })}
                     className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
                   >
                     <Plus className="h-4 w-4" />
-                    <span>Tambah Transaksi</span>
+                    <span>{t('add_transaction', lang)}</span>
                   </button>
                 </div>
               </div>
@@ -1507,33 +1544,35 @@ export default function Dashboard({
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Target Tabungan Impian</h2>
+                      <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                        {t('goals_tab_title', lang)}
+                      </h2>
                       <span className="rounded-xl bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
                         Tahap 2
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      Wujudkan impian masa depan Anda seperti Beli Rumah, Dana Darurat, Liburan, atau Kendaraan.
+                      {t('goals_tab_subtitle', lang)}
                     </p>
                   </div>
                   <button
                     onClick={() => setShowModal({ type: 'goal' })}
                     className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
                   >
-                  <Plus className="h-4 w-4" />
-                  <span>Buat Target Baru</span>
-                </button>
-              </div>
+                    <Plus className="h-4 w-4" />
+                    <span>{t('create_goal', lang)}</span>
+                  </button>
+                </div>
 
               {/* Goals Summary Stats */}
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                  <p className="text-xs text-slate-400 font-semibold">Total Nilai Target</p>
+                  <p className="text-xs text-slate-400 font-semibold">{t('total_goal_target', lang)}</p>
                   <p className="text-xl font-black text-slate-900 dark:text-white mt-1">{formatRupiah(totalGoalTarget)}</p>
-                  <p className="text-[11px] text-slate-400 mt-2">{goalsList.length} Target aktif terdaftar</p>
+                  <p className="text-[11px] text-slate-400 mt-2">{goalsList.length} {t('active_goals_count', lang)}</p>
                 </div>
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                  <p className="text-xs text-slate-400 font-semibold">Total Terkumpul Saat Ini</p>
+                  <p className="text-xs text-slate-400 font-semibold">{t('total_goal_saved', lang)}</p>
                   <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{formatRupiah(totalGoalSaved)}</p>
                   <p className="text-[11px] text-slate-400 mt-2">Sisa target: {formatRupiah(Math.max(0, totalGoalTarget - totalGoalSaved))}</p>
                 </div>
@@ -1717,30 +1756,32 @@ export default function Dashboard({
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Manajemen Tagihan & Langganan Rutin</h2>
+                      <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                        {t('bills_tab_title', lang)}
+                      </h2>
                       <span className="rounded-xl bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
                         Tahap 2
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      Pantau biaya berulang seperti Netflix, Spotify, BPJS, Listrik PLN, WiFi, dan cicilan bulanan.
+                      {t('bills_tab_subtitle', lang)}
                     </p>
                   </div>
                   <button
                     onClick={() => setShowModal({ type: 'subscription' })}
                     className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
                   >
-                  <Plus className="h-4 w-4" />
-                  <span>Tambah Tagihan Baru</span>
-                </button>
-              </div>
+                    <Plus className="h-4 w-4" />
+                    <span>{t('add_bill', lang)}</span>
+                  </button>
+                </div>
 
               {/* Subscriptions Metrics */}
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                  <p className="text-xs text-slate-400 font-semibold">Total Beban Tagihan Bulanan</p>
+                  <p className="text-xs text-slate-400 font-semibold">{t('total_monthly_bills', lang)}</p>
                   <p className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1">{formatRupiah(totalMonthlyBills)}</p>
-                  <p className="text-[11px] text-slate-400 mt-2">{subsList.filter((s) => s.isActive).length} Langganan aktif</p>
+                  <p className="text-[11px] text-slate-400 mt-2">{subsList.filter((s) => s.isActive).length} {t('active_subs_count', lang)}</p>
                 </div>
 
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
@@ -1881,9 +1922,11 @@ export default function Dashboard({
             <div className="space-y-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Kelola Dompet & Rekening</h2>
+                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                    {t('wallets_title', lang)}
+                  </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Atur rekening bank, e-wallet, uang tunai, dan lakukan transfer antar saldo.
+                    {t('wallets_subtitle', lang)}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -1892,14 +1935,14 @@ export default function Dashboard({
                     className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                   >
                     <ArrowLeftRight className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>Transfer Antar Dompet</span>
+                    <span>{t('transfer_between_wallets', lang)}</span>
                   </button>
                   <button
                     onClick={() => setShowModal({ type: 'wallet' })}
                     className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
                   >
                     <Plus className="h-4 w-4" />
-                    <span>Tambah Dompet Baru</span>
+                    <span>{t('add_wallet', lang)}</span>
                   </button>
                 </div>
               </div>
@@ -2016,9 +2059,11 @@ export default function Dashboard({
               <div className="space-y-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Budgeting & Batas Belanja</h2>
+                    <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                      {t('budget_tab_title', lang)}
+                    </h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Alokasikan batas pengeluaran per kategori agar keuangan Anda selalu terkontrol.
+                      {t('budget_tab_subtitle', lang)}
                     </p>
                   </div>
                 <div className="flex items-center gap-3">
@@ -2035,7 +2080,7 @@ export default function Dashboard({
                     className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
                   >
                     <Plus className="h-4 w-4" />
-                    <span>Set Budget Kategori</span>
+                    <span>{t('set_budget', lang)}</span>
                   </button>
                 </div>
               </div>
@@ -2140,9 +2185,11 @@ export default function Dashboard({
             <div className="space-y-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Kelola Kategori Transaksi</h2>
+                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                    {t('categories_tab_title', lang)}
+                  </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Kustomisasi kategori pemasukan dan pengeluaran sesuai preferensi pribadi Anda.
+                    {t('categories_tab_subtitle', lang)}
                   </p>
                 </div>
                 <button
@@ -2150,7 +2197,7 @@ export default function Dashboard({
                   className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
                 >
                   <Plus className="h-4 w-4" />
-                  <span>Tambah Kategori</span>
+                  <span>{t('add_category', lang)}</span>
                 </button>
               </div>
 
@@ -2298,9 +2345,11 @@ export default function Dashboard({
               <div className="space-y-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Laporan & Ekspor Finansial</h2>
+                    <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                      {t('reports_tab_title', lang)}
+                    </h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Unduh file spreadsheet Excel (.xlsx) komprehensif berisi ringkasan, riwayat, dompet, dan budget.
+                      {t('reports_tab_subtitle', lang)}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -2309,7 +2358,7 @@ export default function Dashboard({
                       className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700 transition active:scale-95"
                     >
                       <FileSpreadsheet className="h-4 w-4" />
-                      <span>Download Excel Komprehensif (.xlsx)</span>
+                      <span>{t('download_comprehensive_excel', lang)}</span>
                     </button>
                   </div>
                 </div>
@@ -2318,15 +2367,13 @@ export default function Dashboard({
                   <div className="max-w-2xl space-y-3">
                     <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300">
                       <Sparkles className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                      Fitur Ekspor Excel Multi-Sheet
+                      {t('excel_feature_badge', lang)}
                     </span>
                     <h3 className="text-xl font-black text-slate-900 dark:text-white">
-                      Laporan Lengkap Siap Pakai untuk Pembukuan & Akuntansi
+                      {t('excel_feature_title', lang)}
                     </h3>
                     <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                      Format Excel yang di-generate sudah otomatis terbagi ke dalam 5 Sheet terpisah dengan kolom rapi,
-                      perhitungan formula saldo, dan format angka Rupiah Indonesia yang siap diprint atau dianalisis
-                      lebih lanjut di Microsoft Excel, Google Sheets, atau Apple Numbers.
+                      {t('excel_feature_desc', lang)}
                     </p>
 
                     <div className="grid gap-3 pt-4 sm:grid-cols-2">
@@ -2362,29 +2409,72 @@ export default function Dashboard({
           {tab === 'Pengaturan' && (
             <div className="space-y-6 max-w-4xl">
               <div>
-                <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Pengaturan & Preferensi</h2>
+                <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                  {t('settings_title', lang)}
+                </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Sesuaikan tema tampilan, tata letak sidebar, dan kelola preferensi akun Anda.
+                  {t('settings_subtitle', lang)}
                 </p>
               </div>
 
-              {/* 1. Theme Settings Card */}
+              {/* 1. Language Settings Card */}
+              <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-6">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Globe className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                    <span>{t('language_card_title', lang)}</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {t('language_card_desc', lang)}
+                  </p>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {[
+                    { id: 'en' as const, title: 'English (US)', desc: 'Active default language with clean global UI terminology', flag: '🇺🇸' },
+                    { id: 'id' as const, title: 'Bahasa Indonesia', desc: 'Tampilan antarmuka berbahasa Indonesia asli', flag: '🇮🇩' },
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleLanguageChange(item.id)}
+                      className={`relative flex flex-col items-start rounded-2xl border p-4 text-left transition-all ${
+                        lang === item.id
+                          ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
+                          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span className="text-2xl">{item.flag}</span>
+                        {lang === item.id && (
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-white">
+                            <Check className="h-3 w-3" />
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-3 font-bold text-xs text-slate-900 dark:text-white">{item.title}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">{item.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. Theme Settings Card */}
               <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-6">
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Sun className="h-5 w-5 text-amber-500" />
-                    <span>Mode Tampilan & Tema (Dark Mode)</span>
+                    <span>{t('theme_card_title', lang)}</span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
-                    Pilih tampilan tema terang atau gelap sesuai kenyamanan mata Anda.
+                    {t('theme_card_desc', lang)}
                   </p>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-3">
                   {[
-                    { id: 'light', title: 'Mode Terang', desc: 'Tampilan bersih & cerah', icon: Sun },
-                    { id: 'dark', title: 'Mode Gelap (Dark)', desc: 'Tampilan nyaman di malam hari', icon: Moon },
-                    { id: 'system', title: 'Otomatis Sistem', desc: 'Mengikuti pengaturan OS Anda', icon: Sparkles },
+                    { id: 'light', title: t('theme_light', lang), desc: lang === 'en' ? 'Clean & bright appearance' : 'Tampilan bersih & cerah', icon: Sun },
+                    { id: 'dark', title: t('theme_dark', lang), desc: lang === 'en' ? 'Comfortable for low light' : 'Tampilan nyaman di malam hari', icon: Moon },
+                    { id: 'system', title: t('theme_system', lang), desc: lang === 'en' ? 'Follow your OS preference' : 'Mengikuti pengaturan OS Anda', icon: Sparkles },
                   ].map((t) => (
                     <button
                       key={t.id}
