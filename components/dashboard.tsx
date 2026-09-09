@@ -966,19 +966,59 @@ export default function Dashboard({
                         <Target className="h-5 w-5" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-slate-900 dark:text-white text-base">Target Tabungan Impian</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-slate-900 dark:text-white text-base">Target Tabungan Impian</h3>
+                          {!isPro && (
+                            <span className="rounded-full bg-amber-100 dark:bg-amber-950/80 px-2 py-0.5 text-[9px] font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                              🔒 PRO
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[11px] text-slate-400">Pencapaian: {overallGoalPercentage}% dari {formatRupiah(totalGoalTarget)}</p>
                       </div>
                     </div>
                     <button
-                      onClick={() => setTab('Target Impian')}
-                      className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                      onClick={() => {
+                        if (!isPro) {
+                          setShowUpgradeModal({
+                            featureName: 'Target Impian',
+                            description: 'Fitur Target Impian membantu Anda menabung untuk membeli rumah, kendaraan, atau dana darurat dengan indikator visual otomatis di Dompetku PRO.'
+                          })
+                          return
+                        }
+                        setTab('Target Impian')
+                      }}
+                      className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1.5"
                     >
-                      Buka Goals <ChevronRight className="h-3.5 w-3.5" />
+                      <span>Buka Goals</span>
+                      {!isPro && <span className="rounded bg-amber-500/20 text-amber-700 dark:text-amber-400 text-[10px] px-1.5 py-0.5 font-black">PRO 🔒</span>}
+                      <ChevronRight className="h-3.5 w-3.5" />
                     </button>
                   </div>
 
-                  {goalsList.length > 0 ? (
+                  {!isPro ? (
+                    <div className="rounded-2xl border border-amber-200/80 dark:border-amber-900/60 bg-gradient-to-br from-amber-50/50 via-white to-amber-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20 p-5 text-center space-y-3 my-auto">
+                      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                        <Lock className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Target Impian Terkunci (Eksklusif PRO)</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                          Pasang target menabung untuk membeli rumah, mobil, liburan, atau dana darurat dengan progress bar & kalkulator otomatis.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setShowUpgradeModal({
+                          featureName: 'Target Impian',
+                          description: 'Fitur Target Impian membantu Anda menabung untuk membeli rumah, kendaraan, atau dana darurat dengan indikator visual otomatis di Dompetku PRO.'
+                        })}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-xs font-black text-white shadow hover:from-emerald-700 hover:to-teal-700 transition"
+                      >
+                        <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+                        <span>Buka Akses Target Impian</span>
+                      </button>
+                    </div>
+                  ) : goalsList.length > 0 ? (
                     <div className="space-y-3">
                       {goalsList.slice(0, 2).map((g) => {
                         const pct = g.targetAmount > 0 ? Math.min(100, Math.round((g.currentAmount / g.targetAmount) * 100)) : 0
@@ -1014,19 +1054,59 @@ export default function Dashboard({
                         <CalendarDays className="h-5 w-5" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-slate-900 dark:text-white text-base">Tagihan Rutin & Langganan</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-slate-900 dark:text-white text-base">Tagihan Rutin & Langganan</h3>
+                          {!isPro && (
+                            <span className="rounded-full bg-amber-100 dark:bg-amber-950/80 px-2 py-0.5 text-[9px] font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                              🔒 PRO
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[11px] text-slate-400">Estimasi bulanan: {formatRupiah(totalMonthlyBills)}</p>
                       </div>
                     </div>
                     <button
-                      onClick={() => setTab('Tagihan Rutin')}
-                      className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                      onClick={() => {
+                        if (!isPro) {
+                          setShowUpgradeModal({
+                            featureName: 'Tagihan Rutin',
+                            description: 'Fitur Tagihan Rutin memantau pengeluaran berulang bulanan seperti langganan, listrik, WiFi, dan cicilan dengan pengingat jatuh tempo otomatis di Dompetku PRO.'
+                          })
+                          return
+                        }
+                        setTab('Tagihan Rutin')
+                      }}
+                      className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1.5"
                     >
-                      Buka Tagihan <ChevronRight className="h-3.5 w-3.5" />
+                      <span>Buka Tagihan</span>
+                      {!isPro && <span className="rounded bg-amber-500/20 text-amber-700 dark:text-amber-400 text-[10px] px-1.5 py-0.5 font-black">PRO 🔒</span>}
+                      <ChevronRight className="h-3.5 w-3.5" />
                     </button>
                   </div>
 
-                  {subsList.length > 0 ? (
+                  {!isPro ? (
+                    <div className="rounded-2xl border border-amber-200/80 dark:border-amber-900/60 bg-gradient-to-br from-amber-50/50 via-white to-amber-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20 p-5 text-center space-y-3 my-auto">
+                      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                        <Lock className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Tagihan Rutin Terkunci (Eksklusif PRO)</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                          Kelola langganan berkala (Netflix, Spotify, listrik, WiFi) dan hindari denda keterlambatan dengan alarm pengingat H-3.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setShowUpgradeModal({
+                          featureName: 'Tagihan Rutin',
+                          description: 'Fitur Tagihan Rutin memantau pengeluaran berulang bulanan seperti langganan, listrik, WiFi, dan cicilan dengan pengingat jatuh tempo otomatis di Dompetku PRO.'
+                        })}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-xs font-black text-white shadow hover:from-emerald-700 hover:to-teal-700 transition"
+                      >
+                        <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+                        <span>Buka Akses Tagihan Rutin</span>
+                      </button>
+                    </div>
+                  ) : subsList.length > 0 ? (
                     <div className="space-y-2">
                       {subsList.slice(0, 3).map((s) => {
                         const daysLeft = s.dueDate >= todayDate ? s.dueDate - todayDate : 30 - (todayDate - s.dueDate)
@@ -1376,23 +1456,70 @@ export default function Dashboard({
 
           {/* TAB: TARGET IMPIAN (FINANCIAL GOALS - TAHAP 2) */}
           {tab === 'Target Impian' && (
-            <div className="space-y-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Target Tabungan Impian</h2>
-                    <span className="rounded-xl bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                      Tahap 2
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Wujudkan impian masa depan Anda seperti Beli Rumah, Dana Darurat, Liburan, atau Kendaraan.
+            !isPro ? (
+              <div className="rounded-3xl border border-amber-200/80 dark:border-amber-900/60 bg-gradient-to-br from-amber-50/60 via-white to-amber-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/30 p-8 sm:p-12 text-center shadow-sm max-w-3xl mx-auto space-y-6">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                  <Lock className="h-8 w-8" />
+                </div>
+                <div className="space-y-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/80 px-3 py-1 text-xs font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                    <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                    FITUR EKSKLUSIF DOMPETKU PRO
+                  </span>
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+                    Target Tabungan Impian (Financial Goals)
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
+                    Wujudkan target finansial Anda seperti membeli rumah, kendaraan, liburan, atau dana darurat dengan visual tracker progres otomatis, fitur setor tabungan 1-klik, dan estimasi tanggal tercapai.
                   </p>
                 </div>
-                <button
-                  onClick={() => setShowModal({ type: 'goal' })}
-                  className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
-                >
+
+                <div className="grid gap-3 sm:grid-cols-2 text-left max-w-lg mx-auto pt-2">
+                  {[
+                    'Target Tabungan Tanpa Batas',
+                    'Indikator Visual Progres Persentase',
+                    'Setor Tabungan 1-Klik dari Saldo Dompet',
+                    'Perhitungan Estimasi Sisa Hari & Target Tercapai',
+                    'Integrasi Mutasi Transaksi Otomatis',
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-4">
+                  <button
+                    onClick={() => setShowUpgradeModal({
+                      featureName: 'Target Impian',
+                      description: 'Fitur Target Impian membantu Anda menabung untuk membeli rumah, kendaraan, atau dana darurat dengan indikator visual otomatis di Dompetku PRO.'
+                    })}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 py-3.5 text-xs font-black text-white shadow-xl shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700 transition active:scale-95"
+                  >
+                    <Sparkles className="h-4 w-4 text-amber-300" />
+                    <span>Buka Akses Target Impian (Upgrade PRO)</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Target Tabungan Impian</h2>
+                      <span className="rounded-xl bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                        Tahap 2
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Wujudkan impian masa depan Anda seperti Beli Rumah, Dana Darurat, Liburan, atau Kendaraan.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowModal({ type: 'goal' })}
+                    className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
+                  >
                   <Plus className="h-4 w-4" />
                   <span>Buat Target Baru</span>
                 </button>
@@ -1534,27 +1661,75 @@ export default function Dashboard({
                 </div>
               )}
             </div>
+            )
           )}
 
           {/* TAB: TAGIHAN RUTIN & LANGGANAN (SUBSCRIPTIONS - TAHAP 2) */}
           {tab === 'Tagihan Rutin' && (
-            <div className="space-y-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Manajemen Tagihan & Langganan Rutin</h2>
-                    <span className="rounded-xl bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                      Tahap 2
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Pantau biaya berulang seperti Netflix, Spotify, BPJS, Listrik PLN, WiFi, dan cicilan bulanan.
+            !isPro ? (
+              <div className="rounded-3xl border border-amber-200/80 dark:border-amber-900/60 bg-gradient-to-br from-amber-50/60 via-white to-amber-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/30 p-8 sm:p-12 text-center shadow-sm max-w-3xl mx-auto space-y-6">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                  <Lock className="h-8 w-8" />
+                </div>
+                <div className="space-y-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/80 px-3 py-1 text-xs font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                    <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                    FITUR EKSKLUSIF DOMPETKU PRO
+                  </span>
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+                    Manajemen Tagihan & Langganan Rutin
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
+                    Kelola seluruh pengeluaran berulang bulanan seperti langganan digital (Netflix, Spotify), utilitas rumah tangga (PLN, WiFi), asuransi BPJS, dan cicilan berkala dengan sistem peringatan jatuh tempo otomatis.
                   </p>
                 </div>
-                <button
-                  onClick={() => setShowModal({ type: 'subscription' })}
-                  className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
-                >
+
+                <div className="grid gap-3 sm:grid-cols-2 text-left max-w-lg mx-auto pt-2">
+                  {[
+                    'Pengingat Jatuh Tempo Tagihan H-3 Otomatis',
+                    'Fitur Bayar Tagihan 1-Klik Otomatis Catat Transaksi',
+                    'Kalkulasi Total Beban Tagihan Bulanan Real-Time',
+                    'Daftar Langganan Aktif & Nonaktif Fleksibel',
+                    'Pilihan Pembayaran Berulang Per Bulan / Per Tahun',
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-4">
+                  <button
+                    onClick={() => setShowUpgradeModal({
+                      featureName: 'Tagihan Rutin',
+                      description: 'Fitur Tagihan Rutin memantau pengeluaran berulang bulanan seperti langganan, listrik, WiFi, dan cicilan dengan pengingat jatuh tempo otomatis di Dompetku PRO.'
+                    })}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 py-3.5 text-xs font-black text-white shadow-xl shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700 transition active:scale-95"
+                  >
+                    <Sparkles className="h-4 w-4 text-amber-300" />
+                    <span>Buka Akses Tagihan Rutin (Upgrade PRO)</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Manajemen Tagihan & Langganan Rutin</h2>
+                      <span className="rounded-xl bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                        Tahap 2
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Pantau biaya berulang seperti Netflix, Spotify, BPJS, Listrik PLN, WiFi, dan cicilan bulanan.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowModal({ type: 'subscription' })}
+                    className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
+                  >
                   <Plus className="h-4 w-4" />
                   <span>Tambah Tagihan Baru</span>
                 </button>
@@ -1698,6 +1873,7 @@ export default function Dashboard({
                 </div>
               )}
             </div>
+            )
           )}
 
           {/* TAB 3: DOMPET & AKUN */}
@@ -1791,14 +1967,60 @@ export default function Dashboard({
 
           {/* TAB 4: BUDGET BULANAN */}
           {tab === 'Budget' && (
-            <div className="space-y-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Budgeting & Batas Belanja</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Alokasikan batas pengeluaran per kategori agar keuangan Anda selalu terkontrol.
+            !isPro ? (
+              <div className="rounded-3xl border border-amber-200/80 dark:border-amber-900/60 bg-gradient-to-br from-amber-50/60 via-white to-amber-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/30 p-8 sm:p-12 text-center shadow-sm max-w-3xl mx-auto space-y-6">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                  <Lock className="h-8 w-8" />
+                </div>
+                <div className="space-y-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/80 px-3 py-1 text-xs font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                    <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                    FITUR EKSKLUSIF DOMPETKU PRO
+                  </span>
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+                    Budgeting & Batas Belanja Bulanan
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
+                    Alokasikan batas pengeluaran per kategori setiap bulan agar keuangan Anda selalu terkontrol dengan peringatan over-budget otomatis.
                   </p>
                 </div>
+
+                <div className="grid gap-3 sm:grid-cols-2 text-left max-w-lg mx-auto pt-2">
+                  {[
+                    'Batas Anggaran Per Kategori Tanpa Batas',
+                    'Visual Tracking Realisasi Budget Real-Time',
+                    'Peringatan Otomatis Saat Budget Mendekati / Melebihi Batas',
+                    'Histori Pemakaian Budget Antar Bulan',
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-4">
+                  <button
+                    onClick={() => setShowUpgradeModal({
+                      featureName: 'Budget Bulanan',
+                      description: 'Kendalikan pengeluaran dengan batas anggaran bulanan per kategori dan notifikasi over-budget otomatis di Dompetku PRO.'
+                    })}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 py-3.5 text-xs font-black text-white shadow-xl shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700 transition active:scale-95"
+                  >
+                    <Sparkles className="h-4 w-4 text-amber-300" />
+                    <span>Buka Akses Budget Bulanan (Upgrade PRO)</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Budgeting & Batas Belanja</h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Alokasikan batas pengeluaran per kategori agar keuangan Anda selalu terkontrol.
+                    </p>
+                  </div>
                 <div className="flex items-center gap-3">
                   <div className="w-52">
                     <DatePickerInput
@@ -1910,6 +2132,7 @@ export default function Dashboard({
                 </div>
               )}
             </div>
+            )
           )}
 
           {/* TAB 5: KATEGORI */}
@@ -2731,7 +2954,48 @@ export default function Dashboard({
       {/* MODAL DIALOGS */}
       {showModal && (
         <ModalContainer close={() => setShowModal(null)}>
-          {/* 1. Transaction Form Modal */}
+          {/* PRO Guard for PRO-only Modals */}
+          {!isPro && ['budget', 'goal', 'goalDeposit', 'subscription', 'paySubscription'].includes(showModal.type) ? (
+            <div className="text-center p-6 sm:p-8 space-y-4 max-w-md mx-auto">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                <Lock className="h-7 w-7" />
+              </div>
+              <div className="space-y-1.5">
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-black px-2.5 py-0.5">
+                  ⭐ FITUR DOMPETKU PRO
+                </span>
+                <h3 className="text-lg font-bold text-white">
+                  {showModal.type.includes('goal') ? 'Target Impian Eksklusif PRO' : showModal.type.includes('sub') ? 'Tagihan Rutin Eksklusif PRO' : 'Budget Bulanan Eksklusif PRO'}
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Fitur ini hanya dapat digunakan oleh pengguna dengan paket Dompetku PRO aktif. Nikmati pengelolaan finansial tanpa batasan.
+                </p>
+              </div>
+              <div className="pt-2 flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    const feat = showModal.type.includes('goal') ? 'Target Impian' : showModal.type.includes('sub') ? 'Tagihan Rutin' : 'Budget Bulanan'
+                    setShowModal(null)
+                    setShowUpgradeModal({
+                      featureName: feat,
+                      description: `Buka akses penuh fitur ${feat} dan semua fitur eksklusif lainnya di Dompetku PRO.`
+                    })
+                  }}
+                  className="w-full rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/20 hover:from-emerald-700 hover:to-teal-700 transition"
+                >
+                  Lihat Paket & Upgrade PRO
+                </button>
+                <button
+                  onClick={() => setShowModal(null)}
+                  className="w-full rounded-xl border border-slate-700 bg-slate-900 py-2.5 text-xs font-semibold text-slate-400 hover:bg-slate-800 transition"
+                >
+                  Kembali
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* 1. Transaction Form Modal */}
           {showModal.type === 'transaction' && (
             <TransactionModal
               data={data}
@@ -2806,6 +3070,8 @@ export default function Dashboard({
               close={() => setShowModal(null)}
               done={handleSuccess}
             />
+          )}
+            </>
           )}
         </ModalContainer>
       )}
