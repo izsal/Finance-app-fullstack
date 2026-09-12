@@ -7,9 +7,8 @@ import { desc, eq } from 'drizzle-orm'
 export async function GET(req: NextRequest) {
   try {
     const user = await getAuthUser(req)
-    requireProUser(user)
 
-    const [allWallets, allCategories, allBudgets, allTransactions] = await Promise.all([
+    let [allWallets, allCategories, allBudgets, allTransactions] = await Promise.all([
       db.select().from(wallets).where(eq(wallets.userId, user.id)),
       db.select().from(categories).where(eq(categories.userId, user.id)),
       db.select().from(budgets).where(eq(budgets.userId, user.id)),
@@ -19,6 +18,30 @@ export async function GET(req: NextRequest) {
         .where(eq(transactions.userId, user.id))
         .orderBy(desc(transactions.date)),
     ])
+
+    if (allWallets.length === 0) {
+      allWallets = await db
+        .insert(wallets)
+        .values([
+          { userId: user.id, name: 'BCA Utama', type: 'Bank', balance: 0, color: 'teal' },
+          { userId: user.id, name: 'Kas Tunai', type: 'Tunai', balance: 0, color: 'emerald' },
+          { userId: user.id, name: 'GoPay / OVO', type: 'E-wallet', balance: 0, color: 'indigo' },
+        ])
+        .returning()
+    }
+
+    if (allCategories.length === 0) {
+      allCategories = await db
+        .insert(categories)
+        .values([
+          { userId: user.id, name: 'Gaji & Pendapatan', type: 'income', color: 'emerald' },
+          { userId: user.id, name: 'Makanan & Minuman', type: 'expense', color: 'amber' },
+          { userId: user.id, name: 'Belanja Bulanan', type: 'expense', color: 'rose' },
+          { userId: user.id, name: 'Transportasi', type: 'expense', color: 'violet' },
+          { userId: user.id, name: 'Tagihan & Utilitas', type: 'expense', color: 'cyan' },
+        ])
+        .returning()
+    }
 
     // Calculate dynamic wallet balances
     const calculatedWallets = allWallets.map((w) => {

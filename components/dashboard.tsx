@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo, useState, useTransition } from 'react'
+import React, { useEffect, useMemo, useState, useTransition, useRef } from 'react'
 import {
   addBudget,
   addCategory,
@@ -38,6 +38,7 @@ import {
   Bell,
   Calendar,
   CalendarDays,
+  Camera,
   Check,
   CheckCircle2,
   ChevronRight,
@@ -55,6 +56,7 @@ import {
   Languages,
   Layers,
   LayoutDashboard,
+  Loader2,
   Lock,
   LogOut,
   Menu,
@@ -3349,6 +3351,66 @@ function TransactionModal({
   const [categoriesList, setCategoriesList] = useState(data.categories)
   const [isCreatingWallet, setIsCreatingWallet] = useState(false)
   const [isCreatingCategory, setIsCreatingCategory] = useState(false)
+  const [scanningReceipt, setScanningReceipt] = useState(false)
+  const [scanMessage, setScanMessage] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleScanReceiptFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setScanningReceipt(true)
+    setScanMessage(lang === 'en' ? 'AI is scanning receipt & reading amounts...' : 'AI sedang memindai struk & membaca nominal...')
+
+    try {
+      const reader = new FileReader()
+      reader.onloadend = async () => {
+        const base64String = reader.result as string
+        const base64Data = base64String.includes(',') ? base64String.split(',')[1] : base64String
+
+        try {
+          const res = await fetch('/api/v1/scan-receipt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageBase64: base64Data, mimeType: file.type || 'image/jpeg' }),
+          })
+          const json = await res.json()
+          if (res.ok && json.success && json.data) {
+            const d = json.data
+            if (d.amount > 0) setAmount(d.amount)
+            if (d.type) {
+              setType(d.type)
+            }
+            if (d.description) setDescription(d.description)
+            if (d.date) setDate(d.date)
+            if (d.categoryId) {
+              setCategoryId(d.categoryId)
+            } else if (d.categoryName) {
+              const matched = categoriesList.find(
+                (c) => c.type === (d.type || 'expense') && c.name.toLowerCase().includes(d.categoryName.toLowerCase())
+              )
+              if (matched) setCategoryId(matched.id)
+            }
+            setScanMessage(
+              lang === 'en'
+                ? `✨ Receipt analyzed: ${d.type === 'expense' ? 'Expense' : 'Income'} • ${d.categoryName} (${d.description})`
+                : `✨ Struk terdeteksi: ${d.type === 'expense' ? 'Pengeluaran' : 'Pemasukan'} • ${d.categoryName} (${d.description})`
+            )
+          } else {
+            setScanMessage(json.message || (lang === 'en' ? 'Failed to read receipt' : 'Gagal membaca struk belanja'))
+          }
+        } catch (apiErr: any) {
+          setScanMessage(apiErr?.message || (lang === 'en' ? 'Failed to connect to AI scanner' : 'Gagal terhubung ke scanner AI'))
+        } finally {
+          setScanningReceipt(false)
+        }
+      }
+      reader.readAsDataURL(file)
+    } catch (err: any) {
+      setScanMessage(lang === 'en' ? 'Error reading image file' : 'Gagal memproses file foto')
+      setScanningReceipt(false)
+    }
+  }
 
   const filteredCategories = categoriesList.filter((c) => c.type === type)
 
@@ -3486,6 +3548,61 @@ function TransactionModal({
         <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
           <X className="h-5 w-5" />
         </button>
+      </div>
+
+      {/* Smart Receipt Scanner Card */}
+      <div className="rounded-2xl border border-teal-500/30 bg-teal-500/10 dark:bg-teal-950/30 p-3.5 text-xs">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-teal-500/20 text-teal-600 dark:text-teal-400">
+              <Camera className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-100">
+                <span>{lang === 'en' ? 'Smart Receipt Scanner' : 'Pindai Struk / Bukti AI'}</span>
+                <span className="rounded-full bg-teal-500 px-1.5 py-0.2 text-[9px] font-black text-white">AI ✨</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                {lang === 'en' ? 'Upload receipt / bank transfer screenshot for auto-fill' : 'Upload foto struk belanja / mutasi untuk isi nominal otomatis'}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              className="hidden"
+              onChange={handleScanReceiptFile}
+            />
+            <button
+              type="button"
+              disabled={scanningReceipt}
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-teal-500/40 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-bold text-teal-600 dark:text-teal-400 shadow-sm hover:bg-teal-50 dark:hover:bg-slate-800 transition cursor-pointer"
+            >
+              {scanningReceipt ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>{lang === 'en' ? 'Analyzing...' : 'Membaca...'}</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>{lang === 'en' ? 'Upload Receipt' : 'Upload Struk'}</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {scanMessage && (
+          <div className="mt-2.5 flex items-center gap-1.5 rounded-lg bg-teal-500/15 px-2.5 py-1.5 text-[11px] font-semibold text-teal-700 dark:text-teal-300">
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+            <span>{scanMessage}</span>
+          </div>
+        )}
       </div>
 
       {/* Type Switcher */}

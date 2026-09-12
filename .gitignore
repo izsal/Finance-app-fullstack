@@ -1,3 +1,41 @@
+# Dependencies
+node_modules/
+mobile/node_modules/
+
+# Next.js build
+.next/
+out/
+build/
+dist/
+mobile/dist/
+mobile/web-build/
+
+# Expo
+.expo/
+mobile/.expo/
+expo-env.d.ts
+mobile/expo-env.d.ts
+
+# Environment variables & secrets
+.env
+.env*.local
+.env.production
+.env.development
+
+# TypeScript build info
+*.tsbuildinfo
+next-env.d.ts
+
+# macOS & OS files
+.DS_Store
+*.pem
+
+# Editor & AI tool configs
+.claude/
+mobile/.claude/
+.vscode/
+.idea/
+
 # v0 sandbox internal files
 __v0_runtime_loader.js
 __v0_devtools.tsx
@@ -6,11 +44,4 @@ __v0_jsx-dev-runtime.ts
 .v0-trash/
 .vercel/
 pnpm-lock.yaml
-
-# Environment variables
-.env*.local
-
-# Common ignores
-node_modules
-.next/
-.DS_Store
+pnpm-workspace.yaml
