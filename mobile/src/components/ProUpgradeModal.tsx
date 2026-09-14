@@ -40,10 +40,10 @@ export const ProUpgradeModal: React.FC<Props> = ({
         ? 'Tahunan (Rp 149.000 / Hemat 35%)'
         : 'Bulanan (Rp 19.000)'
 
-    const name = currentUser?.name || 'Pengguna Dompetku'
+    const name = currentUser?.name || 'Pengguna Qwarts Finance'
     const email = currentUser?.email || 'email@example.com'
 
-    const message = `Halo Admin Dompetku, saya ingin upgrade ke akun Dompetku PRO!\n\nNama: ${name}\nEmail: ${email}\nPaket: ${planText}\n\nMohon info nomor rekening / QRIS untuk pembayaran.`
+    const message = `Halo Admin Qwarts Finance, saya ingin upgrade ke akun Qwarts Finance PRO!\n\nNama: ${name}\nEmail: ${email}\nPaket: ${planText}\n\nMohon info nomor rekening / QRIS untuk pembayaran.`
     const url = `https://wa.me/6281776370728?text=${encodeURIComponent(message)}`
 
     try {
@@ -105,7 +105,7 @@ export const ProUpgradeModal: React.FC<Props> = ({
           <View style={styles.headerRow}>
             <View style={styles.proBadge}>
               <Ionicons name="sparkles" size={13} color="#fcd34d" />
-              <Text style={styles.proBadgeText}>DOMPETKU PRO EXCLUSIVE</Text>
+              <Text style={styles.proBadgeText}>QWARTS FINANCE PRO EXCLUSIVE</Text>
             </View>
 
             <TouchableOpacity
@@ -119,11 +119,11 @@ export const ProUpgradeModal: React.FC<Props> = ({
 
           <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: 12 }}>
             {/* Title & Description */}
-            <Text style={styles.title}>Tingkatkan ke Dompetku PRO 🚀</Text>
+            <Text style={styles.title}>Tingkatkan ke Qwarts Finance PRO 🚀</Text>
             <Text style={styles.description}>
               {description ||
                 (featureName
-                  ? `Fitur ${featureName} adalah fitur eksklusif Dompetku PRO. Tingkatkan akun Anda untuk mengontrol anggaran, target tabungan, dan mengunduh laporan keuangan tanpa batasan.`
+                  ? `Fitur ${featureName} adalah fitur eksklusif Qwarts Finance PRO. Tingkatkan akun Anda untuk mengontrol anggaran, target tabungan, dan mengunduh laporan keuangan tanpa batasan.`
                   : 'Tingkatkan akun Anda ke PRO untuk mengontrol anggaran, mengejar target tabungan, dan mengunduh laporan keuangan tanpa batasan.')}
             </Text>
 

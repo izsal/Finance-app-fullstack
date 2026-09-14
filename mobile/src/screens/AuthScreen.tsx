@@ -157,7 +157,7 @@ export const AuthScreen: React.FC<Props> = ({ onLoginSuccess }) => {
         {/* Brand Header */}
         <View style={styles.brandSection}>
           <AppLogo size={68} borderRadius={18} style={styles.logoBadge} />
-          <Text style={[styles.brandTitle, { color: theme.colors.text }]}>Dompetku</Text>
+          <Text style={[styles.brandTitle, { color: theme.colors.text }]}>Qwarts Finance</Text>
           <Text style={[styles.brandSubtitle, { color: theme.colors.textSecondary }]}>
             Aplikasi Keuangan Pribadi Minimalis & Real-Time
           </Text>

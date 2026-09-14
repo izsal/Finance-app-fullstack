@@ -123,16 +123,21 @@ const ThemeContext = createContext<ThemeContextType>({
   setThemeMode: () => {},
 })
 
-const STORAGE_KEY_THEME = '@dompetku_theme_mode'
+const STORAGE_KEY_THEME = '@qwarts_theme_mode'
+const LEGACY_STORAGE_KEY_THEME = '@dompetku_theme_mode'
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const systemScheme = useColorScheme()
   const [themeMode, setThemeModeState] = useState<ThemeMode>('light')
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY_THEME).then((saved) => {
-      if (saved === 'light' || saved === 'dark') {
-        setThemeModeState(saved)
+    Promise.all([
+      AsyncStorage.getItem(STORAGE_KEY_THEME),
+      AsyncStorage.getItem(LEGACY_STORAGE_KEY_THEME),
+    ]).then(([saved, legacySaved]) => {
+      const active = saved || legacySaved
+      if (active === 'light' || active === 'dark') {
+        setThemeModeState(active)
       } else if (systemScheme === 'dark') {
         setThemeModeState('dark')
       }

@@ -28,14 +28,14 @@ export async function GET(req: NextRequest) {
     }
 
     if (token) {
-      const deepLink = `dompetku://auth?token=${encodeURIComponent(token)}`
+      const deepLink = `qwartsfinance://auth?token=${encodeURIComponent(token)}`
       
       const html = `<!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login Google Berhasil — Dompetku Mobile</title>
+  <title>Login Google Berhasil — Qwarts Finance Mobile</title>
   <style>
     body {
       background: #050814;
@@ -113,8 +113,8 @@ export async function GET(req: NextRequest) {
   <div class="card">
     <div class="icon">✨</div>
     <h1>Login Berhasil!</h1>
-    <p>Akun Anda telah terhubung. Silakan klik tombol di bawah untuk kembali ke aplikasi Dompetku Mobile.</p>
-    <a href="${deepLink}" class="btn">Buka Aplikasi Dompetku Mobile</a>
+    <p>Akun Anda telah terhubung. Silakan klik tombol di bawah untuk kembali ke aplikasi Qwarts Finance Mobile.</p>
+    <a href="${deepLink}" class="btn">Buka Aplikasi Qwarts Finance Mobile</a>
     <div class="token-box">
       Token Sesi: ${token.slice(0, 10)}...${token.slice(-10)}
     </div>

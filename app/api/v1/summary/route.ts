@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
       return apiError('Unauthorized. Silakan sertakan header Authorization: Bearer <token>', 401)
     }
     if (err?.message === 'PRO_REQUIRED') {
-      return apiError('Fitur REST API eksklusif untuk pengguna Dompetku PRO. Silakan upgrade paket akun Anda di dashboard.', 403)
+      return apiError('Fitur REST API eksklusif untuk pengguna Qwarts Finance PRO. Silakan upgrade paket akun Anda di dashboard.', 403)
     }
     return apiError(err?.message || 'Gagal memuat ringkasan', 500)
   }

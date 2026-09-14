@@ -110,7 +110,7 @@ export const GoalsScreen: React.FC<Props> = ({
                 <Ionicons name="lock-closed" size={24} color="#d97706" />
               </View>
               <Text style={[styles.lockedBannerTitle, { color: theme.colors.text }]}>
-                Fitur Eksklusif Dompetku PRO 👑
+                Fitur Eksklusif Qwarts Finance PRO 👑
               </Text>
               <Text style={[styles.lockedBannerDesc, { color: theme.colors.textSecondary }]}>
                 Target Impian & Pengingat Tagihan Rutin hanya dapat diakses penuh oleh member PRO sebagaimana di versi website.

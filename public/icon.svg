@@ -1,12 +1,12 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="dompetkuGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="qwartsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#14b8a6" />
       <stop offset="50%" stop-color="#0d9488" />
       <stop offset="100%" stop-color="#059669" />
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="120" fill="url(#dompetkuGrad)" />
+  <rect width="512" height="512" rx="120" fill="url(#qwartsGrad)" />
   <g transform="translate(121, 121) scale(11.25)" stroke="#ffffff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" fill="none">
     <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
     <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />

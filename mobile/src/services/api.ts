@@ -12,8 +12,10 @@ import {
 } from './mockData'
 
 const DEFAULT_LOCAL_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000'
-const STORAGE_KEY_BASE_URL = '@dompetku_api_base_url'
-const STORAGE_KEY_AUTH_TOKEN = '@dompetku_auth_token'
+const STORAGE_KEY_BASE_URL = '@qwarts_api_base_url'
+const STORAGE_KEY_AUTH_TOKEN = '@qwarts_auth_token'
+const LEGACY_STORAGE_KEY_BASE_URL = '@dompetku_api_base_url'
+const LEGACY_STORAGE_KEY_AUTH_TOKEN = '@dompetku_auth_token'
 
 export class ApiService {
   private static baseUrl: string = DEFAULT_LOCAL_URL
@@ -22,10 +24,10 @@ export class ApiService {
 
   static async init() {
     try {
-      const savedUrl = await AsyncStorage.getItem(STORAGE_KEY_BASE_URL)
+      const savedUrl = (await AsyncStorage.getItem(STORAGE_KEY_BASE_URL)) || (await AsyncStorage.getItem(LEGACY_STORAGE_KEY_BASE_URL))
       if (savedUrl) this.baseUrl = savedUrl
 
-      const savedToken = await AsyncStorage.getItem(STORAGE_KEY_AUTH_TOKEN)
+      const savedToken = (await AsyncStorage.getItem(STORAGE_KEY_AUTH_TOKEN)) || (await AsyncStorage.getItem(LEGACY_STORAGE_KEY_AUTH_TOKEN))
       if (savedToken) {
         this.token = savedToken
         await this.getMe()
@@ -206,7 +208,7 @@ export class ApiService {
       }
 
       // Di iOS / Android gunakan WebBrowser session
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, 'dompetku://')
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, 'qwartsfinance://')
       if (result.type === 'success' && result.url) {
         const parsed = new URL(result.url)
         const token = parsed.searchParams.get('token')

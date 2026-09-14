@@ -31,7 +31,7 @@ export const auth = betterAuth({
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url, token }) => {
       const resendApiKey = process.env.RESEND_API_KEY?.trim()
-      const rawEmailFrom = process.env.EMAIL_FROM || 'Dompetku <noreply@mail.qwarts.my.id>'
+      const rawEmailFrom = process.env.EMAIL_FROM || 'Qwarts Finance <noreply@mail.qwarts.my.id>'
       // Hapus tanda petik ganda/tunggal yang mungkin terbawa dari .env atau Vercel
       const emailFrom = rawEmailFrom.replace(/^["']|["']$/g, '').trim()
 
@@ -60,16 +60,16 @@ export const auth = betterAuth({
             body: JSON.stringify({
               from: emailFrom,
               to: user.email,
-              subject: 'Verifikasi Akun Dompetku Anda',
+              subject: 'Verifikasi Akun Qwarts Finance Anda',
               html: `
                 <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
                   <div style="text-align: center; margin-bottom: 24px;">
-                    <h1 style="color: #0d9488; margin: 0; font-size: 24px;">Dompetku</h1>
+                    <h1 style="color: #0d9488; margin: 0; font-size: 24px;">Qwarts Finance</h1>
                     <p style="color: #64748b; font-size: 13px; margin-top: 4px;">Dashboard Keuangan Pribadi</p>
                   </div>
                   <h2 style="color: #0f172a; font-size: 18px;">Halo, ${user.name}!</h2>
                   <p style="color: #334155; font-size: 14px; line-height: 1.6;">
-                    Terima kasih telah mendaftar di Dompetku. Untuk mengaktifkan akun Anda dan mulai mengelola keuangan dengan rapi, silakan klik tombol verifikasi di bawah ini:
+                    Terima kasih telah mendaftar di Qwarts Finance. Untuk mengaktifkan akun Anda dan mulai mengelola keuangan dengan rapi, silakan klik tombol verifikasi di bawah ini:
                   </p>
                   <div style="text-align: center; margin: 28px 0;">
                     <a href="${verifyUrl}" style="background-color: #0d9488; color: #ffffff; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block;">
@@ -82,7 +82,7 @@ export const auth = betterAuth({
                   </p>
                   <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 24px 0;" />
                   <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 0;">
-                    Jika Anda tidak pernah mendaftar di Dompetku, abaikan email ini.
+                    Jika Anda tidak pernah mendaftar di Qwarts Finance, abaikan email ini.
                   </p>
                 </div>
               `,
@@ -103,7 +103,7 @@ export const auth = betterAuth({
         }
       } else {
         console.warn('[Resend Warning]: RESEND_API_KEY tidak ditemukan di environment variables!')
-        console.log(`\n========================================\n[DOMPETKU EMAIL VERIFICATION]\nTo: ${user.email}\nVerify URL: ${url}\n========================================\n`)
+        console.log(`\n========================================\n[QWARTS FINANCE EMAIL VERIFICATION]\nTo: ${user.email}\nVerify URL: ${url}\n========================================\n`)
       }
     },
   },

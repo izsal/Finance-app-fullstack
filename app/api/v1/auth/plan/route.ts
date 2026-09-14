@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
         isPro: targetPlan === 'pro',
       },
       targetPlan === 'pro'
-        ? 'Selamat! Akun Anda berhasil ditingkatkan ke Dompetku PRO 👑'
+        ? 'Selamat! Akun Anda berhasil ditingkatkan ke Qwarts Finance PRO 👑'
         : 'Status akun dialihkan ke paket Free'
     )
   } catch (err: any) {

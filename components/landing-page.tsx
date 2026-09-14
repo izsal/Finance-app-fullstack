@@ -45,8 +45,8 @@ function GoogleIcon({ className = 'h-5 w-5' }: { className?: string }) {
 
 const faqs = [
   {
-    q: 'Apakah Dompetku memiliki versi gratis?',
-    a: 'Ya! Dompetku menyediakan Paket Starter (Free) 100% gratis selamanya untuk pencatatan transaksi harian. Bagi Anda yang ingin fitur tingkat lanjut seperti Target Impian, Budgeting Bulanan, dan Ekspor Excel, Anda dapat upgrade ke Paket PRO yang sangat terjangkau (mulai Rp19.000/bulan).',
+    q: 'Apakah Qwarts Finance memiliki versi gratis?',
+    a: 'Ya! Qwarts Finance menyediakan Paket Starter (Free) 100% gratis selamanya untuk pencatatan transaksi harian. Bagi Anda yang ingin fitur tingkat lanjut seperti Target Impian, Budgeting Bulanan, dan Ekspor Excel, Anda dapat upgrade ke Paket PRO yang sangat terjangkau (mulai Rp19.000/bulan).',
   },
   {
     q: 'Apakah saya bisa login langsung dengan akun Google?',
@@ -62,7 +62,7 @@ const faqs = [
   },
   {
     q: 'Apakah ada fitur pengingat tagihan bulanan dan target tabungan?',
-    a: 'Ya! Dompetku dilengkapi fitur Target Impian (Goals) untuk memantau tabungan dan fitur Tagihan Rutin (Subscriptions) dengan pengingat jatuh tempo.',
+    a: 'Ya! Qwarts Finance dilengkapi fitur Target Impian (Goals) untuk memantau tabungan dan fitur Tagihan Rutin (Subscriptions) dengan pengingat jatuh tempo.',
   },
 ]
 
@@ -94,7 +94,7 @@ export default function LandingPage() {
               <Wallet className="h-5 w-5" />
             </div>
             <span className="text-xl font-black tracking-tight text-white">
-              Dompet<span className="text-teal-400">ku</span>
+              Qwarts <span className="text-teal-400">Finance</span>
             </span>
           </Link>
 
@@ -204,7 +204,7 @@ export default function LandingPage() {
                 <span className="h-3 w-3 rounded-full bg-amber-500/80" />
                 <span className="h-3 w-3 rounded-full bg-emerald-500/80" />
                 <span className="ml-2 text-xs font-medium text-slate-500">
-                  dompetku.qwarts.my.id/dashboard
+                  finance.qwarts.my.id/dashboard
                 </span>
               </div>
               <div className="flex items-center gap-2 text-xs font-semibold text-teal-400">
@@ -337,7 +337,7 @@ export default function LandingPage() {
               Segala yang Anda Butuhkan untuk Hidup Bebas Khawatir Finansial
             </p>
             <p className="mt-4 text-slate-400">
-              Dirancang untuk kemudahan dan kejelasan, Dompetku menggabungkan semua aspek pencatatan
+              Dirancang untuk kemudahan dan kejelasan, Qwarts Finance menggabungkan semua aspek pencatatan
               keuangan ke dalam satu alur kerja yang intuitif.
             </p>
           </div>
@@ -560,7 +560,7 @@ export default function LandingPage() {
               <div>
                 <div className="flex items-center justify-between">
                   <span className="text-lg font-bold text-white flex items-center gap-2">
-                    <span>Paket Dompetku PRO</span>
+                    <span>Paket Qwarts Finance PRO</span>
                     <span className="rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-extrabold px-2 py-0.5 border border-amber-500/30">PRO</span>
                   </span>
                 </div>
@@ -706,9 +706,9 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-500 text-white font-black text-xs">
-              D
+              Q
             </div>
-            <span className="font-bold text-slate-300">Dompetku</span>
+            <span className="font-bold text-slate-300">Qwarts Finance</span>
             <span>— Dashboard Keuangan Pribadi</span>
           </div>
 
@@ -724,7 +724,7 @@ export default function LandingPage() {
             </a>
           </div>
 
-          <p>© {new Date().getFullYear()} Dompetku. Seluruh hak cipta dilindungi.</p>
+          <p>© {new Date().getFullYear()} Qwarts Finance. Seluruh hak cipta dilindungi.</p>
         </div>
       </footer>
     </div>

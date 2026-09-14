@@ -48,7 +48,7 @@ export const SettingsScreen: React.FC<Props> = ({ isLive, onConfigChanged, onLog
   const handleLogout = async () => {
     Alert.alert(
       'Konfirmasi Logout',
-      'Apakah Anda yakin ingin keluar dari akun Dompetku ini?',
+      'Apakah Anda yakin ingin keluar dari akun Qwarts Finance ini?',
       [
         { text: 'Batal', style: 'cancel' },
         {
@@ -109,7 +109,7 @@ export const SettingsScreen: React.FC<Props> = ({ isLive, onConfigChanged, onLog
             <View style={styles.userInfo}>
               <View style={styles.userNameRow}>
                 <Text style={[styles.userNameText, { color: theme.colors.text }]}>
-                  {currentUser?.name || 'Pengguna Dompetku'}
+                  {currentUser?.name || 'Pengguna Qwarts Finance'}
                 </Text>
               </View>
 
@@ -175,7 +175,7 @@ export const SettingsScreen: React.FC<Props> = ({ isLive, onConfigChanged, onLog
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.proActiveTitle, { color: theme.colors.text }]}>
-                      Dompetku PRO Aktif 👑
+                      Qwarts Finance PRO Aktif 👑
                     </Text>
                     <Text style={[styles.proActiveSub, { color: theme.colors.textSecondary }]}>
                       Anda memiliki akses tak terbatas ke seluruh fitur eksklusif
@@ -230,7 +230,7 @@ export const SettingsScreen: React.FC<Props> = ({ isLive, onConfigChanged, onLog
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.freeTitle, { color: theme.colors.text }]}>
-                      Tingkatkan ke Dompetku PRO 👑
+                      Tingkatkan ke Qwarts Finance PRO 👑
                     </Text>
                     <Text style={[styles.freeSub, { color: theme.colors.textSecondary }]}>
                       Beberapa fitur lanjutan saat ini dikunci untuk akun Free
@@ -339,7 +339,7 @@ export const SettingsScreen: React.FC<Props> = ({ isLive, onConfigChanged, onLog
           <View style={styles.infoCardInner}>
             <View style={styles.infoRow}>
               <Text style={[styles.infoLabel, { color: theme.colors.textSecondary }]}>Versi Aplikasi</Text>
-              <Text style={[styles.infoValue, { color: theme.colors.text }]}>Dompetku Mobile v1.2.0</Text>
+              <Text style={[styles.infoValue, { color: theme.colors.text }]}>Qwarts Finance Mobile v1.2.0</Text>
             </View>
 
             <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />

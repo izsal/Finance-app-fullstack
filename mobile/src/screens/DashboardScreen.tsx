@@ -79,7 +79,7 @@ export const DashboardScreen: React.FC<Props> = ({
               </Text>
               <View style={styles.userTitleRow}>
                 <Text style={[styles.userNameText, { color: theme.colors.text }]}>
-                  {currentUser?.name || currentUser?.email || 'Pengguna Dompetku'}
+                  {currentUser?.name || currentUser?.email || 'Pengguna Qwarts Finance'}
                 </Text>
               <View
                 style={[
@@ -357,7 +357,7 @@ export const DashboardScreen: React.FC<Props> = ({
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.dashProTitle, { color: theme.colors.text }]}>
-                    Upgrade ke Dompetku PRO 👑
+                    Upgrade ke Qwarts Finance PRO 👑
                   </Text>
                   <Text style={[styles.dashProDesc, { color: theme.colors.textSecondary }]}>
                     Buka target tabungan impian, pengingat tagihan rutin, & rekening tak terbatas.

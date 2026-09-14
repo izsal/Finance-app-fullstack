@@ -266,7 +266,7 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-500 text-white shadow-lg shadow-teal-500/25">
               <Wallet className="h-6 w-6" />
             </div>
-            <p className="text-xs font-bold uppercase tracking-wider text-teal-400">Dompetku</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-teal-400">Qwarts Finance</p>
             <h1 className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-white">
               {signup ? 'Mulai Gratis Sekarang' : 'Selamat Datang Kembali'}
             </h1>

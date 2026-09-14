@@ -5,31 +5,31 @@ import './globals.css'
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.qwarts.my.id'),
   title: {
-    default: 'Dompetku — Dashboard & Aplikasi Pengelola Keuangan Pribadi',
-    template: '%s | Dompetku',
+    default: 'Qwarts Finance — Dashboard & Aplikasi Pengelola Keuangan Pribadi',
+    template: '%s | Qwarts Finance',
   },
   description:
     'Kelola transaksi, dompet, rekening bank, anggaran bulanan, tagihan rutin, dan target impian finansial Anda dengan rapi, aman, dan mudah.',
-  applicationName: 'Dompetku',
-  authors: [{ name: 'Dompetku', url: 'https://www.qwarts.my.id' }],
+  applicationName: 'Qwarts Finance',
+  authors: [{ name: 'Qwarts Finance', url: 'https://www.qwarts.my.id' }],
   keywords: [
     'aplikasi keuangan pribadi',
     'catat pengeluaran',
     'budgeting app indonesia',
     'financial tracker',
     'dompet digital',
-    'dompetku',
+    'qwarts finance',
     'qwarts',
   ],
   alternates: {
     canonical: 'https://www.qwarts.my.id',
   },
   openGraph: {
-    title: 'Dompetku — Dashboard & Aplikasi Pengelola Keuangan Pribadi',
+    title: 'Qwarts Finance — Dashboard & Aplikasi Pengelola Keuangan Pribadi',
     description:
       'Catat transaksi, atur anggaran bulanan, kelola tagihan rutin, dan capai target impian finansialmu dengan mudah, rapi, dan aman.',
     url: 'https://www.qwarts.my.id',
-    siteName: 'Dompetku',
+    siteName: 'Qwarts Finance',
     locale: 'id_ID',
     type: 'website',
     images: [
@@ -37,14 +37,14 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 675,
-        alt: 'Dompetku - Personal Finance Dashboard',
+        alt: 'Qwarts Finance - Personal Finance Dashboard',
         type: 'image/png',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Dompetku — Dashboard & Aplikasi Pengelola Keuangan Pribadi',
+    title: 'Qwarts Finance — Dashboard & Aplikasi Pengelola Keuangan Pribadi',
     description:
       'Catat transaksi, atur anggaran bulanan, kelola tagihan rutin, dan capai target impian finansialmu dengan mudah.',
     images: ['/og-image.png'],

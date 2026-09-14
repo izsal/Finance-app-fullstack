@@ -106,7 +106,7 @@ function MainContent() {
         />
         <View style={styles.splashContainer}>
           <AppLogo size={72} borderRadius={20} style={styles.splashLogoBox} />
-          <Text style={[styles.splashTitle, { color: theme.colors.text }]}>Dompetku</Text>
+          <Text style={[styles.splashTitle, { color: theme.colors.text }]}>Qwarts Finance</Text>
           <Text style={[styles.splashSubtitle, { color: theme.colors.textSecondary }]}>Memuat sesi akun Anda...</Text>
           <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginTop: 20 }} />
         </View>

@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Dompetku Mobile",
-    "slug": "dompetku-mobile",
-    "scheme": "dompetku",
+    "name": "Qwarts Finance",
+    "slug": "qwarts-finance",
+    "scheme": "qwartsfinance",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

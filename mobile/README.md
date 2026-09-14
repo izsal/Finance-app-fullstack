@@ -1,6 +1,6 @@
-# Dompetku Mobile — Liquid Glass & Gradient Cards Edition 💎
+# Qwarts Finance Mobile — Liquid Glass & Gradient Cards Edition 💎
 
-Aplikasi mobile finansial modern berbasis **Expo (React Native + TypeScript)** yang terhubung langsung dengan REST API backend Next.js Dompetku (`/api/v1/*`), didesain dengan visual futuristik bertema **Liquid Glass & Gradient Cards** (frosted glassmorphism tebal, specular light sheen, glowing neon borders, ambient aurora backdrop, dan micro-interactions).
+Aplikasi mobile finansial modern berbasis **Expo (React Native + TypeScript)** yang terhubung langsung dengan REST API backend Next.js Qwarts Finance (`/api/v1/*`), didesain dengan visual futuristik bertema **Liquid Glass & Gradient Cards** (frosted glassmorphism tebal, specular light sheen, glowing neon borders, ambient aurora backdrop, dan micro-interactions).
 
 ---
 

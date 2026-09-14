@@ -176,9 +176,9 @@ export default function Dashboard({
 
   // Initialize and persist theme, language & sidebar state
   useEffect(() => {
-    const savedTheme = (localStorage.getItem('dompetku-theme') as 'light' | 'dark' | 'system') || 'light'
-    const savedSidebar = localStorage.getItem('dompetku-sidebar') === 'true'
-    const savedLang = (localStorage.getItem('dompetku-lang') as Language) || 'en'
+    const savedTheme = ((localStorage.getItem('qwarts-theme') || localStorage.getItem('dompetku-theme')) as 'light' | 'dark' | 'system') || 'light'
+    const savedSidebar = (localStorage.getItem('qwarts-sidebar') ?? localStorage.getItem('dompetku-sidebar')) === 'true'
+    const savedLang = ((localStorage.getItem('qwarts-lang') || localStorage.getItem('dompetku-lang')) as Language) || 'en'
     setTheme(savedTheme)
     setSidebarCollapsed(savedSidebar)
     setLang(savedLang)
@@ -198,21 +198,21 @@ export default function Dashboard({
 
   const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
     setTheme(newTheme)
-    localStorage.setItem('dompetku-theme', newTheme)
+    localStorage.setItem('qwarts-theme', newTheme)
     applyTheme(newTheme)
     showToast(lang === 'en' ? `Theme switched to ${newTheme} mode` : `Tema diganti ke mode ${newTheme === 'dark' ? 'Gelap' : newTheme === 'light' ? 'Terang' : 'Sistem'}`)
   }
 
   const handleLanguageChange = (newLang: Language) => {
     setLang(newLang)
-    localStorage.setItem('dompetku-lang', newLang)
+    localStorage.setItem('qwarts-lang', newLang)
     showToast(newLang === 'en' ? 'Language switched to English (US)!' : 'Bahasa dialihkan ke Bahasa Indonesia!', 'success')
   }
 
   const toggleSidebar = () => {
     const next = !sidebarCollapsed
     setSidebarCollapsed(next)
-    localStorage.setItem('dompetku-sidebar', String(next))
+    localStorage.setItem('qwarts-sidebar', String(next))
   }
 
   // Keep state synced with server components
@@ -277,7 +277,7 @@ export default function Dashboard({
     if (!isPro) {
       setShowUpgradeModal({
         featureName: 'Integrasi Mobile REST API Android',
-        description: 'Akses API v1 untuk menghubungkan aplikasi Android, Flutter, atau automasi finansial kustom adalah fitur eksklusif Dompetku PRO.'
+        description: 'Akses API v1 untuk menghubungkan aplikasi Android, Flutter, atau automasi finansial kustom adalah fitur eksklusif Qwarts Finance PRO.'
       })
       return
     }
@@ -484,7 +484,7 @@ export default function Dashboard({
     if (!isPro) {
       setShowUpgradeModal({
         featureName: 'Ekspor Laporan Excel (.xlsx)',
-        description: 'Unduh seluruh catatan transaksi, buku kas, dan ringkasan anggaran Anda dalam format spreadsheet Excel (.xlsx) rapi dengan formula otomatis di Dompetku PRO.'
+        description: 'Unduh seluruh catatan transaksi, buku kas, dan ringkasan anggaran Anda dalam format spreadsheet Excel (.xlsx) rapi dengan formula otomatis di Qwarts Finance PRO.'
       })
       return
     }
@@ -518,7 +518,7 @@ export default function Dashboard({
     const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
-    link.download = `Transaksi_Dompetku_${new Date().toISOString().slice(0, 10)}.csv`
+    link.download = `Transaksi_Qwarts_Finance_${new Date().toISOString().slice(0, 10)}.csv`
     link.click()
     showToast('Berhasil mendownload file CSV!', 'success')
   }
@@ -586,7 +586,7 @@ export default function Dashboard({
               {!sidebarCollapsed && (
                 <div>
                   <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
-                    Dompet<span className="text-emerald-600 dark:text-emerald-400">ku</span>
+                    Qwarts <span className="text-emerald-600 dark:text-emerald-400">Finance</span>
                   </span>
                   <span className="block text-[10px] font-semibold text-slate-400 tracking-wider uppercase">
                     Finance Pro
@@ -630,7 +630,7 @@ export default function Dashboard({
                     if (isProFeature && !isPro) {
                       setShowUpgradeModal({
                         featureName: label,
-                        description: `Fitur ${label} adalah fitur eksklusif Dompetku PRO. Buka akses tanpa batas untuk mengelola keuangan Anda lebih cerdas.`
+                        description: `Fitur ${label} adalah fitur eksklusif Qwarts Finance PRO. Buka akses tanpa batas untuk mengelola keuangan Anda lebih cerdas.`
                       })
                       return
                     }
@@ -744,7 +744,7 @@ export default function Dashboard({
                   </span>
                 ) : (
                   <button
-                    onClick={() => setShowUpgradeModal({ featureName: 'Dompetku PRO', description: 'Buka semua fitur canggih tanpa batasan.' })}
+                    onClick={() => setShowUpgradeModal({ featureName: 'Qwarts Finance PRO', description: 'Buka semua fitur canggih tanpa batasan.' })}
                     className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-2.5 py-0.5 text-[10px] font-black text-white hover:brightness-110 shadow-sm shadow-amber-500/30 transition cursor-pointer"
                   >
                     <Sparkles className="h-2.5 w-2.5 fill-white" />
@@ -807,7 +807,7 @@ export default function Dashboard({
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white font-bold">
                       <Wallet className="h-4 w-4" />
                     </div>
-                    <span className="font-bold text-lg dark:text-white">Dompetku</span>
+                    <span className="font-bold text-lg dark:text-white">Qwarts Finance</span>
                   </div>
                   <button onClick={() => setMobileMenuOpen(false)} className="p-1 text-slate-400">
                     <X className="h-5 w-5" />
@@ -821,7 +821,7 @@ export default function Dashboard({
                         if (isProFeature && !isPro) {
                           setShowUpgradeModal({
                             featureName: label,
-                            description: `Fitur ${label} adalah fitur eksklusif Dompetku PRO. Buka akses tanpa batas untuk mengelola keuangan Anda lebih cerdas.`
+                            description: `Fitur ${label} adalah fitur eksklusif Qwarts Finance PRO. Buka akses tanpa batas untuk mengelola keuangan Anda lebih cerdas.`
                           })
                           setMobileMenuOpen(false)
                           return
@@ -914,7 +914,7 @@ export default function Dashboard({
                       if (!isPro) {
                         setShowUpgradeModal({
                           featureName: 'Target Impian',
-                          description: 'Fitur Target Impian membantu Anda menabung untuk membeli rumah, kendaraan, atau dana darurat dengan indikator visual otomatis di Dompetku PRO.'
+                          description: 'Fitur Target Impian membantu Anda menabung untuk membeli rumah, kendaraan, atau dana darurat dengan indikator visual otomatis di Qwarts Finance PRO.'
                         })
                         return
                       }
@@ -1017,7 +1017,7 @@ export default function Dashboard({
                         if (!isPro) {
                           setShowUpgradeModal({
                             featureName: 'Target Impian',
-                            description: 'Fitur Target Impian membantu Anda menabung untuk membeli rumah, kendaraan, atau dana darurat dengan indikator visual otomatis di Dompetku PRO.'
+                            description: 'Fitur Target Impian membantu Anda menabung untuk membeli rumah, kendaraan, atau dana darurat dengan indikator visual otomatis di Qwarts Finance PRO.'
                           })
                           return
                         }
@@ -1045,7 +1045,7 @@ export default function Dashboard({
                       <button
                         onClick={() => setShowUpgradeModal({
                           featureName: 'Target Impian',
-                          description: 'Fitur Target Impian membantu Anda menabung untuk membeli rumah, kendaraan, atau dana darurat dengan indikator visual otomatis di Dompetku PRO.'
+                          description: 'Fitur Target Impian membantu Anda menabung untuk membeli rumah, kendaraan, atau dana darurat dengan indikator visual otomatis di Qwarts Finance PRO.'
                         })}
                         className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-xs font-black text-white shadow hover:from-emerald-700 hover:to-teal-700 transition"
                       >
@@ -1105,7 +1105,7 @@ export default function Dashboard({
                         if (!isPro) {
                           setShowUpgradeModal({
                             featureName: 'Tagihan Rutin',
-                            description: 'Fitur Tagihan Rutin memantau pengeluaran berulang bulanan seperti langganan, listrik, WiFi, dan cicilan dengan pengingat jatuh tempo otomatis di Dompetku PRO.'
+                            description: 'Fitur Tagihan Rutin memantau pengeluaran berulang bulanan seperti langganan, listrik, WiFi, dan cicilan dengan pengingat jatuh tempo otomatis di Qwarts Finance PRO.'
                           })
                           return
                         }
@@ -1133,7 +1133,7 @@ export default function Dashboard({
                       <button
                         onClick={() => setShowUpgradeModal({
                           featureName: 'Tagihan Rutin',
-                          description: 'Fitur Tagihan Rutin memantau pengeluaran berulang bulanan seperti langganan, listrik, WiFi, dan cicilan dengan pengingat jatuh tempo otomatis di Dompetku PRO.'
+                          description: 'Fitur Tagihan Rutin memantau pengeluaran berulang bulanan seperti langganan, listrik, WiFi, dan cicilan dengan pengingat jatuh tempo otomatis di Qwarts Finance PRO.'
                         })}
                         className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-xs font-black text-white shadow hover:from-emerald-700 hover:to-teal-700 transition"
                       >
@@ -1503,7 +1503,7 @@ export default function Dashboard({
                 <div className="space-y-2">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/80 px-3 py-1 text-xs font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
                     <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                    FITUR EKSKLUSIF DOMPETKU PRO
+                    FITUR EKSKLUSIF QWARTS FINANCE PRO
                   </span>
                   <h2 className="text-2xl font-black text-slate-900 dark:text-white">
                     Target Tabungan Impian (Financial Goals)
@@ -1532,7 +1532,7 @@ export default function Dashboard({
                   <button
                     onClick={() => setShowUpgradeModal({
                       featureName: 'Target Impian',
-                      description: 'Fitur Target Impian membantu Anda menabung untuk membeli rumah, kendaraan, atau dana darurat dengan indikator visual otomatis di Dompetku PRO.'
+                      description: 'Fitur Target Impian membantu Anda menabung untuk membeli rumah, kendaraan, atau dana darurat dengan indikator visual otomatis di Qwarts Finance PRO.'
                     })}
                     className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 py-3.5 text-xs font-black text-white shadow-xl shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700 transition active:scale-95"
                   >
@@ -1715,7 +1715,7 @@ export default function Dashboard({
                 <div className="space-y-2">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/80 px-3 py-1 text-xs font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
                     <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                    FITUR EKSKLUSIF DOMPETKU PRO
+                    FITUR EKSKLUSIF QWARTS FINANCE PRO
                   </span>
                   <h2 className="text-2xl font-black text-slate-900 dark:text-white">
                     Manajemen Tagihan & Langganan Rutin
@@ -1744,7 +1744,7 @@ export default function Dashboard({
                   <button
                     onClick={() => setShowUpgradeModal({
                       featureName: 'Tagihan Rutin',
-                      description: 'Fitur Tagihan Rutin memantau pengeluaran berulang bulanan seperti langganan, listrik, WiFi, dan cicilan dengan pengingat jatuh tempo otomatis di Dompetku PRO.'
+                      description: 'Fitur Tagihan Rutin memantau pengeluaran berulang bulanan seperti langganan, listrik, WiFi, dan cicilan dengan pengingat jatuh tempo otomatis di Qwarts Finance PRO.'
                     })}
                     className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 py-3.5 text-xs font-black text-white shadow-xl shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700 transition active:scale-95"
                   >
@@ -2049,8 +2049,8 @@ export default function Dashboard({
                     onClick={() => setShowUpgradeModal({
                       featureName: lang === 'en' ? 'Monthly Budget' : 'Budget Bulanan',
                       description: lang === 'en'
-                        ? 'Control spending with category monthly limits and automatic overbudget alerts in Dompetku PRO.'
-                        : 'Kendalikan pengeluaran dengan batas anggaran bulanan per kategori dan notifikasi over-budget otomatis di Dompetku PRO.'
+                        ? 'Control spending with category monthly limits and automatic overbudget alerts in Qwarts Finance PRO.'
+                        : 'Kendalikan pengeluaran dengan batas anggaran bulanan per kategori dan notifikasi over-budget otomatis di Qwarts Finance PRO.'
                     })}
                     className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 py-3.5 text-xs font-black text-white shadow-xl shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700 transition active:scale-95"
                   >
@@ -2340,8 +2340,8 @@ export default function Dashboard({
                     onClick={() => setShowUpgradeModal({
                       featureName: lang === 'en' ? 'Reports & Excel (.xlsx) Export' : 'Laporan & Ekspor Excel (.xlsx)',
                       description: lang === 'en'
-                        ? 'Download all your transactions, cashbooks, and budget summaries in formatted Excel (.xlsx) sheets with automated formulas in Dompetku PRO.'
-                        : 'Unduh seluruh catatan transaksi, buku kas, dan ringkasan anggaran Anda dalam format spreadsheet Excel (.xlsx) rapi dengan formula otomatis di Dompetku PRO.'
+                        ? 'Download all your transactions, cashbooks, and budget summaries in formatted Excel (.xlsx) sheets with automated formulas in Qwarts Finance PRO.'
+                        : 'Unduh seluruh catatan transaksi, buku kas, dan ringkasan anggaran Anda dalam format spreadsheet Excel (.xlsx) rapi dengan formula otomatis di Qwarts Finance PRO.'
                     })}
                     className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 py-3.5 text-xs font-black text-white shadow-xl shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700 transition active:scale-95"
                   >
@@ -2586,8 +2586,8 @@ export default function Dashboard({
                       onClick={() => setShowUpgradeModal({
                         featureName: lang === 'en' ? 'Android Mobile REST API Integration' : 'Integrasi Mobile REST API Android',
                         description: lang === 'en'
-                          ? 'Access REST API v1 endpoints and specifications exclusively for Dompetku PRO members.'
-                          : 'Akses spesifikasi dan endpoint REST API v1 eksklusif untuk pengguna Dompetku PRO.'
+                          ? 'Access REST API v1 endpoints and specifications exclusively for Qwarts Finance PRO members.'
+                          : 'Akses spesifikasi dan endpoint REST API v1 eksklusif untuk pengguna Qwarts Finance PRO.'
                       })}
                       className="flex items-center gap-1.5 rounded-xl border border-amber-200 dark:border-amber-800/80 bg-amber-50 dark:bg-amber-950/50 px-3 py-1.5 text-xs font-bold text-amber-700 dark:text-amber-300 hover:bg-amber-100 transition self-start"
                     >
@@ -2609,8 +2609,8 @@ export default function Dashboard({
                         </p>
                         <p className="text-[11px] text-amber-700 dark:text-amber-400">
                           {lang === 'en'
-                            ? 'Upgrade to Dompetku PRO to unlock Bearer token authentication & full REST API v1 endpoints.'
-                            : 'Upgrade ke Dompetku PRO untuk membuka Bearer token autentikasi & seluruh endpoint REST API v1.'}
+                            ? 'Upgrade to Qwarts Finance PRO to unlock Bearer token authentication & full REST API v1 endpoints.'
+                            : 'Upgrade ke Qwarts Finance PRO untuk membuka Bearer token autentikasi & seluruh endpoint REST API v1.'}
                         </p>
                       </div>
                     </div>
@@ -2618,8 +2618,8 @@ export default function Dashboard({
                       onClick={() => setShowUpgradeModal({
                         featureName: lang === 'en' ? 'Android Mobile REST API Integration' : 'Integrasi Mobile REST API Android',
                         description: lang === 'en'
-                          ? 'API v1 access to connect Android, iOS, or custom financial automation apps is an exclusive Dompetku PRO feature.'
-                          : 'Akses API v1 untuk menghubungkan aplikasi Android, iOS, atau automasi finansial kustom adalah fitur eksklusif Dompetku PRO.'
+                          ? 'API v1 access to connect Android, iOS, or custom financial automation apps is an exclusive Qwarts Finance PRO feature.'
+                          : 'Akses API v1 untuk menghubungkan aplikasi Android, iOS, atau automasi finansial kustom adalah fitur eksklusif Qwarts Finance PRO.'
                       })}
                       className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 px-4 py-2 text-xs font-black text-white shadow-md shadow-amber-500/20 transition shrink-0"
                     >
@@ -2808,7 +2808,7 @@ export default function Dashboard({
                     {!isPro ? (
                       <button
                         type="button"
-                        onClick={() => setShowUpgradeModal({ featureName: 'Dompetku PRO', description: lang === 'en' ? 'Unlock all exclusive financial planning features without limitations.' : 'Buka semua fitur perencanaan finansial eksklusif tanpa batasan.' })}
+                        onClick={() => setShowUpgradeModal({ featureName: 'Qwarts Finance PRO', description: lang === 'en' ? 'Unlock all exclusive financial planning features without limitations.' : 'Buka semua fitur perencanaan finansial eksklusif tanpa batasan.' })}
                         className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-5 py-2.5 text-xs font-bold text-white hover:brightness-110 shadow-md shadow-amber-500/25 transition shrink-0 cursor-pointer"
                       >
                         <Sparkles className="h-4 w-4 fill-white" />
@@ -3088,8 +3088,8 @@ export default function Dashboard({
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   {lang === 'en'
-                    ? 'This feature is exclusively available for active Dompetku PRO members. Enjoy limitless financial management.'
-                    : 'Fitur ini hanya dapat digunakan oleh pengguna dengan paket Dompetku PRO aktif. Nikmati pengelolaan finansial tanpa batasan.'}
+                    ? 'This feature is exclusively available for active Qwarts Finance PRO members. Enjoy limitless financial management.'
+                    : 'Fitur ini hanya dapat digunakan oleh pengguna dengan paket Qwarts Finance PRO aktif. Nikmati pengelolaan finansial tanpa batasan.'}
                 </p>
               </div>
               <div className="pt-2 flex flex-col gap-2">
@@ -3104,8 +3104,8 @@ export default function Dashboard({
                     setShowUpgradeModal({
                       featureName: feat,
                       description: lang === 'en'
-                        ? `Unlock full access to ${feat} and all other exclusive features in Dompetku PRO.`
-                        : `Buka akses penuh fitur ${feat} dan semua fitur eksklusif lainnya di Dompetku PRO.`
+                        ? `Unlock full access to ${feat} and all other exclusive features in Qwarts Finance PRO.`
+                        : `Buka akses penuh fitur ${feat} dan semua fitur eksklusif lainnya di Qwarts Finance PRO.`
                     })
                   }}
                   className="w-full rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/20 hover:from-emerald-700 hover:to-teal-700 transition"
@@ -3284,8 +3284,8 @@ export default function Dashboard({
                 <a
                   href={`https://wa.me/6281776370728?text=${encodeURIComponent(
                     lang === 'en'
-                      ? `Hello Dompetku Admin, I would like to upgrade to Dompetku PRO!\n\nName: ${currentUser.name}\nEmail: ${currentUser.email}\nPlan: Yearly (Rp 149.000) / Monthly (Rp 19.000)\n\nPlease provide payment information (Bank Transfer / QRIS).`
-                      : `Halo Admin Dompetku, saya ingin upgrade ke akun Dompetku PRO!\n\nNama: ${currentUser.name}\nEmail: ${currentUser.email}\nPaket: Tahunan (Rp 149.000) / Bulanan (Rp 19.000)\n\nMohon info nomor rekening / QRIS untuk pembayaran.`
+                      ? `Hello Admin Qwarts Finance, I would like to upgrade to Qwarts Finance PRO!\n\nName: ${currentUser.name}\nEmail: ${currentUser.email}\nPlan: Yearly (Rp 149.000) / Monthly (Rp 19.000)\n\nPlease provide payment information (Bank Transfer / QRIS).`
+                      : `Halo Admin Qwarts Finance, saya ingin upgrade ke akun Qwarts Finance PRO!\n\nNama: ${currentUser.name}\nEmail: ${currentUser.email}\nPaket: Tahunan (Rp 149.000) / Bulanan (Rp 19.000)\n\nMohon info nomor rekening / QRIS untuk pembayaran.`
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"

@@ -225,10 +225,10 @@ export const dictionaries = {
     sending_verification: 'Mengirim...',
     btn_sign_out: 'Keluar dari Akun',
     plan_status_title: 'Status Paket & Langganan Akun',
-    plan_status_desc: 'Informasi status tingkatan akses fitur aplikasi Dompetku Anda.',
+    plan_status_desc: 'Informasi status tingkatan akses fitur aplikasi Qwarts Finance Anda.',
     current_plan_label: 'Paket Saat Ini:',
     plan_starter_free: 'Paket Starter (Free)',
-    pro_member_badge: 'DOMPETKU PRO MEMBER',
+    pro_member_badge: 'QWARTS FINANCE PRO MEMBER',
     pro_active_text: 'Selamat! Akun Anda memiliki akses penuh tanpa batas ke seluruh fitur Budget Bulanan, Target Impian, Tagihan Rutin, dan Ekspor Excel.',
     free_active_text: 'Akun Anda saat ini menggunakan paket gratis. Upgrade ke PRO untuk mengaktifkan Target Impian, Budget Bulanan, dan Ekspor Excel.',
     btn_upgrade_now: 'Upgrade ke PRO Sekarang',
@@ -251,7 +251,7 @@ export const dictionaries = {
     test_api_button: 'Test Request API (/api/v1/summary)',
 
     // Paywall Modal
-    paywall_title: 'Tingkatkan ke Dompetku PRO 🚀',
+    paywall_title: 'Tingkatkan ke Qwarts Finance PRO 🚀',
     paywall_default_desc: 'Tingkatkan akun Anda ke PRO untuk mengontrol anggaran, mengejar target tabungan, dan mengunduh laporan keuangan tanpa batasan.',
     benefit_1_title: 'Target Impian',
     benefit_1_desc: 'Tabungan rumah, mobil, dan dana darurat',
@@ -281,7 +281,7 @@ export const dictionaries = {
     close: 'Tutup',
     actions: 'Aksi',
     loading: 'Memuat...',
-    pro_exclusive: 'DOMPETKU PRO EXCLUSIVE',
+    pro_exclusive: 'QWARTS FINANCE PRO EXCLUSIVE',
   },
   en: {
     // Navigation & Sidebar
@@ -510,7 +510,7 @@ export const dictionaries = {
     plan_status_desc: 'Information about your current feature access level.',
     current_plan_label: 'Current Plan:',
     plan_starter_free: 'Starter Plan (Free)',
-    pro_member_badge: 'DOMPETKU PRO MEMBER',
+    pro_member_badge: 'QWARTS FINANCE PRO MEMBER',
     pro_active_text: 'Congratulations! Your account has full unlimited access to Monthly Budgets, Financial Goals, Recurring Bills, and Excel Exports.',
     free_active_text: 'You are currently on the free plan. Upgrade to PRO to unlock Financial Goals, Monthly Budgets, and Excel Export.',
     btn_upgrade_now: 'Upgrade to PRO Now',
@@ -533,7 +533,7 @@ export const dictionaries = {
     test_api_button: 'Test Request API (/api/v1/summary)',
 
     // Paywall Modal
-    paywall_title: 'Upgrade to Dompetku PRO 🚀',
+    paywall_title: 'Upgrade to Qwarts Finance PRO 🚀',
     paywall_default_desc: 'Upgrade your account to PRO to control budgets, pursue savings goals, and download financial reports without limitations.',
     benefit_1_title: 'Financial Goals',
     benefit_1_desc: 'Savings for house, car, and emergency fund',
@@ -563,7 +563,7 @@ export const dictionaries = {
     close: 'Close',
     actions: 'Actions',
     loading: 'Loading...',
-    pro_exclusive: 'DOMPETKU PRO EXCLUSIVE',
+    pro_exclusive: 'QWARTS FINANCE PRO EXCLUSIVE',
   },
 } as const
 
