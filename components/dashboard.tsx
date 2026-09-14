@@ -585,11 +585,8 @@ export default function Dashboard({
               </div>
               {!sidebarCollapsed && (
                 <div>
-                  <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
+                  <span className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
                     Qwarts <span className="text-emerald-600 dark:text-emerald-400">Finance</span>
-                  </span>
-                  <span className="block text-[10px] font-semibold text-slate-400 tracking-wider uppercase">
-                    Finance Pro
                   </span>
                 </div>
               )}
@@ -1566,142 +1563,142 @@ export default function Dashboard({
                   </button>
                 </div>
 
-              {/* Goals Summary Stats */}
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                  <p className="text-xs text-slate-400 font-semibold">{t('total_goal_target', lang)}</p>
-                  <p className="text-xl font-black text-slate-900 dark:text-white mt-1">{formatRupiah(totalGoalTarget)}</p>
-                  <p className="text-[11px] text-slate-400 mt-2">{goalsList.length} {t('active_goals_count', lang)}</p>
-                </div>
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                  <p className="text-xs text-slate-400 font-semibold">{t('total_goal_saved', lang)}</p>
-                  <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{formatRupiah(totalGoalSaved)}</p>
-                  <p className="text-[11px] text-slate-400 mt-2">{t('goal_remaining', lang)} {formatRupiah(Math.max(0, totalGoalTarget - totalGoalSaved))}</p>
-                </div>
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                  <p className="text-xs text-slate-400 font-semibold">{t('goal_average_progress', lang)}</p>
-                  <p className="text-xl font-black text-teal-700 dark:text-teal-400 mt-1">{overallGoalPercentage}%</p>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 mt-2">
-                    <div className="h-full rounded-full bg-teal-500 transition-all" style={{ width: `${overallGoalPercentage}%` }} />
+                {/* Goals Summary Stats */}
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+                    <p className="text-xs text-slate-400 font-semibold">{t('total_goal_target', lang)}</p>
+                    <p className="text-xl font-black text-slate-900 dark:text-white mt-1">{formatRupiah(totalGoalTarget)}</p>
+                    <p className="text-[11px] text-slate-400 mt-2">{goalsList.length} {t('active_goals_count', lang)}</p>
+                  </div>
+                  <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+                    <p className="text-xs text-slate-400 font-semibold">{t('total_goal_saved', lang)}</p>
+                    <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{formatRupiah(totalGoalSaved)}</p>
+                    <p className="text-[11px] text-slate-400 mt-2">{t('goal_remaining', lang)} {formatRupiah(Math.max(0, totalGoalTarget - totalGoalSaved))}</p>
+                  </div>
+                  <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+                    <p className="text-xs text-slate-400 font-semibold">{t('goal_average_progress', lang)}</p>
+                    <p className="text-xl font-black text-teal-700 dark:text-teal-400 mt-1">{overallGoalPercentage}%</p>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 mt-2">
+                      <div className="h-full rounded-full bg-teal-500 transition-all" style={{ width: `${overallGoalPercentage}%` }} />
+                    </div>
                   </div>
                 </div>
+
+                {/* Goals Grid */}
+                {goalsList.length > 0 ? (
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {goalsList.map((g) => {
+                      const pct = g.targetAmount > 0 ? Math.min(100, Math.round((g.currentAmount / g.targetAmount) * 100)) : 0
+                      const remaining = Math.max(0, g.targetAmount - g.currentAmount)
+                      const isDone = g.isAchieved || pct >= 100
+
+                      return (
+                        <div
+                          key={g.id}
+                          className={`rounded-3xl border bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between transition hover:shadow-md ${isDone ? 'border-emerald-300 dark:border-emerald-800 bg-gradient-to-b from-emerald-50/30 to-white dark:from-emerald-950/20 dark:to-slate-900' : 'border-slate-200/80 dark:border-slate-800'
+                            }`}
+                        >
+                          <div>
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center gap-2.5">
+                                <div
+                                  className={`flex h-10 w-10 items-center justify-center rounded-2xl ${isDone ? 'bg-emerald-500 text-white' : 'bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400'
+                                    }`}
+                                >
+                                  {isDone ? <Award className="h-5 w-5" /> : <Target className="h-5 w-5" />}
+                                </div>
+                                <div>
+                                  <h3 className="font-bold text-base text-slate-900 dark:text-white">{g.name}</h3>
+                                  {g.targetDate && (
+                                    <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                                      <Clock className="h-3 w-3" />
+                                      <span>Target: {new Date(g.targetDate).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { month: 'short', year: 'numeric' })}</span>
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setShowModal({ type: 'goal', editData: g })}
+                                  className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                                  title={t('edit', lang)}
+                                >
+                                  <Edit3 className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    if (confirm(t('confirm_delete_goal', lang))) {
+                                      const fresh = await deleteGoal(g.id)
+                                      handleSuccess(lang === 'en' ? 'Financial goal deleted' : 'Target impian dihapus', fresh)
+                                    }
+                                  }}
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                                  title={t('delete', lang)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="mt-5 space-y-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-semibold text-slate-500 dark:text-slate-400">{t('goal_progress', lang)}</span>
+                                <span className={`font-black text-sm ${isDone ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
+                                  {pct}% {isDone && `🎉 ${t('goal_achieved', lang)}`}
+                                </span>
+                              </div>
+
+                              <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-700 ${isDone ? 'bg-emerald-500' : 'bg-gradient-to-r from-teal-500 to-emerald-500'
+                                    }`}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+
+                              <div className="flex items-center justify-between text-xs pt-1">
+                                <span className="font-bold text-slate-900 dark:text-white">{formatRupiah(g.currentAmount)}</span>
+                                <span className="text-slate-400">Target: {formatRupiah(g.targetAmount)}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                            <span className="text-[11px] text-slate-400">
+                              {isDone ? t('goal_all_done', lang) : `${t('goal_remaining_short', lang)} ${formatRupiah(remaining)}`}
+                            </span>
+
+                            {!isDone && (
+                              <button
+                                onClick={() => setShowModal({ type: 'goalDeposit', goal: g })}
+                                className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                                <span>+ {t('deposit_savings', lang)}</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center">
+                    <Target className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />
+                    <p className="mt-3 font-bold text-slate-800 dark:text-slate-200 text-base">{t('goal_empty_title', lang)}</p>
+                    <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                      {t('goal_empty_desc', lang)}
+                    </p>
+                    <button
+                      onClick={() => setShowModal({ type: 'goal' })}
+                      className="mt-5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700"
+                    >
+                      {t('goal_empty_btn', lang)}
+                    </button>
+                  </div>
+                )}
               </div>
-
-              {/* Goals Grid */}
-              {goalsList.length > 0 ? (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {goalsList.map((g) => {
-                    const pct = g.targetAmount > 0 ? Math.min(100, Math.round((g.currentAmount / g.targetAmount) * 100)) : 0
-                    const remaining = Math.max(0, g.targetAmount - g.currentAmount)
-                    const isDone = g.isAchieved || pct >= 100
-
-                    return (
-                      <div
-                        key={g.id}
-                        className={`rounded-3xl border bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between transition hover:shadow-md ${isDone ? 'border-emerald-300 dark:border-emerald-800 bg-gradient-to-b from-emerald-50/30 to-white dark:from-emerald-950/20 dark:to-slate-900' : 'border-slate-200/80 dark:border-slate-800'
-                          }`}
-                      >
-                        <div>
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-2.5">
-                              <div
-                                className={`flex h-10 w-10 items-center justify-center rounded-2xl ${isDone ? 'bg-emerald-500 text-white' : 'bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400'
-                                  }`}
-                              >
-                                {isDone ? <Award className="h-5 w-5" /> : <Target className="h-5 w-5" />}
-                              </div>
-                              <div>
-                                <h3 className="font-bold text-base text-slate-900 dark:text-white">{g.name}</h3>
-                                {g.targetDate && (
-                                  <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
-                                    <Clock className="h-3 w-3" />
-                                    <span>Target: {new Date(g.targetDate).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { month: 'short', year: 'numeric' })}</span>
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => setShowModal({ type: 'goal', editData: g })}
-                                className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-                                title={t('edit', lang)}
-                              >
-                                <Edit3 className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  if (confirm(t('confirm_delete_goal', lang))) {
-                                    const fresh = await deleteGoal(g.id)
-                                    handleSuccess(lang === 'en' ? 'Financial goal deleted' : 'Target impian dihapus', fresh)
-                                  }
-                                }}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                                title={t('delete', lang)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="mt-5 space-y-2">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="font-semibold text-slate-500 dark:text-slate-400">{t('goal_progress', lang)}</span>
-                              <span className={`font-black text-sm ${isDone ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
-                                {pct}% {isDone && `🎉 ${t('goal_achieved', lang)}`}
-                              </span>
-                            </div>
-
-                            <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                              <div
-                                className={`h-full rounded-full transition-all duration-700 ${isDone ? 'bg-emerald-500' : 'bg-gradient-to-r from-teal-500 to-emerald-500'
-                                  }`}
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-
-                            <div className="flex items-center justify-between text-xs pt-1">
-                              <span className="font-bold text-slate-900 dark:text-white">{formatRupiah(g.currentAmount)}</span>
-                              <span className="text-slate-400">Target: {formatRupiah(g.targetAmount)}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
-                          <span className="text-[11px] text-slate-400">
-                            {isDone ? t('goal_all_done', lang) : `${t('goal_remaining_short', lang)} ${formatRupiah(remaining)}`}
-                          </span>
-
-                          {!isDone && (
-                            <button
-                              onClick={() => setShowModal({ type: 'goalDeposit', goal: g })}
-                              className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                              <span>+ {t('deposit_savings', lang)}</span>
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center">
-                  <Target className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />
-                  <p className="mt-3 font-bold text-slate-800 dark:text-slate-200 text-base">{t('goal_empty_title', lang)}</p>
-                  <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                    {t('goal_empty_desc', lang)}
-                  </p>
-                  <button
-                    onClick={() => setShowModal({ type: 'goal' })}
-                    className="mt-5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700"
-                  >
-                    {t('goal_empty_btn', lang)}
-                  </button>
-                </div>
-              )}
-            </div>
             )
           )}
 
@@ -1778,144 +1775,144 @@ export default function Dashboard({
                   </button>
                 </div>
 
-              {/* Subscriptions Metrics */}
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                  <p className="text-xs text-slate-400 font-semibold">{t('total_monthly_bills', lang)}</p>
-                  <p className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1">{formatRupiah(totalMonthlyBills)}</p>
-                  <p className="text-[11px] text-slate-400 mt-2">{subsList.filter((s) => s.isActive).length} {t('active_subs_count', lang)}</p>
-                </div>
+                {/* Subscriptions Metrics */}
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+                    <p className="text-xs text-slate-400 font-semibold">{t('total_monthly_bills', lang)}</p>
+                    <p className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1">{formatRupiah(totalMonthlyBills)}</p>
+                    <p className="text-[11px] text-slate-400 mt-2">{subsList.filter((s) => s.isActive).length} {t('active_subs_count', lang)}</p>
+                  </div>
 
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                  <p className="text-xs text-slate-400 font-semibold">{t('due_soon_alert', lang)}</p>
-                  <p className="text-xl font-black text-amber-500 mt-1">{dueSoonSubs.length} {lang === 'en' ? 'Bills' : 'Tagihan'}</p>
-                  <p className="text-[11px] text-slate-400 mt-2">{t('due_soon_sub', lang)}</p>
-                </div>
+                  <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+                    <p className="text-xs text-slate-400 font-semibold">{t('due_soon_alert', lang)}</p>
+                    <p className="text-xl font-black text-amber-500 mt-1">{dueSoonSubs.length} {lang === 'en' ? 'Bills' : 'Tagihan'}</p>
+                    <p className="text-[11px] text-slate-400 mt-2">{t('due_soon_sub', lang)}</p>
+                  </div>
 
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                  <p className="text-xs text-slate-400 font-semibold">{t('api_sync_title', lang)}</p>
-                  <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
-                    <Zap className="h-4 w-4" /> {t('api_sync_desc', lang)}
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-2">Endpoint: /api/v1/subscriptions</p>
-                </div>
-              </div>
-
-              {/* Subscriptions List */}
-              {subsList.length > 0 ? (
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
-                          <th className="pb-3 pl-2">{t('sub_col_date', lang)}</th>
-                          <th className="pb-3">{t('sub_col_name', lang)}</th>
-                          <th className="pb-3">{t('sub_col_cycle', lang)}</th>
-                          <th className="pb-3">{t('sub_col_status', lang)}</th>
-                          <th className="pb-3 text-right">{t('sub_col_cost', lang)}</th>
-                          <th className="pb-3 pr-2 text-right">{t('sub_col_action', lang)}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                        {subsList.map((s) => {
-                          const daysLeft = s.dueDate >= todayDate ? s.dueDate - todayDate : 30 - (todayDate - s.dueDate)
-                          const isDueSoon = s.isActive && daysLeft <= (s.reminderDaysBefore || 3)
-
-                          return (
-                            <tr key={s.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
-                              <td className="py-4 pl-2 whitespace-nowrap">
-                                <div className="flex items-center gap-2.5">
-                                  <div
-                                    className={`flex h-9 w-9 items-center justify-center rounded-xl font-black text-xs ${isDueSoon
-                                      ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 ring-2 ring-rose-500/20'
-                                      : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
-                                      }`}
-                                  >
-                                    {s.dueDate}
-                                  </div>
-                                  <div>
-                                    <p className="font-bold text-slate-800 dark:text-slate-200">{lang === 'en' ? `${s.dueDate}th each month` : `Tgl ${s.dueDate} tiap bulan`}</p>
-                                    <p className={`text-[10px] ${isDueSoon ? 'text-rose-500 font-bold' : 'text-slate-400'}`}>
-                                      {daysLeft === 0 ? t('sub_due_today', lang) : `${daysLeft} ${t('days_left', lang)}`}
-                                    </p>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="py-4 font-bold text-slate-900 dark:text-white text-sm">{s.name}</td>
-                              <td className="py-4 whitespace-nowrap">
-                                <span className="inline-block rounded-lg bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                                  {s.billingCycle === 'monthly' ? t('sub_cycle_monthly', lang) : s.billingCycle === 'yearly' ? t('sub_cycle_yearly', lang) : t('sub_cycle_weekly', lang)}
-                                </span>
-                              </td>
-                              <td className="py-4 whitespace-nowrap">
-                                <span
-                                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${s.isActive
-                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400'
-                                    : 'bg-slate-100 text-slate-500 dark:bg-slate-800'
-                                    }`}
-                                >
-                                  <span className={`h-1.5 w-1.5 rounded-full ${s.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-                                  {s.isActive ? t('sub_status_active', lang) : t('sub_status_inactive', lang)}
-                                </span>
-                              </td>
-                              <td className="py-4 text-right font-black text-slate-900 dark:text-white text-sm whitespace-nowrap">
-                                {formatRupiah(s.amount)}
-                              </td>
-                              <td className="py-4 pr-2 text-right whitespace-nowrap">
-                                <div className="flex items-center justify-end gap-2">
-                                  <button
-                                    onClick={() => setShowModal({ type: 'paySubscription', subscription: s })}
-                                    className="flex items-center gap-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 transition"
-                                    title={lang === 'en' ? 'Record Payment' : 'Catat Pembayaran Tagihan Ini'}
-                                  >
-                                    <Zap className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                                    <span>{t('pay_bill', lang)}</span>
-                                  </button>
-
-                                  <button
-                                    onClick={() => setShowModal({ type: 'subscription', editData: s })}
-                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200"
-                                    title={t('edit', lang)}
-                                  >
-                                    <Edit3 className="h-3.5 w-3.5" />
-                                  </button>
-                                  <button
-                                    onClick={async () => {
-                                      if (confirm(t('confirm_delete_sub', lang))) {
-                                        const fresh = await deleteSubscription(s.id)
-                                        handleSuccess(lang === 'en' ? 'Recurring bill deleted' : 'Tagihan dihapus', fresh)
-                                      }
-                                    }}
-                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400"
-                                    title={t('delete', lang)}
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
+                  <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+                    <p className="text-xs text-slate-400 font-semibold">{t('api_sync_title', lang)}</p>
+                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
+                      <Zap className="h-4 w-4" /> {t('api_sync_desc', lang)}
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-2">Endpoint: /api/v1/subscriptions</p>
                   </div>
                 </div>
-              ) : (
-                <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center">
-                  <CalendarDays className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />
-                  <p className="mt-3 font-bold text-slate-800 dark:text-slate-200 text-base">{t('sub_empty_title', lang)}</p>
-                  <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                    {t('sub_empty_desc', lang)}
-                  </p>
-                  <button
-                    onClick={() => setShowModal({ type: 'subscription' })}
-                    className="mt-5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700"
-                  >
-                    {t('sub_empty_btn', lang)}
-                  </button>
-                </div>
-              )}
-            </div>
+
+                {/* Subscriptions List */}
+                {subsList.length > 0 ? (
+                  <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
+                            <th className="pb-3 pl-2">{t('sub_col_date', lang)}</th>
+                            <th className="pb-3">{t('sub_col_name', lang)}</th>
+                            <th className="pb-3">{t('sub_col_cycle', lang)}</th>
+                            <th className="pb-3">{t('sub_col_status', lang)}</th>
+                            <th className="pb-3 text-right">{t('sub_col_cost', lang)}</th>
+                            <th className="pb-3 pr-2 text-right">{t('sub_col_action', lang)}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                          {subsList.map((s) => {
+                            const daysLeft = s.dueDate >= todayDate ? s.dueDate - todayDate : 30 - (todayDate - s.dueDate)
+                            const isDueSoon = s.isActive && daysLeft <= (s.reminderDaysBefore || 3)
+
+                            return (
+                              <tr key={s.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                                <td className="py-4 pl-2 whitespace-nowrap">
+                                  <div className="flex items-center gap-2.5">
+                                    <div
+                                      className={`flex h-9 w-9 items-center justify-center rounded-xl font-black text-xs ${isDueSoon
+                                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 ring-2 ring-rose-500/20'
+                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
+                                        }`}
+                                    >
+                                      {s.dueDate}
+                                    </div>
+                                    <div>
+                                      <p className="font-bold text-slate-800 dark:text-slate-200">{lang === 'en' ? `${s.dueDate}th each month` : `Tgl ${s.dueDate} tiap bulan`}</p>
+                                      <p className={`text-[10px] ${isDueSoon ? 'text-rose-500 font-bold' : 'text-slate-400'}`}>
+                                        {daysLeft === 0 ? t('sub_due_today', lang) : `${daysLeft} ${t('days_left', lang)}`}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-4 font-bold text-slate-900 dark:text-white text-sm">{s.name}</td>
+                                <td className="py-4 whitespace-nowrap">
+                                  <span className="inline-block rounded-lg bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                                    {s.billingCycle === 'monthly' ? t('sub_cycle_monthly', lang) : s.billingCycle === 'yearly' ? t('sub_cycle_yearly', lang) : t('sub_cycle_weekly', lang)}
+                                  </span>
+                                </td>
+                                <td className="py-4 whitespace-nowrap">
+                                  <span
+                                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${s.isActive
+                                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400'
+                                      : 'bg-slate-100 text-slate-500 dark:bg-slate-800'
+                                      }`}
+                                  >
+                                    <span className={`h-1.5 w-1.5 rounded-full ${s.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                                    {s.isActive ? t('sub_status_active', lang) : t('sub_status_inactive', lang)}
+                                  </span>
+                                </td>
+                                <td className="py-4 text-right font-black text-slate-900 dark:text-white text-sm whitespace-nowrap">
+                                  {formatRupiah(s.amount)}
+                                </td>
+                                <td className="py-4 pr-2 text-right whitespace-nowrap">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <button
+                                      onClick={() => setShowModal({ type: 'paySubscription', subscription: s })}
+                                      className="flex items-center gap-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 transition"
+                                      title={lang === 'en' ? 'Record Payment' : 'Catat Pembayaran Tagihan Ini'}
+                                    >
+                                      <Zap className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                                      <span>{t('pay_bill', lang)}</span>
+                                    </button>
+
+                                    <button
+                                      onClick={() => setShowModal({ type: 'subscription', editData: s })}
+                                      className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200"
+                                      title={t('edit', lang)}
+                                    >
+                                      <Edit3 className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={async () => {
+                                        if (confirm(t('confirm_delete_sub', lang))) {
+                                          const fresh = await deleteSubscription(s.id)
+                                          handleSuccess(lang === 'en' ? 'Recurring bill deleted' : 'Tagihan dihapus', fresh)
+                                        }
+                                      }}
+                                      className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400"
+                                      title={t('delete', lang)}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center">
+                    <CalendarDays className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />
+                    <p className="mt-3 font-bold text-slate-800 dark:text-slate-200 text-base">{t('sub_empty_title', lang)}</p>
+                    <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                      {t('sub_empty_desc', lang)}
+                    </p>
+                    <button
+                      onClick={() => setShowModal({ type: 'subscription' })}
+                      className="mt-5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700"
+                    >
+                      {t('sub_empty_btn', lang)}
+                    </button>
+                  </div>
+                )}
+              </div>
             )
           )}
 
@@ -2070,118 +2067,118 @@ export default function Dashboard({
                       {t('budget_tab_subtitle', lang)}
                     </p>
                   </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-52">
-                    <DatePickerInput
-                      type="month"
-                      value={selectedMonth}
-                      onChange={setSelectedMonth}
-                      lang={lang}
-                    />
+                  <div className="flex items-center gap-3">
+                    <div className="w-52">
+                      <DatePickerInput
+                        type="month"
+                        value={selectedMonth}
+                        onChange={setSelectedMonth}
+                        lang={lang}
+                      />
+                    </div>
+
+                    <button
+                      onClick={() => setShowModal({ type: 'budget' })}
+                      className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>{t('set_budget', lang)}</span>
+                    </button>
                   </div>
-
-                  <button
-                    onClick={() => setShowModal({ type: 'budget' })}
-                    className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>{t('set_budget', lang)}</span>
-                  </button>
                 </div>
+
+                {/* Budgets Grid */}
+                {monthlyBudgets.length > 0 ? (
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {monthlyBudgets.map((b) => {
+                      const isOver = b.percentage > 100
+                      const isWarning = b.percentage >= 80 && !isOver
+                      return (
+                        <div
+                          key={b.id}
+                          className={`rounded-3xl border p-6 bg-white dark:bg-slate-900 shadow-sm flex flex-col justify-between ${isOver ? 'border-rose-200 dark:border-rose-900/60' : isWarning ? 'border-amber-200 dark:border-amber-900/60' : 'border-slate-200/80 dark:border-slate-800'
+                            }`}
+                        >
+                          <div>
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <span
+                                  className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${isOver
+                                    ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
+                                    : isWarning
+                                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                                      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                    }`}
+                                >
+                                  {isOver ? t('budget_overbudget', lang) : isWarning ? t('budget_warning', lang) : t('budget_safe', lang)} ({b.percentage}%)
+                                </span>
+                                <h3 className="mt-3 text-lg font-bold text-slate-900 dark:text-white">{b.categoryName}</h3>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setShowModal({ type: 'budget', editData: b })}
+                                  className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                                  title={t('edit', lang)}
+                                >
+                                  <Edit3 className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    if (confirm(t('confirm_delete_budget', lang))) {
+                                      const fresh = await deleteBudget(b.id)
+                                      handleSuccess(lang === 'en' ? 'Budget deleted' : 'Budget dihapus', fresh)
+                                    }
+                                  }}
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                                  title={t('delete', lang)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="mt-4">
+                              <div className="flex justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                <span>{t('budget_spent', lang)} {formatRupiah(b.spent)}</span>
+                                <span>{t('budget_limit', lang)} {formatRupiah(b.amount)}</span>
+                              </div>
+
+                              <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${isOver ? 'bg-rose-500' : isWarning ? 'bg-amber-500' : 'bg-emerald-500'
+                                    }`}
+                                  style={{ width: `${Math.min(100, b.percentage)}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                            <span className="text-slate-400">{t('budget_remaining', lang)}</span>
+                            <span className={`font-black ${isOver ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}`}>
+                              {b.remaining >= 0 ? formatRupiah(b.remaining) : `- ${formatRupiah(Math.abs(b.remaining))}`}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center">
+                    <PiggyBank className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />
+                    <p className="mt-3 font-bold text-slate-800 dark:text-slate-200 text-base">{t('budget_empty', lang)}</p>
+                    <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                      {t('budget_empty_sub', lang)}
+                    </p>
+                    <button
+                      onClick={() => setShowModal({ type: 'budget' })}
+                      className="mt-5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700"
+                    >
+                      {t('create_budget_now', lang)}
+                    </button>
+                  </div>
+                )}
               </div>
-
-              {/* Budgets Grid */}
-              {monthlyBudgets.length > 0 ? (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {monthlyBudgets.map((b) => {
-                    const isOver = b.percentage > 100
-                    const isWarning = b.percentage >= 80 && !isOver
-                    return (
-                      <div
-                        key={b.id}
-                        className={`rounded-3xl border p-6 bg-white dark:bg-slate-900 shadow-sm flex flex-col justify-between ${isOver ? 'border-rose-200 dark:border-rose-900/60' : isWarning ? 'border-amber-200 dark:border-amber-900/60' : 'border-slate-200/80 dark:border-slate-800'
-                          }`}
-                      >
-                        <div>
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <span
-                                className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${isOver
-                                  ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
-                                  : isWarning
-                                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
-                                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                                  }`}
-                              >
-                                {isOver ? t('budget_overbudget', lang) : isWarning ? t('budget_warning', lang) : t('budget_safe', lang)} ({b.percentage}%)
-                              </span>
-                              <h3 className="mt-3 text-lg font-bold text-slate-900 dark:text-white">{b.categoryName}</h3>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => setShowModal({ type: 'budget', editData: b })}
-                                className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-                                title={t('edit', lang)}
-                              >
-                                <Edit3 className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  if (confirm(t('confirm_delete_budget', lang))) {
-                                    const fresh = await deleteBudget(b.id)
-                                    handleSuccess(lang === 'en' ? 'Budget deleted' : 'Budget dihapus', fresh)
-                                  }
-                                }}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                                title={t('delete', lang)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="mt-4">
-                            <div className="flex justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-                              <span>{t('budget_spent', lang)} {formatRupiah(b.spent)}</span>
-                              <span>{t('budget_limit', lang)} {formatRupiah(b.amount)}</span>
-                            </div>
-
-                            <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                              <div
-                                className={`h-full rounded-full transition-all duration-500 ${isOver ? 'bg-rose-500' : isWarning ? 'bg-amber-500' : 'bg-emerald-500'
-                                  }`}
-                                style={{ width: `${Math.min(100, b.percentage)}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                          <span className="text-slate-400">{t('budget_remaining', lang)}</span>
-                          <span className={`font-black ${isOver ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}`}>
-                            {b.remaining >= 0 ? formatRupiah(b.remaining) : `- ${formatRupiah(Math.abs(b.remaining))}`}
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center">
-                  <PiggyBank className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />
-                  <p className="mt-3 font-bold text-slate-800 dark:text-slate-200 text-base">{t('budget_empty', lang)}</p>
-                  <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                    {t('budget_empty_sub', lang)}
-                  </p>
-                  <button
-                    onClick={() => setShowModal({ type: 'budget' })}
-                    className="mt-5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700"
-                  >
-                    {t('create_budget_now', lang)}
-                  </button>
-                </div>
-              )}
-            </div>
             )
           )}
 
@@ -2446,11 +2443,10 @@ export default function Dashboard({
                     <button
                       key={item.id}
                       onClick={() => handleLanguageChange(item.id)}
-                      className={`relative flex flex-col items-start rounded-2xl border p-4 text-left transition-all ${
-                        lang === item.id
-                          ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
-                          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
-                      }`}
+                      className={`relative flex flex-col items-start rounded-2xl border p-4 text-left transition-all ${lang === item.id
+                        ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
+                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+                        }`}
                     >
                       <div className="flex items-center justify-between w-full">
                         <span className="text-2xl">{item.flag}</span>
@@ -3123,87 +3119,87 @@ export default function Dashboard({
           ) : (
             <>
               {/* 1. Transaction Form Modal */}
-          {showModal.type === 'transaction' && (
-            <TransactionModal
-              data={data}
-              editData={showModal.editData}
-              lang={lang}
-              close={() => setShowModal(null)}
-              done={handleSuccess}
-              onWalletCreated={(fresh) => setData(fresh)}
-              onDataUpdated={(fresh) => setData(fresh)}
-            />
-          )}
+              {showModal.type === 'transaction' && (
+                <TransactionModal
+                  data={data}
+                  editData={showModal.editData}
+                  lang={lang}
+                  close={() => setShowModal(null)}
+                  done={handleSuccess}
+                  onWalletCreated={(fresh) => setData(fresh)}
+                  onDataUpdated={(fresh) => setData(fresh)}
+                />
+              )}
 
-          {/* 2. Transfer Form Modal */}
-          {showModal.type === 'transfer' && (
-            <TransferModal data={data} lang={lang} close={() => setShowModal(null)} done={handleSuccess} />
-          )}
+              {/* 2. Transfer Form Modal */}
+              {showModal.type === 'transfer' && (
+                <TransferModal data={data} lang={lang} close={() => setShowModal(null)} done={handleSuccess} />
+              )}
 
-          {/* 3. Wallet Form Modal */}
-          {showModal.type === 'wallet' && (
-            <WalletModal editData={showModal.editData} lang={lang} close={() => setShowModal(null)} done={handleSuccess} />
-          )}
+              {/* 3. Wallet Form Modal */}
+              {showModal.type === 'wallet' && (
+                <WalletModal editData={showModal.editData} lang={lang} close={() => setShowModal(null)} done={handleSuccess} />
+              )}
 
-          {/* 4. Category Form Modal */}
-          {showModal.type === 'category' && (
-            <CategoryModal editData={showModal.editData} lang={lang} close={() => setShowModal(null)} done={handleSuccess} />
-          )}
+              {/* 4. Category Form Modal */}
+              {showModal.type === 'category' && (
+                <CategoryModal editData={showModal.editData} lang={lang} close={() => setShowModal(null)} done={handleSuccess} />
+              )}
 
-          {/* 5. Budget Form Modal */}
-          {showModal.type === 'budget' && (
-            <BudgetModal
-              data={data}
-              editData={showModal.editData}
-              defaultMonth={selectedMonth}
-              lang={lang}
-              close={() => setShowModal(null)}
-              done={handleSuccess}
-            />
-          )}
+              {/* 5. Budget Form Modal */}
+              {showModal.type === 'budget' && (
+                <BudgetModal
+                  data={data}
+                  editData={showModal.editData}
+                  defaultMonth={selectedMonth}
+                  lang={lang}
+                  close={() => setShowModal(null)}
+                  done={handleSuccess}
+                />
+              )}
 
-          {/* 6. Goal (Target Tabungan) Modal - Tahap 2 */}
-          {showModal.type === 'goal' && (
-            <GoalModal
-              editData={showModal.editData}
-              lang={lang}
-              close={() => setShowModal(null)}
-              done={handleSuccess}
-            />
-          )}
+              {/* 6. Goal (Target Tabungan) Modal - Tahap 2 */}
+              {showModal.type === 'goal' && (
+                <GoalModal
+                  editData={showModal.editData}
+                  lang={lang}
+                  close={() => setShowModal(null)}
+                  done={handleSuccess}
+                />
+              )}
 
-          {/* 7. Goal Deposit Modal - Tahap 2 */}
-          {showModal.type === 'goalDeposit' && (
-            <GoalDepositModal
-              goal={showModal.goal}
-              wallets={data.wallets}
-              lang={lang}
-              close={() => setShowModal(null)}
-              done={handleSuccess}
-            />
-          )}
+              {/* 7. Goal Deposit Modal - Tahap 2 */}
+              {showModal.type === 'goalDeposit' && (
+                <GoalDepositModal
+                  goal={showModal.goal}
+                  wallets={data.wallets}
+                  lang={lang}
+                  close={() => setShowModal(null)}
+                  done={handleSuccess}
+                />
+              )}
 
-          {/* 8. Subscription Modal - Tahap 2 */}
-          {showModal.type === 'subscription' && (
-            <SubscriptionModal
-              data={data}
-              editData={showModal.editData}
-              lang={lang}
-              close={() => setShowModal(null)}
-              done={handleSuccess}
-            />
-          )}
+              {/* 8. Subscription Modal - Tahap 2 */}
+              {showModal.type === 'subscription' && (
+                <SubscriptionModal
+                  data={data}
+                  editData={showModal.editData}
+                  lang={lang}
+                  close={() => setShowModal(null)}
+                  done={handleSuccess}
+                />
+              )}
 
-          {/* 9. Pay Subscription Modal - Tahap 2 */}
-          {showModal.type === 'paySubscription' && (
-            <PaySubscriptionModal
-              subscription={showModal.subscription}
-              wallets={data.wallets}
-              lang={lang}
-              close={() => setShowModal(null)}
-              done={handleSuccess}
-            />
-          )}
+              {/* 9. Pay Subscription Modal - Tahap 2 */}
+              {showModal.type === 'paySubscription' && (
+                <PaySubscriptionModal
+                  subscription={showModal.subscription}
+                  wallets={data.wallets}
+                  lang={lang}
+                  close={() => setShowModal(null)}
+                  done={handleSuccess}
+                />
+              )}
             </>
           )}
         </ModalContainer>
