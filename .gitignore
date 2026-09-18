@@ -43,5 +43,6 @@ __v0_jsx-dev-runtime.ts
 .snowflake/
 .v0-trash/
 .vercel/
+.package-lock.json
 pnpm-lock.yaml
 pnpm-workspace.yaml

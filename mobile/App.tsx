@@ -27,6 +27,7 @@ import {
   SummaryData,
 } from './src/services/mockData'
 import { ThemeProvider, useAppTheme } from './src/theme/ThemeContext'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 type TabType = 'dashboard' | 'transactions' | 'wallets' | 'goals' | 'settings'
 
@@ -253,6 +254,7 @@ export default function App() {
       <ThemeProvider>
         <MainContent />
       </ThemeProvider>
+      <SpeedInsights />
     </SafeAreaProvider>
   )
 }
