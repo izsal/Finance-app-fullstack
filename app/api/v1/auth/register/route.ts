@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { apiError, apiSuccess } from '@/lib/api-auth'
 import { db } from '@/lib/db'
-import { session as sessionTable, user as userTable, wallets, categories } from '@/lib/schema'
+import { session as sessionTable, user as userTable } from '@/lib/schema'
 import { eq } from 'drizzle-orm'
 import { randomUUID } from 'crypto'
 
@@ -93,35 +93,6 @@ export async function POST(req: NextRequest) {
         createdAt: new Date(),
         updatedAt: new Date(),
       })
-    }
-
-    // Seed default wallets dan categories untuk user baru agar akun langsung siap pakai
-    if (createdUser?.id) {
-      const existingWallets = await db
-        .select()
-        .from(wallets)
-        .where(eq(wallets.userId, createdUser.id))
-      if (existingWallets.length === 0) {
-        await db.insert(wallets).values([
-          { userId: createdUser.id, name: 'BCA Utama', type: 'Bank', balance: 0, color: 'teal' },
-          { userId: createdUser.id, name: 'Kas Tunai', type: 'Tunai', balance: 0, color: 'emerald' },
-          { userId: createdUser.id, name: 'GoPay / OVO', type: 'E-wallet', balance: 0, color: 'indigo' },
-        ])
-      }
-
-      const existingCats = await db
-        .select()
-        .from(categories)
-        .where(eq(categories.userId, createdUser.id))
-      if (existingCats.length === 0) {
-        await db.insert(categories).values([
-          { userId: createdUser.id, name: 'Gaji & Pendapatan', type: 'income', color: 'emerald' },
-          { userId: createdUser.id, name: 'Makanan & Minuman', type: 'expense', color: 'amber' },
-          { userId: createdUser.id, name: 'Belanja Bulanan', type: 'expense', color: 'rose' },
-          { userId: createdUser.id, name: 'Transportasi', type: 'expense', color: 'violet' },
-          { userId: createdUser.id, name: 'Tagihan & Utilitas', type: 'expense', color: 'cyan' },
-        ])
-      }
     }
 
     return apiSuccess(

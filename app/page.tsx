@@ -1,7 +1,7 @@
 import { cookies, headers } from 'next/headers'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { getFinanceData, seedDefaults } from '@/app/actions/finance'
+import { getFinanceData } from '@/app/actions/finance'
 import Dashboard from '@/components/dashboard'
 import LandingPage from '@/components/landing-page'
 
@@ -25,8 +25,7 @@ export default async function Page() {
     where: (u, { eq }) => eq(u.id, session.user.id),
   })
 
-  let data = await getFinanceData()
-  if (!data.wallets.length || !data.categories.length) data = await seedDefaults()
+  const data = await getFinanceData()
   return (
     <Dashboard
       user={{

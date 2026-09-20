@@ -52,6 +52,14 @@ export async function POST(req: NextRequest) {
       return apiError('Nama dompet wajib diisi', 422)
     }
 
+    const isPro = user.plan === 'pro'
+    if (!isPro) {
+      const existing = await db.select().from(wallets).where(eq(wallets.userId, user.id))
+      if (existing.length >= 2) {
+        return apiError('Paket Free dibatasi maksimal 2 dompet. Silakan upgrade ke PRO untuk menambah dompet tanpa batas.', 403)
+      }
+    }
+
     const [created] = await db
       .insert(wallets)
       .values({

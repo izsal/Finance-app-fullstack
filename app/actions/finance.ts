@@ -39,31 +39,35 @@ export async function getFinanceData() {
   };
 }
 
+async function checkProAccess(uid: string, featureName: string) {
+  const userRecord = await db.query.user.findFirst({ where: (u, { eq }) => eq(u.id, uid) });
+  if (userRecord?.plan !== 'pro') {
+    throw new Error(`Fitur ${featureName} eksklusif untuk pengguna Qwarts Finance PRO.`);
+  }
+}
+
 export async function seedDefaults() {
   await ensureTahap2Tables();
   const uid = await userId();
+  const userRecord = await db.query.user.findFirst({ where: (u, { eq }) => eq(u.id, uid) });
+  const isPro = userRecord?.plan === 'pro';
+
   const existing = await db
     .select()
     .from(wallets)
     .where(eq(wallets.userId, uid));
   if (!existing.length) {
-    await db.insert(wallets).values([
-      { userId: uid, name: "Tunai / Cash", type: "Tunai", balance: 0, color: "emerald" },
-      {
-        userId: uid,
-        name: "BCA / Bank Utama",
-        type: "Bank",
-        balance: 0,
-        color: "teal",
-      },
-      {
-        userId: uid,
-        name: "GoPay / OVO / Dana",
-        type: "E-wallet",
-        balance: 0,
-        color: "indigo",
-      },
-    ]);
+    const defaultWallets = isPro
+      ? [
+          { userId: uid, name: "Tunai / Cash", type: "Tunai", balance: 0, color: "emerald" },
+          { userId: uid, name: "BCA / Bank Utama", type: "Bank", balance: 0, color: "teal" },
+          { userId: uid, name: "GoPay / OVO / Dana", type: "E-wallet", balance: 0, color: "indigo" },
+        ]
+      : [
+          { userId: uid, name: "Tunai / Cash", type: "Tunai", balance: 0, color: "emerald" },
+          { userId: uid, name: "BCA / Bank Utama", type: "Bank", balance: 0, color: "teal" },
+        ];
+    await db.insert(wallets).values(defaultWallets);
   }
 
   const cats = await db
@@ -88,6 +92,14 @@ export async function seedDefaults() {
 // WALLET ACTIONS
 export async function addWallet(form: { name: string; type: string; balance?: number; color?: string }) {
   const uid = await userId();
+  const userRecord = await db.query.user.findFirst({ where: (u, { eq }) => eq(u.id, uid) });
+  if (userRecord?.plan !== 'pro') {
+    const currentWallets = await db.select().from(wallets).where(eq(wallets.userId, uid));
+    if (currentWallets.length >= 2) {
+      throw new Error('Paket Free dibatasi maksimal 2 dompet/rekening. Silakan upgrade ke PRO untuk menambah dompet tanpa batas.');
+    }
+  }
+
   await db.insert(wallets).values({
     userId: uid,
     name: form.name.trim(),
@@ -166,6 +178,7 @@ export async function upsertBudget(form: {
   month: string;
 }) {
   const uid = await userId();
+  await checkProAccess(uid, "Budget Bulanan");
   const existing = await db
     .select()
     .from(budgets)
@@ -351,6 +364,7 @@ export async function addGoal(form: {
 }) {
   await ensureTahap2Tables();
   const uid = await userId();
+  await checkProAccess(uid, "Target Impian");
   await db.insert(goals).values({
     userId: uid,
     name: form.name.trim(),
@@ -478,6 +492,7 @@ export async function addSubscription(form: {
 }) {
   await ensureTahap2Tables();
   const uid = await userId();
+  await checkProAccess(uid, "Tagihan Rutin");
   await db.insert(subscriptions).values({
     userId: uid,
     name: form.name.trim(),

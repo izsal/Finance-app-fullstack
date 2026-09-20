@@ -930,7 +930,13 @@ export default function Dashboard({
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button
-                    onClick={() => setShowModal({ type: 'transfer' })}
+                    onClick={() => {
+                      if (data.wallets.length < 2) {
+                        alert(lang === 'en' ? 'You need at least 2 wallets to transfer balance between accounts.' : 'Anda membutuhkan minimal 2 dompet untuk melakukan transfer saldo.')
+                        return
+                      }
+                      setShowModal({ type: 'transfer' })
+                    }}
                     className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                   >
                     <ArrowLeftRight className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
@@ -2041,80 +2047,123 @@ export default function Dashboard({
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button
-                    onClick={() => setShowModal({ type: 'transfer' })}
+                    onClick={() => {
+                      if (data.wallets.length < 2) {
+                        alert(lang === 'en' ? 'You need at least 2 wallets to transfer balance between accounts.' : 'Anda membutuhkan minimal 2 dompet untuk melakukan transfer saldo.')
+                        return
+                      }
+                      setShowModal({ type: 'transfer' })
+                    }}
                     className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                   >
                     <ArrowLeftRight className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     <span>{t('transfer_between_wallets', lang)}</span>
                   </button>
                   <button
-                    onClick={() => setShowModal({ type: 'wallet' })}
+                    onClick={() => {
+                      if (!isPro && data.wallets.length >= 2) {
+                        setShowUpgradeModal({
+                          featureName: lang === 'en' ? 'Unlimited Wallets (> 2 Accounts)' : 'Multi-Dompet (> 2 Rekening)',
+                          description: lang === 'en'
+                            ? 'Free plan is limited to 2 wallets. Upgrade to PRO to add unlimited bank accounts, e-wallets, and cash registers.'
+                            : 'Paket Free dibatasi maksimal 2 dompet. Upgrade ke PRO untuk mengelola rekening bank, e-wallet, dan dompet tanpa batas.'
+                        })
+                        return
+                      }
+                      setShowModal({ type: 'wallet' })
+                    }}
                     className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
                   >
                     <Plus className="h-4 w-4" />
                     <span>{t('add_wallet', lang)}</span>
+                    {!isPro && data.wallets.length >= 2 && <span className="rounded bg-amber-500/20 text-amber-200 text-[10px] px-1.5 py-0.5 font-black">PRO 🔒</span>}
                   </button>
                 </div>
               </div>
 
               {/* Wallets Cards List */}
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {calculatedWallets.map((w) => (
-                  <div
-                    key={w.id}
-                    className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between">
-                        <span className="rounded-xl bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-400">
-                          {w.type}
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => setShowModal({ type: 'wallet', editData: w })}
-                            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200"
-                            title={lang === 'en' ? 'Edit Wallet' : 'Edit Dompet'}
-                          >
-                            <Edit3 className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={async () => {
-                              if (confirm(lang === 'en' ? `Delete wallet "${w.name}"?` : `Hapus dompet "${w.name}"?`)) {
-                                const fresh = await deleteWallet(w.id)
-                                handleSuccess(lang === 'en' ? 'Wallet deleted' : 'Dompet dihapus', fresh)
-                              }
-                            }}
-                            className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400"
-                            title={lang === 'en' ? 'Delete Wallet' : 'Hapus Dompet'}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+              {calculatedWallets.length > 0 ? (
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {calculatedWallets.map((w) => (
+                    <div
+                      key={w.id}
+                      className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-start justify-between">
+                          <span className="rounded-xl bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                            {w.type}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => setShowModal({ type: 'wallet', editData: w })}
+                              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200"
+                              title={lang === 'en' ? 'Edit Wallet' : 'Edit Dompet'}
+                            >
+                              <Edit3 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (confirm(lang === 'en' ? `Delete wallet "${w.name}"?` : `Hapus dompet "${w.name}"?`)) {
+                                  const fresh = await deleteWallet(w.id)
+                                  handleSuccess(lang === 'en' ? 'Wallet deleted' : 'Dompet dihapus', fresh)
+                                }
+                              }}
+                              className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400"
+                              title={lang === 'en' ? 'Delete Wallet' : 'Hapus Dompet'}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
+
+                        <h3 className="mt-4 text-lg font-bold text-slate-900 dark:text-white">{w.name}</h3>
+                        <p className="mt-2 text-2xl font-black text-slate-900 dark:text-white">{formatRupiah(w.currentBalance)}</p>
                       </div>
 
-                      <h3 className="mt-4 text-lg font-bold text-slate-900 dark:text-white">{w.name}</h3>
-                      <p className="mt-2 text-2xl font-black text-slate-900 dark:text-white">{formatRupiah(w.currentBalance)}</p>
-                    </div>
-
-                    <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-1.5 text-xs text-slate-500 dark:text-slate-400">
-                      <div className="flex justify-between">
-                        <span>{t('wallet_income_in', lang)}</span>
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400">+{formatRupiah(w.totalIncome)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>{t('wallet_expense_out', lang)}</span>
-                        <span className="font-bold text-rose-600 dark:text-rose-400">-{formatRupiah(w.totalExpense)}</span>
-                      </div>
-                      {w.balance > 0 && (
-                        <div className="flex justify-between text-[11px] text-slate-400">
-                          <span>{t('initial_balance', lang)}:</span>
-                          <span>{formatRupiah(w.balance)}</span>
+                      <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-1.5 text-xs text-slate-500 dark:text-slate-400">
+                        <div className="flex justify-between">
+                          <span>{t('wallet_income_in', lang)}</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">+{formatRupiah(w.totalIncome)}</span>
                         </div>
-                      )}
+                        <div className="flex justify-between">
+                          <span>{t('wallet_expense_out', lang)}</span>
+                          <span className="font-bold text-rose-600 dark:text-rose-400">-{formatRupiah(w.totalExpense)}</span>
+                        </div>
+                        {w.balance > 0 && (
+                          <div className="flex justify-between text-[11px] text-slate-400">
+                            <span>{t('initial_balance', lang)}:</span>
+                            <span>{formatRupiah(w.balance)}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 p-12 text-center space-y-4">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+                    <WalletCards className="h-7 w-7" />
                   </div>
-                ))}
-              </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                      {lang === 'en' ? 'No Wallets Yet' : 'Belum Ada Dompet / Rekening'}
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                      {lang === 'en'
+                        ? 'Start by creating your first cash wallet or bank account (max 2 on Free plan).'
+                        : 'Mulai dengan menambahkan dompet tunai atau rekening bank pertama Anda (maksimal 2 pada paket Free).'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowModal({ type: 'wallet' })}
+                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>{t('add_wallet', lang)}</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -2322,40 +2371,46 @@ export default function Dashboard({
                   </h3>
 
                   <div className="space-y-2">
-                    {data.categories
-                      .filter((c) => c.type === 'expense')
-                      .map((c) => (
-                        <div
-                          key={c.id}
-                          className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Tag className="h-4 w-4 text-slate-400" />
-                            <span className="font-bold text-xs text-slate-800 dark:text-slate-200">{c.name}</span>
+                    {data.categories.filter((c) => c.type === 'expense').length > 0 ? (
+                      data.categories
+                        .filter((c) => c.type === 'expense')
+                        .map((c) => (
+                          <div
+                            key={c.id}
+                            className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Tag className="h-4 w-4 text-slate-400" />
+                              <span className="font-bold text-xs text-slate-800 dark:text-slate-200">{c.name}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setShowModal({ type: 'category', editData: c })}
+                                className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-white dark:hover:bg-slate-700"
+                                title={t('edit', lang)}
+                              >
+                                <Edit3 className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (confirm(lang === 'en' ? `Delete category "${c.name}"?` : `Hapus kategori "${c.name}"?`)) {
+                                    const fresh = await deleteCategory(c.id)
+                                    handleSuccess(lang === 'en' ? 'Category deleted' : 'Kategori dihapus', fresh)
+                                  }
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-white dark:hover:bg-slate-700"
+                                title={t('delete', lang)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => setShowModal({ type: 'category', editData: c })}
-                              className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-white dark:hover:bg-slate-700"
-                              title={t('edit', lang)}
-                            >
-                              <Edit3 className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              onClick={async () => {
-                                if (confirm(lang === 'en' ? `Delete category "${c.name}"?` : `Hapus kategori "${c.name}"?`)) {
-                                  const fresh = await deleteCategory(c.id)
-                                  handleSuccess(lang === 'en' ? 'Category deleted' : 'Kategori dihapus', fresh)
-                                }
-                              }}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-white dark:hover:bg-slate-700"
-                              title={t('delete', lang)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                        ))
+                    ) : (
+                      <div className="py-8 text-center text-xs text-slate-400">
+                        {lang === 'en' ? 'No expense categories yet. Click "+ Add Category" to create one.' : 'Belum ada kategori pengeluaran. Klik "+ Tambah Kategori" untuk membuat.'}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -2366,40 +2421,46 @@ export default function Dashboard({
                   </h3>
 
                   <div className="space-y-2">
-                    {data.categories
-                      .filter((c) => c.type === 'income')
-                      .map((c) => (
-                        <div
-                          key={c.id}
-                          className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Tag className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                            <span className="font-bold text-xs text-slate-800 dark:text-slate-200">{c.name}</span>
+                    {data.categories.filter((c) => c.type === 'income').length > 0 ? (
+                      data.categories
+                        .filter((c) => c.type === 'income')
+                        .map((c) => (
+                          <div
+                            key={c.id}
+                            className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Tag className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                              <span className="font-bold text-xs text-slate-800 dark:text-slate-200">{c.name}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setShowModal({ type: 'category', editData: c })}
+                                className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-white dark:hover:bg-slate-700"
+                                title={t('edit', lang)}
+                              >
+                                <Edit3 className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (confirm(lang === 'en' ? `Delete category "${c.name}"?` : `Hapus kategori "${c.name}"?`)) {
+                                    const fresh = await deleteCategory(c.id)
+                                    handleSuccess(lang === 'en' ? 'Category deleted' : 'Kategori dihapus', fresh)
+                                  }
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-white dark:hover:bg-slate-700"
+                                title={t('delete', lang)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => setShowModal({ type: 'category', editData: c })}
-                              className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-white dark:hover:bg-slate-700"
-                              title={t('edit', lang)}
-                            >
-                              <Edit3 className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              onClick={async () => {
-                                if (confirm(lang === 'en' ? `Delete category "${c.name}"?` : `Hapus kategori "${c.name}"?`)) {
-                                  const fresh = await deleteCategory(c.id)
-                                  handleSuccess(lang === 'en' ? 'Category deleted' : 'Kategori dihapus', fresh)
-                                }
-                              }}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-white dark:hover:bg-slate-700"
-                              title={t('delete', lang)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                        ))
+                    ) : (
+                      <div className="py-8 text-center text-xs text-slate-400">
+                        {lang === 'en' ? 'No income categories yet. Click "+ Add Category" to create one.' : 'Belum ada kategori pemasukan. Klik "+ Tambah Kategori" untuk membuat.'}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -3235,6 +3296,8 @@ export default function Dashboard({
                   data={data}
                   editData={showModal.editData}
                   lang={lang}
+                  isPro={isPro}
+                  onRequirePro={(featureName, description) => setShowUpgradeModal({ featureName, description })}
                   close={() => setShowModal(null)}
                   done={handleSuccess}
                   onWalletCreated={(fresh) => setData(fresh)}
@@ -3432,6 +3495,8 @@ function TransactionModal({
   data,
   editData,
   lang = 'en',
+  isPro = false,
+  onRequirePro,
   close,
   done,
   onWalletCreated,
@@ -3440,6 +3505,8 @@ function TransactionModal({
   data: Data
   editData?: Transaction
   lang?: Language
+  isPro?: boolean
+  onRequirePro?: (featureName: string, description: string) => void
   close: () => void
   done: (msg: string, freshData?: Data) => void
   onWalletCreated?: (freshData: Data) => void
@@ -3529,6 +3596,15 @@ function TransactionModal({
 
   const handleCreateWallet = async (inputValue: string) => {
     if (!inputValue || !inputValue.trim()) return
+    if (!isPro && walletsList.length >= 2) {
+      onRequirePro?.(
+        lang === 'en' ? 'Unlimited Wallets (> 2 Accounts)' : 'Multi-Dompet (> 2 Rekening)',
+        lang === 'en'
+          ? 'Free plan is limited to 2 wallets. Upgrade to PRO to add unlimited bank accounts, e-wallets, and cash registers.'
+          : 'Paket Free dibatasi maksimal 2 dompet. Upgrade ke PRO untuk mengelola rekening bank, e-wallet, dan dompet tanpa batas.'
+      )
+      return
+    }
     const name = inputValue.trim()
     setIsCreatingWallet(true)
     try {
@@ -3612,6 +3688,14 @@ function TransactionModal({
     e.preventDefault()
     if (!amount || amount <= 0) {
       alert(lang === 'en' ? 'Please enter a valid transaction amount' : 'Mohon masukkan nominal transaksi yang valid')
+      return
+    }
+    if (!walletId || Number(walletId) <= 0) {
+      alert(lang === 'en' ? 'Please select or create a wallet first' : 'Mohon pilih atau buat dompet terlebih dahulu')
+      return
+    }
+    if (!categoryId || Number(categoryId) <= 0) {
+      alert(lang === 'en' ? 'Please select or create a category first' : 'Mohon pilih atau buat kategori terlebih dahulu')
       return
     }
     setSubmitting(true)
@@ -3760,6 +3844,35 @@ function TransactionModal({
           className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
         />
       </div>
+
+      {/* Empty wallet / category helper banners */}
+      {walletsList.length === 0 && (
+        <div className="rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/70 dark:bg-amber-950/30 p-3 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+          <div>
+            <p className="font-bold">{lang === 'en' ? 'No Wallets Available' : 'Dompet Belum Tersedia'}</p>
+            <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
+              {lang === 'en'
+                ? 'Type a wallet name in the selector below (e.g. "BCA" or "Cash") and press Enter to create it immediately.'
+                : 'Ketik nama dompet pada kolom di bawah (misal: "BCA" atau "Kas Tunai") lalu tekan Enter untuk langsung membuatnya.'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {filteredCategories.length === 0 && (
+        <div className="rounded-xl border border-teal-200 dark:border-teal-900/60 bg-teal-50/70 dark:bg-teal-950/30 p-3 text-xs text-teal-800 dark:text-teal-300 flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0 text-teal-600 mt-0.5" />
+          <div>
+            <p className="font-bold">{lang === 'en' ? 'No Category Available' : 'Kategori Belum Tersedia'}</p>
+            <p className="text-[11px] text-teal-700 dark:text-teal-400 mt-0.5">
+              {lang === 'en'
+                ? 'Type a category name in the selector below (e.g. "Food" or "Salary") and press Enter to create it immediately.'
+                : 'Ketik nama kategori pada kolom di bawah (misal: "Makanan" atau "Gaji") lalu tekan Enter untuk langsung membuatnya.'}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* React-Select: Wallet & Category Selection */}
       <div className="grid gap-3 sm:grid-cols-2">
