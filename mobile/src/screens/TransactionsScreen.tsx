@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   StyleSheet,
   Text,
@@ -35,6 +35,14 @@ export const TransactionsScreen: React.FC<Props> = ({
   const [editingTx, setEditingTx] = useState<TransactionItem | null>(null)
   const [catManageVisible, setCatManageVisible] = useState(false)
 
+  // 10 items per page pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 10
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filterType, searchQuery])
+
   const filteredList = transactions.filter((tx) => {
     if (filterType !== 'all' && tx.type !== filterType) return false
     if (searchQuery.trim()) {
@@ -45,6 +53,10 @@ export const TransactionsScreen: React.FC<Props> = ({
     }
     return true
   })
+
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / ITEMS_PER_PAGE))
+  const safePage = Math.min(Math.max(1, currentPage), totalPages)
+  const paginatedList = filteredList.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE)
 
   const totalFilteredAmount = filteredList.reduce((sum, item) => {
     return item.type === 'income' ? sum + item.amount : sum - item.amount
@@ -166,65 +178,108 @@ export const TransactionsScreen: React.FC<Props> = ({
             </View>
           </GlassCard>
         ) : (
-          filteredList.map((tx) => {
-            const badge = getCategoryCuteBadge(tx.categoryName, tx.type, theme)
-            return (
-              <TouchableOpacity
-                key={tx.id}
-                activeOpacity={0.75}
-                onPress={() => setEditingTx(tx)}
-              >
-                <GlassCard
-                  borderRadius={16}
-                  style={styles.txCard}
+          <>
+            {paginatedList.map((tx) => {
+              const badge = getCategoryCuteBadge(tx.categoryName, tx.type, theme)
+              return (
+                <TouchableOpacity
+                  key={tx.id}
+                  activeOpacity={0.75}
+                  onPress={() => setEditingTx(tx)}
                 >
-                  <View style={styles.txInner}>
-                    <View
-                      style={[
-                        styles.iconBox,
-                        {
-                          backgroundColor: badge.bg,
-                        },
-                      ]}
-                    >
-                      <Ionicons
-                        name={badge.icon}
-                        size={18}
-                        color={badge.text}
-                      />
-                    </View>
-
-                    <View style={styles.txMain}>
-                      <Text style={[styles.txDesc, { color: theme.colors.text }]}>{tx.description}</Text>
-                      <View style={styles.tagRow}>
-                        <View style={[styles.miniBadge, { backgroundColor: badge.bg }]}>
-                          <Text style={[styles.miniBadgeText, { color: badge.text }]}>
-                            {tx.categoryName || (tx.type === 'income' ? 'Pemasukan' : 'Pengeluaran')}
-                          </Text>
-                        </View>
-                        <Text style={[styles.dotSeparator, { color: theme.colors.textMuted }]}>•</Text>
-                        <Text style={[styles.txDate, { color: theme.colors.textMuted }]}>{tx.date}</Text>
-                      </View>
-                    </View>
-
-                    <View style={{ alignItems: 'flex-end', gap: 2 }}>
-                      <Text
+                  <GlassCard
+                    borderRadius={16}
+                    style={styles.txCard}
+                  >
+                    <View style={styles.txInner}>
+                      <View
                         style={[
-                          styles.amountText,
+                          styles.iconBox,
                           {
-                            color: tx.type === 'income' ? theme.colors.income : theme.colors.expense,
+                            backgroundColor: badge.bg,
                           },
                         ]}
                       >
-                        {tx.type === 'income' ? '+' : '-'} {ApiService.formatRupiah(tx.amount)}
-                      </Text>
-                      <Ionicons name="create-outline" size={12} color={theme.colors.textMuted} />
+                        <Ionicons
+                          name={badge.icon}
+                          size={18}
+                          color={badge.text}
+                        />
+                      </View>
+
+                      <View style={styles.txMain}>
+                        <Text style={[styles.txDesc, { color: theme.colors.text }]}>{tx.description}</Text>
+                        <View style={styles.tagRow}>
+                          <View style={[styles.miniBadge, { backgroundColor: badge.bg }]}>
+                            <Text style={[styles.miniBadgeText, { color: badge.text }]}>
+                              {tx.categoryName || (tx.type === 'income' ? 'Pemasukan' : 'Pengeluaran')}
+                            </Text>
+                          </View>
+                          <Text style={[styles.dotSeparator, { color: theme.colors.textMuted }]}>•</Text>
+                          <Text style={[styles.txDate, { color: theme.colors.textMuted }]}>{tx.date}</Text>
+                        </View>
+                      </View>
+
+                      <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                        <Text
+                          style={[
+                            styles.amountText,
+                            {
+                              color: tx.type === 'income' ? theme.colors.income : theme.colors.expense,
+                            },
+                          ]}
+                        >
+                          {tx.type === 'income' ? '+' : '-'} {ApiService.formatRupiah(tx.amount)}
+                        </Text>
+                        <Ionicons name="create-outline" size={12} color={theme.colors.textMuted} />
+                      </View>
                     </View>
-                  </View>
-                </GlassCard>
-              </TouchableOpacity>
-            )
-          })
+                  </GlassCard>
+                </TouchableOpacity>
+              )
+            })}
+
+            {/* Mobile Pagination Control */}
+            <View style={styles.paginationContainer}>
+              <Text style={[styles.paginationText, { color: theme.colors.textSecondary }]}>
+                Halaman {safePage} dari {totalPages} ({filteredList.length > 0 ? (safePage - 1) * ITEMS_PER_PAGE + 1 : 0}–{Math.min(safePage * ITEMS_PER_PAGE, filteredList.length)} dari {filteredList.length})
+              </Text>
+              {totalPages > 1 && (
+                <View style={styles.paginationBtnGroup}>
+                  <TouchableOpacity
+                    disabled={safePage <= 1}
+                    onPress={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    style={[
+                      styles.pageButton,
+                      {
+                        backgroundColor: theme.colors.surfaceElevated,
+                        borderColor: theme.colors.border,
+                        opacity: safePage <= 1 ? 0.4 : 1,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="chevron-back" size={14} color={theme.colors.text} />
+                    <Text style={[styles.pageButtonText, { color: theme.colors.text }]}>Sebelumnya</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    disabled={safePage >= totalPages}
+                    onPress={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    style={[
+                      styles.pageButton,
+                      {
+                        backgroundColor: theme.colors.surfaceElevated,
+                        borderColor: theme.colors.border,
+                        opacity: safePage >= totalPages ? 0.4 : 1,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.pageButtonText, { color: theme.colors.text }]}>Berikutnya</Text>
+                    <Ionicons name="chevron-forward" size={14} color={theme.colors.text} />
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </>
         )}
       </ScrollView>
 
@@ -435,5 +490,36 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 6,
+  },
+  paginationContainer: {
+    marginTop: 16,
+    marginBottom: 20,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(150, 150, 150, 0.15)',
+    alignItems: 'center',
+    gap: 10,
+  },
+  paginationText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  paginationBtnGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  pageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  pageButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 })

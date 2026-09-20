@@ -41,6 +41,7 @@ import {
   Camera,
   Check,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   Clock,
   Code2,
@@ -298,12 +299,19 @@ export default function Dashboard({
     }
   }
 
-  // Transactions Filter States
+  // Transactions Filter & Pagination States (10 items per page)
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [walletFilter, setWalletFilter] = useState<string>('all')
   const [dateFilter, setDateFilter] = useState<'all' | '7days' | '30days' | 'month'>('all')
+  const TX_ITEMS_PER_PAGE = 10
+  const [txPage, setTxPage] = useState(1)
+
+  // Reset pagination to page 1 whenever search or filter criteria change
+  useEffect(() => {
+    setTxPage(1)
+  }, [searchQuery, typeFilter, categoryFilter, walletFilter, dateFilter])
 
   // Selected Budget Month
   const currentMonthStr = useMemo(() => new Date().toISOString().slice(0, 7), [])
@@ -407,6 +415,28 @@ export default function Dashboard({
       return true
     })
   }, [data.transactions, typeFilter, categoryFilter, walletFilter, searchQuery, dateFilter, categoryMap, walletMap])
+
+  // Transactions Pagination Computation
+  const totalTxPages = Math.max(1, Math.ceil(filteredTransactions.length / TX_ITEMS_PER_PAGE))
+  const currentTxPage = Math.min(Math.max(1, txPage), totalTxPages)
+  const startIndex = (currentTxPage - 1) * TX_ITEMS_PER_PAGE
+  const endIndex = startIndex + TX_ITEMS_PER_PAGE
+  const paginatedTransactions = useMemo(() => {
+    return filteredTransactions.slice(startIndex, endIndex)
+  }, [filteredTransactions, startIndex, endIndex])
+
+  const getPaginationPages = (current: number, total: number): (number | string)[] => {
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, i) => i + 1)
+    }
+    if (current <= 3) {
+      return [1, 2, 3, 4, '...', total]
+    }
+    if (current >= total - 2) {
+      return [1, '...', total - 3, total - 2, total - 1, total]
+    }
+    return [1, '...', current - 1, current, current + 1, '...', total]
+  }
 
   // Chart Data: Cashflow Trend
   const cashflowChartData = useMemo(() => {
@@ -1405,7 +1435,15 @@ export default function Dashboard({
                   </div>
 
                   <span className="text-slate-400 font-medium">
-                    {t('showing_tx', lang)} <b className="text-slate-800 dark:text-slate-200">{filteredTransactions.length}</b> {t('transactions_count', lang)}
+                    {t('showing_tx', lang)}{' '}
+                    <b className="text-slate-800 dark:text-slate-200">
+                      {filteredTransactions.length > 0
+                        ? `${startIndex + 1}–${Math.min(endIndex, filteredTransactions.length)}`
+                        : 0}
+                    </b>{' '}
+                    {lang === 'en' ? 'of' : 'dari'}{' '}
+                    <b className="text-slate-800 dark:text-slate-200">{filteredTransactions.length}</b>{' '}
+                    {t('transactions_count', lang)}
                   </span>
                 </div>
               </div>
@@ -1413,72 +1451,145 @@ export default function Dashboard({
               {/* Transactions Table */}
               <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm overflow-hidden">
                 {filteredTransactions.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
-                          <th className="pb-3 pl-2">{t('col_date', lang)}</th>
-                          <th className="pb-3">{t('col_desc', lang)}</th>
-                          <th className="pb-3">{t('col_category', lang)}</th>
-                          <th className="pb-3">{t('col_wallet', lang)}</th>
-                          <th className="pb-3 text-right">{t('col_amount', lang)}</th>
-                          <th className="pb-3 pr-2 text-right">{t('col_actions', lang)}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                        {filteredTransactions.map((tRow) => {
-                          const cat = categoryMap.get(tRow.categoryId)
-                          const wal = walletMap.get(tRow.walletId)
-                          const isInc = tRow.type === 'income'
-                          return (
-                            <tr key={tRow.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
-                              <td className="py-3.5 pl-2 text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                                <p className="font-semibold text-slate-800 dark:text-slate-200">{formatIndoDate(tRow.date, false, lang)}</p>
-                                <p className="text-[10px] text-slate-400">
-                                  {new Date(tRow.date).toLocaleTimeString(lang === 'en' ? 'en-US' : 'id-ID', { hour: '2-digit', minute: '2-digit' })}
-                                </p>
-                              </td>
-                              <td className="py-3.5 font-bold text-slate-900 dark:text-white max-w-xs">{tRow.description}</td>
-                              <td className="py-3.5 whitespace-nowrap">
-                                <span className="inline-flex items-center rounded-lg bg-slate-100 dark:bg-slate-800 px-2.5 py-1 font-semibold text-slate-700 dark:text-slate-300">
-                                  {cat?.name || t('col_category', lang)}
-                                </span>
-                              </td>
-                              <td className="py-3.5 text-slate-600 dark:text-slate-400 whitespace-nowrap">{wal?.name || t('col_wallet', lang)}</td>
-                              <td className="py-3.5 text-right whitespace-nowrap">
-                                <span className={`font-black text-sm ${isInc ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                                  {isInc ? '+' : '-'} {formatRupiah(tRow.amount)}
-                                </span>
-                              </td>
-                              <td className="py-3.5 pr-2 text-right whitespace-nowrap">
-                                <div className="flex items-center justify-end gap-1.5">
-                                  <button
-                                    onClick={() => setShowModal({ type: 'transaction', editData: tRow })}
-                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200"
-                                    title={t('edit', lang)}
-                                  >
-                                    <Edit3 className="h-3.5 w-3.5" />
-                                  </button>
-                                  <button
-                                    onClick={async () => {
-                                      if (confirm(t('confirm_delete_tx', lang))) {
-                                        const fresh = await deleteTransaction(tRow.id)
-                                        handleSuccess(lang === 'en' ? 'Transaction deleted' : 'Transaksi dihapus', fresh)
-                                      }
-                                    }}
-                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400"
-                                    title={t('delete', lang)}
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
+                            <th className="pb-3 pl-2">{t('col_date', lang)}</th>
+                            <th className="pb-3">{t('col_desc', lang)}</th>
+                            <th className="pb-3">{t('col_category', lang)}</th>
+                            <th className="pb-3">{t('col_wallet', lang)}</th>
+                            <th className="pb-3 text-right">{t('col_amount', lang)}</th>
+                            <th className="pb-3 pr-2 text-right">{t('col_actions', lang)}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                          {paginatedTransactions.map((tRow) => {
+                            const cat = categoryMap.get(tRow.categoryId)
+                            const wal = walletMap.get(tRow.walletId)
+                            const isInc = tRow.type === 'income'
+                            return (
+                              <tr key={tRow.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                                <td className="py-3.5 pl-2 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                  <p className="font-semibold text-slate-800 dark:text-slate-200">{formatIndoDate(tRow.date, false, lang)}</p>
+                                  <p className="text-[10px] text-slate-400">
+                                    {new Date(tRow.date).toLocaleTimeString(lang === 'en' ? 'en-US' : 'id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                  </p>
+                                </td>
+                                <td className="py-3.5 font-bold text-slate-900 dark:text-white max-w-xs">{tRow.description}</td>
+                                <td className="py-3.5 whitespace-nowrap">
+                                  <span className="inline-flex items-center rounded-lg bg-slate-100 dark:bg-slate-800 px-2.5 py-1 font-semibold text-slate-700 dark:text-slate-300">
+                                    {cat?.name || t('col_category', lang)}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 text-slate-600 dark:text-slate-400 whitespace-nowrap">{wal?.name || t('col_wallet', lang)}</td>
+                                <td className="py-3.5 text-right whitespace-nowrap">
+                                  <span className={`font-black text-sm ${isInc ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                    {isInc ? '+' : '-'} {formatRupiah(tRow.amount)}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 pr-2 text-right whitespace-nowrap">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <button
+                                      onClick={() => setShowModal({ type: 'transaction', editData: tRow })}
+                                      className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200 transition"
+                                      title={t('edit', lang)}
+                                    >
+                                      <Edit3 className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={async () => {
+                                        if (confirm(t('confirm_delete_tx', lang))) {
+                                          const fresh = await deleteTransaction(tRow.id)
+                                          handleSuccess(lang === 'en' ? 'Transaction deleted' : 'Transaksi dihapus', fresh)
+                                        }
+                                      }}
+                                      className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400 transition"
+                                      title={t('delete', lang)}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination Bar */}
+                    <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-slate-100 dark:border-slate-800 pt-4">
+                      <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                        {lang === 'en' ? 'Showing' : 'Menampilkan'}{' '}
+                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                          {startIndex + 1}–{Math.min(endIndex, filteredTransactions.length)}
+                        </span>{' '}
+                        {lang === 'en' ? 'of' : 'dari'}{' '}
+                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                          {filteredTransactions.length}
+                        </span>{' '}
+                        {t('transactions_count', lang)}
+                        <span className="hidden sm:inline text-slate-400 ml-1.5">
+                          ({lang === 'en' ? `Page ${currentTxPage} of ${totalTxPages}` : `Halaman ${currentTxPage} dari ${totalTxPages}`})
+                        </span>
+                      </div>
+
+                      {totalTxPages > 1 && (
+                        <div className="flex items-center gap-1.5 self-center sm:self-auto">
+                          {/* Previous Button */}
+                          <button
+                            onClick={() => setTxPage((p) => Math.max(1, p - 1))}
+                            disabled={currentTxPage <= 1}
+                            className="flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm"
+                            aria-label={lang === 'en' ? 'Previous page' : 'Halaman sebelumnya'}
+                          >
+                            <ChevronLeft className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">{lang === 'en' ? 'Prev' : 'Sebelumnya'}</span>
+                          </button>
+
+                          {/* Page Number Buttons */}
+                          <div className="flex items-center gap-1">
+                            {getPaginationPages(currentTxPage, totalTxPages).map((p, idx) => {
+                              if (p === '...') {
+                                return (
+                                  <span key={`ellipsis-${idx}`} className="px-1.5 text-xs font-bold text-slate-400 select-none">
+                                    ...
+                                  </span>
+                                )
+                              }
+                              const isCurrent = p === currentTxPage
+                              return (
+                                <button
+                                  key={`page-${p}`}
+                                  onClick={() => setTxPage(p as number)}
+                                  className={`h-8 min-w-[32px] px-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center ${
+                                    isCurrent
+                                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 ring-2 ring-emerald-600/20'
+                                      : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                                  }`}
+                                >
+                                  {p}
+                                </button>
+                              )
+                            })}
+                          </div>
+
+                          {/* Next Button */}
+                          <button
+                            onClick={() => setTxPage((p) => Math.min(totalTxPages, p + 1))}
+                            disabled={currentTxPage >= totalTxPages}
+                            className="flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm"
+                            aria-label={lang === 'en' ? 'Next page' : 'Halaman berikutnya'}
+                          >
+                            <span className="hidden sm:inline">{lang === 'en' ? 'Next' : 'Berikutnya'}</span>
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </>
                 ) : (
                   <div className="py-16 text-center">
                     <Receipt className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-700" />
