@@ -581,7 +581,7 @@ export default function Dashboard({
     { key: 'Transaksi', label: t('nav_transactions', lang), icon: Receipt },
     { key: 'Dompet', label: t('nav_wallets', lang), icon: WalletCards },
     { key: 'Budget', label: t('nav_budget', lang), icon: PiggyBank, isProFeature: true, badge: !isPro ? '🔒 PRO' : undefined },
-    { key: 'Target Impian', label: t('nav_goals', lang), icon: Target, isProFeature: true, badge: !isPro ? '🔒 PRO' : lang === 'en' ? 'Phase 2' : 'Tahap 2' },
+    { key: 'Target Impian', label: t('nav_goals', lang), icon: Target, isProFeature: true, badge: !isPro ? '🔒 PRO' : lang === 'en' ? undefined : undefined },
     { key: 'Tagihan Rutin', label: t('nav_subscriptions', lang), icon: CalendarDays, isProFeature: true, badge: !isPro ? '🔒 PRO' : dueSoonSubs.length > 0 ? `${dueSoonSubs.length}` : undefined },
     { key: 'Kategori', label: t('nav_categories', lang), icon: Tag },
     { key: 'Analisis', label: t('nav_reports', lang), icon: BarChart3, isProFeature: true, badge: !isPro ? '🔒 PRO' : undefined },
@@ -1570,11 +1570,10 @@ export default function Dashboard({
                                 <button
                                   key={`page-${p}`}
                                   onClick={() => setTxPage(p as number)}
-                                  className={`h-8 min-w-[32px] px-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center ${
-                                    isCurrent
-                                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 ring-2 ring-emerald-600/20'
-                                      : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-                                  }`}
+                                  className={`h-8 min-w-[32px] px-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center ${isCurrent
+                                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 ring-2 ring-emerald-600/20'
+                                    : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                                    }`}
                                 >
                                   {p}
                                 </button>
@@ -1663,9 +1662,6 @@ export default function Dashboard({
                       <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
                         {t('goals_tab_title', lang)}
                       </h2>
-                      <span className="rounded-xl bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                        Tahap 2
-                      </span>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                       {t('goals_tab_subtitle', lang)}
@@ -1875,9 +1871,6 @@ export default function Dashboard({
                       <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
                         {t('bills_tab_title', lang)}
                       </h2>
-                      <span className="rounded-xl bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                        Tahap 2
-                      </span>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                       {t('bills_tab_subtitle', lang)}
@@ -2801,8 +2794,8 @@ export default function Dashboard({
                     {[
                       { method: 'GET', path: '/api/v1/summary', desc: lang === 'en' ? 'Core financial summary for Android home' : 'Ringkasan finansial utama untuk home Android' },
                       { method: 'GET / POST', path: '/api/v1/transactions', desc: lang === 'en' ? 'Transaction records, pagination, filters & creation' : 'Daftar transaksi, pagination, filter & catat baru' },
-                      { method: 'GET / POST', path: '/api/v1/goals', desc: lang === 'en' ? 'Phase 2: Financial dream goals & deposits' : 'Tahap 2: Target tabungan impian & setor saldo' },
-                      { method: 'GET / POST', path: '/api/v1/subscriptions', desc: lang === 'en' ? 'Phase 2: Recurring bills & 1-click payment' : 'Tahap 2: Manajemen tagihan rutin & bayar 1-click' },
+                      { method: 'GET / POST', path: '/api/v1/goals', desc: lang === 'en' ? 'Financial dream goals & deposits' : 'Target tabungan impian & setor saldo' },
+                      { method: 'GET / POST', path: '/api/v1/subscriptions', desc: lang === 'en' ? 'Recurring bills & 1-click payment' : 'Manajemen tagihan rutin & bayar 1-click' },
                       { method: 'GET / POST', path: '/api/v1/wallets', desc: lang === 'en' ? 'Manage wallets & real-time balance mutation' : 'Kelola dompet & mutasi saldo real-time' },
                       { method: 'POST', path: '/api/v1/wallets/transfer', desc: lang === 'en' ? 'Transfer balance between wallets / accounts' : 'Transfer saldo antar dompet / rekening' },
                     ].map((ep, idx) => (
