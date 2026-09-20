@@ -118,3 +118,17 @@ Dokumen ini mencatat ringkasan seluruh perbaikan copy, pesan, dan struktur landi
 - **Kondisi Baru:**
   - Bahasa Indonesia natural, lugas, spesifik, dan berorientasi manfaat nyata (*"Tahu ke mana uangmu pergi"*, *"Catat tanpa ribet"*).
   - Istilah baku yang konsisten: **Starter (Free)**, **PRO**, **Target Impian**, **dompet**, format nominal `Rp 19.000` & `Rp 149.000`.
+
+---
+
+## 8. Autentikasi: Pencegahan Email Duplikat & Alur Lupa / Reset Password
+
+- **Pencegahan Registrasi Ulang Email / Gmail yang Sudah Terdaftar:**
+  - Menambahkan endpoint pengecekan `/api/v1/auth/check-email` dan validasi server-side `checkEmailRegistered`.
+  - Pada form registrasi (`/sign-up`), sistem secara proaktif mengecek apakah email/Gmail sudah pernah terdaftar di database.
+  - Jika sudah terdaftar, proses pendaftaran dibatalkan dan menampilkan pesan ramah berbahasa Indonesia lengkap dengan tombol aksi cepat (*"Masuk Sekarang"* atau *"Lupa Kata Sandi?"*).
+- **Fitur Lupa Kata Sandi & Reset Password via Email:**
+  - Menambahkan alur Lupa Kata Sandi di form masuk (`/sign-in` atau `/forgot-password`).
+  - Mengintegrasikan handler `sendResetPassword` di `lib/auth.ts` menggunakan API Resend dengan template email berbahasa Indonesia yang modern dan profesional.
+  - Membuat halaman baru `/reset-password` (`components/reset-password-form.tsx`) untuk menerima token pemulihan, validasi kata sandi baru (minimal 8 karakter & konfirmasi cocok), serta pengalihan otomatis kembali ke halaman login setelah berhasil diubah.
+

@@ -596,3 +596,14 @@ export async function deleteSubscription(id: number) {
   revalidatePath("/");
   return getFinanceData();
 }
+
+export async function checkEmailRegistered(email: string) {
+  if (!email || typeof email !== "string") return { exists: false };
+  const cleanEmail = email.trim().toLowerCase();
+  const existingUser = await db.query.user.findFirst({
+    where: (u, { eq }) => eq(u.email, cleanEmail),
+    columns: { id: true, email: true },
+  });
+  return { exists: !!existingUser };
+}
+

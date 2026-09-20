@@ -25,6 +25,81 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+    sendResetPassword: async ({ user, url, token }) => {
+      const resendApiKey = process.env.RESEND_API_KEY?.trim()
+      const rawEmailFrom = process.env.EMAIL_FROM || 'Qwarts Finance <noreply@mail.qwarts.my.id>'
+      const emailFrom = rawEmailFrom.replace(/^["']|["']$/g, '').trim()
+
+      let resetUrl = url
+      try {
+        const parsed = new URL(url, baseURL)
+        if (process.env.NODE_ENV === 'production' && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1')) {
+          parsed.protocol = 'https:'
+          parsed.host = 'www.qwarts.my.id'
+          parsed.port = ''
+        }
+        resetUrl = parsed.toString()
+      } catch {
+        resetUrl = `${baseURL.replace(/\/$/, '')}/${url.replace(/^\//, '')}`
+      }
+
+      if (resendApiKey) {
+        try {
+          const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${resendApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: emailFrom,
+              to: user.email,
+              subject: 'Reset Kata Sandi Akun Qwarts Finance Anda',
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+                  <div style="text-align: center; margin-bottom: 24px;">
+                    <h1 style="color: #0d9488; margin: 0; font-size: 24px;">Qwarts Finance</h1>
+                    <p style="color: #64748b; font-size: 13px; margin-top: 4px;">Pemulihan Kata Sandi Akun</p>
+                  </div>
+                  <h2 style="color: #0f172a; font-size: 18px;">Halo, ${user.name || 'Pengguna'}!</h2>
+                  <p style="color: #334155; font-size: 14px; line-height: 1.6;">
+                    Kami menerima permintaan untuk mengatur ulang kata sandi akun Qwarts Finance Anda. Untuk membuat kata sandi baru, silakan klik tombol di bawah ini:
+                  </p>
+                  <div style="text-align: center; margin: 28px 0;">
+                    <a href="${resetUrl}" style="background-color: #0d9488; color: #ffffff; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block;">
+                      Atur Ulang Kata Sandi
+                    </a>
+                  </div>
+                  <p style="color: #64748b; font-size: 12px; line-height: 1.5;">
+                    Tautan ini hanya berlaku selama 1 jam. Jika tombol di atas tidak berfungsi, salin dan buka tautan berikut di browser Anda:<br />
+                    <a href="${resetUrl}" style="color: #0d9488; word-break: break-all;">${resetUrl}</a>
+                  </p>
+                  <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 24px 0;" />
+                  <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 0;">
+                    Jika Anda tidak pernah meminta perubahan kata sandi ini, Anda dapat mengabaikan email ini dengan aman. Kata sandi akun Anda tidak akan berubah.
+                  </p>
+                </div>
+              `,
+            }),
+          })
+
+          if (!res.ok) {
+            const errText = await res.text()
+            console.error('[Resend Reset Password Error]:', res.status, errText)
+            throw new Error(`Gagal mengirim email reset kata sandi via Resend (${res.status}): ${errText}`)
+          } else {
+            const resData = await res.json()
+            console.log('[Resend Reset Password Sent Successfully]:', resData)
+          }
+        } catch (err) {
+          console.error('Exception sending reset password email:', err)
+          throw err
+        }
+      } else {
+        console.warn('[Resend Warning]: RESEND_API_KEY tidak ditemukan di environment variables!')
+        console.log(`\n========================================\n[QWARTS FINANCE PASSWORD RESET]\nTo: ${user.email}\nReset URL: ${resetUrl}\nToken: ${token}\n========================================\n`)
+      }
+    },
   },
   emailVerification: {
     sendOnSignUp: true,

@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
+  KeyRound,
   Loader2,
   Lock,
   Mail,
@@ -45,9 +46,9 @@ function GoogleIcon({ className = 'h-5 w-5' }: { className?: string }) {
   )
 }
 
-export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
-  const signup = mode === 'sign-up'
+export function AuthForm({ mode = 'sign-in' }: { mode?: 'sign-in' | 'sign-up' | 'forgot-password' }) {
   const router = useRouter()
+  const [view, setView] = useState<'sign-in' | 'sign-up' | 'forgot-password'>(mode)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -59,6 +60,8 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
   const [resendSuccess, setResendSuccess] = useState('')
   const [isVerifiedNotice, setIsVerifiedNotice] = useState(false)
   const [isEmailUnverified, setIsEmailUnverified] = useState(false)
+  const [isDuplicateEmail, setIsDuplicateEmail] = useState(false)
+  const [forgotSent, setForgotSent] = useState(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -66,12 +69,21 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
       if (params.get('verified') === 'true') {
         setIsVerifiedNotice(true)
       }
+      if (params.get('forgot') === 'true') {
+        setView('forgot-password')
+      }
     }
   }, [])
+
+  // Sinkronisasi jika prop mode berubah
+  useEffect(() => {
+    setView(mode)
+  }, [mode])
 
   async function handleGoogleSignIn() {
     setGoogleLoading(true)
     setError('')
+    setIsDuplicateEmail(false)
     try {
       const result = await authClient.signIn.social({
         provider: 'google',
@@ -125,32 +137,101 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
     }
   }
 
+  async function handleRequestPasswordReset() {
+    if (!email || !email.includes('@')) {
+      setError('Masukkan alamat email yang valid.')
+      return
+    }
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/auth/request-password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          redirectTo: '/reset-password',
+        }),
+      })
+
+      const data = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        setError(data?.message || 'Gagal mengirim email reset kata sandi. Coba beberapa saat lagi.')
+        return
+      }
+
+      setForgotSent(true)
+    } catch (err: any) {
+      setError(err?.message || 'Terjadi kesalahan jaringan saat meminta reset kata sandi.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
     setResendSuccess('')
     setIsEmailUnverified(false)
+    setIsDuplicateEmail(false)
 
     try {
-      if (signup) {
+      if (view === 'sign-up') {
+        const cleanEmail = email.trim().toLowerCase()
+
+        // 1. Proactive check: Cegah user yang sudah pernah memakai email/gmail mendaftar ulang
+        try {
+          const checkRes = await fetch('/api/v1/auth/check-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: cleanEmail }),
+          })
+          const checkData = await checkRes.json()
+          if (checkData?.data?.exists) {
+            setIsDuplicateEmail(true)
+            setError(
+              `Email "${cleanEmail}" sudah pernah terdaftar di Qwarts Finance. Anda tidak bisa mendaftar ulang dengan email yang sama.`
+            )
+            setLoading(false)
+            return
+          }
+        } catch (checkErr) {
+          console.warn('Check email check failed:', checkErr)
+        }
+
+        // 2. Eksekusi sign-up Better Auth
         const result = await authClient.signUp.email({
-          name,
-          email,
+          name: name.trim(),
+          email: cleanEmail,
           password,
           callbackURL: '/sign-in?verified=true',
         })
 
         if (result.error) {
-          setError(result.error.message || 'Gagal mendaftar. Pastikan email belum terdaftar.')
+          const msg = result.error.message || ''
+          const isDuplicate =
+            (result.error as any).code === 'USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL' ||
+            msg.toLowerCase().includes('already exists') ||
+            msg.toLowerCase().includes('sudah terdaftar')
+
+          if (isDuplicate) {
+            setIsDuplicateEmail(true)
+            setError(
+              `Email "${cleanEmail}" sudah pernah terdaftar di Qwarts Finance. Anda tidak bisa mendaftar ulang dengan email yang sama.`
+            )
+          } else {
+            setError(msg || 'Gagal mendaftar. Pastikan data Anda sudah benar.')
+          }
           return
         }
 
         // Tampilkan layar konfirmasi verifikasi email
         setVerificationSent(true)
-      } else {
+      } else if (view === 'sign-in') {
         const result = await authClient.signIn.email({
-          email,
+          email: email.trim().toLowerCase(),
           password,
           callbackURL: '/',
         })
@@ -175,6 +256,8 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
 
         router.push('/')
         router.refresh()
+      } else if (view === 'forgot-password') {
+        await handleRequestPasswordReset()
       }
     } catch (err: any) {
       setError(err?.message || 'Terjadi kesalahan saat memproses permintaan.')
@@ -182,6 +265,9 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
       setLoading(false)
     }
   }
+
+  const signup = view === 'sign-up'
+  const isForgotPassword = view === 'forgot-password'
 
   return (
     <main className="relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-950 p-4 sm:p-6 text-slate-100 selection:bg-teal-500 selection:text-white">
@@ -264,14 +350,24 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
           {/* Header */}
           <div className="mb-7 text-center">
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-500 text-white shadow-lg shadow-teal-500/25">
-              <Wallet className="h-6 w-6" />
+              {isForgotPassword ? (
+                <KeyRound className="h-6 w-6" />
+              ) : (
+                <Wallet className="h-6 w-6" />
+              )}
             </div>
             <p className="text-xs font-bold uppercase tracking-wider text-teal-400">Qwarts Finance</p>
             <h1 className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-white">
-              {signup ? 'Mulai Gratis Sekarang' : 'Selamat Datang Kembali'}
+              {isForgotPassword
+                ? 'Lupa Kata Sandi'
+                : signup
+                ? 'Mulai Gratis Sekarang'
+                : 'Selamat Datang Kembali'}
             </h1>
             <p className="mt-2 text-xs sm:text-sm text-slate-400">
-              {signup
+              {isForgotPassword
+                ? 'Masukkan email Anda untuk menerima tautan pemulihan kata sandi.'
+                : signup
                 ? 'Kelola cashflow, budget, dan impian finansialmu dengan rapi.'
                 : 'Masuk untuk memantau saldo dan transaksi keuanganmu.'}
             </p>
@@ -335,43 +431,103 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
                   <span>Kirim Ulang Email Verifikasi</span>
                 </button>
 
-                <Link
-                  href="/sign-in"
-                  className="block text-xs font-bold text-teal-400 hover:underline"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVerificationSent(false)
+                    setView('sign-in')
+                  }}
+                  className="block w-full text-xs font-bold text-teal-400 hover:underline"
                 >
                   Sudah verifikasi? Masuk sekarang
-                </Link>
+                </button>
+              </div>
+            </div>
+          ) : isForgotPassword && forgotSent ? (
+            /* Forgot Password Sent State */
+            <div className="space-y-5 text-center py-4">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-teal-500/10 text-teal-400 border border-teal-500/30">
+                <Mail className="h-7 w-7" />
+              </div>
+
+              <div>
+                <h3 className="text-lg font-bold text-white">Tautan Terkirim!</h3>
+                <p className="mt-2 text-xs text-slate-300 leading-relaxed">
+                  Kami telah mengirimkan instruksi dan tautan reset kata sandi ke email:
+                </p>
+                <p className="mt-1 font-bold text-teal-400 text-sm">{email}</p>
+                <p className="mt-2 text-xs text-slate-400">
+                  Periksa kotak masuk (inbox) atau folder spam email Anda. Tautan berlaku selama 1 jam.
+                </p>
+              </div>
+
+              {error && (
+                <div className="flex items-center justify-center gap-2 rounded-xl bg-rose-950/50 p-2.5 text-xs text-rose-300 border border-rose-500/30">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <div className="pt-2 space-y-3">
+                <button
+                  type="button"
+                  onClick={handleRequestPasswordReset}
+                  disabled={loading}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-2.5 text-xs font-semibold text-slate-200 transition hover:bg-slate-700 hover:text-white disabled:opacity-50"
+                >
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  <span>Kirim Ulang Tautan Reset</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForgotSent(false)
+                    setView('sign-in')
+                  }}
+                  className="block w-full text-xs font-bold text-teal-400 hover:underline"
+                >
+                  Kembali ke Halaman Masuk
+                </button>
               </div>
             </div>
           ) : (
             <>
-              {/* Google OAuth Button */}
-              <div className="mb-6">
-                <button
-                  type="button"
-                  id="google-signin-btn"
-                  onClick={handleGoogleSignIn}
-                  disabled={googleLoading || loading}
-                  className="relative flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-700/80 bg-slate-800/80 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700 hover:border-slate-600 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {googleLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin text-teal-400" />
-                  ) : (
-                    <GoogleIcon className="h-5 w-5" />
-                  )}
-                  <span>{signup ? 'Daftar dengan Google' : 'Lanjutkan dengan Google'}</span>
-                </button>
-              </div>
+              {/* Google OAuth Button (Only in sign-in and sign-up mode) */}
+              {!isForgotPassword && (
+                <>
+                  <div className="mb-6">
+                    <button
+                      type="button"
+                      id="google-signin-btn"
+                      onClick={handleGoogleSignIn}
+                      disabled={googleLoading || loading}
+                      className="relative flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-700/80 bg-slate-800/80 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700 hover:border-slate-600 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {googleLoading ? (
+                        <Loader2 className="h-5 w-5 animate-spin text-teal-400" />
+                      ) : (
+                        <GoogleIcon className="h-5 w-5" />
+                      )}
+                      <span>{signup ? 'Daftar dengan Google' : 'Lanjutkan dengan Google'}</span>
+                    </button>
+                  </div>
 
-              {/* Divider */}
-              <div className="relative mb-6 flex items-center justify-center">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-800" />
-                </div>
-                <span className="relative bg-slate-900/90 px-3 text-xs font-medium text-slate-500">
-                  atau lanjutkan dengan email
-                </span>
-              </div>
+                  {/* Divider */}
+                  <div className="relative mb-6 flex items-center justify-center">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-slate-800" />
+                    </div>
+                    <span className="relative bg-slate-900/90 px-3 text-xs font-medium text-slate-500">
+                      atau lanjutkan dengan email
+                    </span>
+                  </div>
+                </>
+              )}
 
               {/* Form */}
               <form onSubmit={submit} className="space-y-4">
@@ -410,33 +566,53 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
                       type="email"
                       placeholder="nama@email.com"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => {
+                        setEmail(e.target.value)
+                        if (isDuplicateEmail) setIsDuplicateEmail(false)
+                      }}
                       required
                       className="w-full rounded-xl border border-slate-800 bg-slate-950/60 py-2.5 pl-10 pr-3.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Kata Sandi
-                  </label>
-                  <div className="relative mt-1.5">
-                    <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
-                      <Lock className="h-4 w-4" />
-                    </span>
-                    <input
-                      id="password-input"
-                      type="password"
-                      placeholder="Minimal 8 karakter"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      minLength={8}
-                      required
-                      className="w-full rounded-xl border border-slate-800 bg-slate-950/60 py-2.5 pl-10 pr-3.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-                    />
+                {!isForgotPassword && (
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                        Kata Sandi
+                      </label>
+                      {!signup && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setView('forgot-password')
+                            setError('')
+                            setIsDuplicateEmail(false)
+                          }}
+                          className="text-xs font-semibold text-teal-400 hover:text-teal-300 hover:underline"
+                        >
+                          Lupa kata sandi?
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative mt-1.5">
+                      <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
+                        <Lock className="h-4 w-4" />
+                      </span>
+                      <input
+                        id="password-input"
+                        type="password"
+                        placeholder="Minimal 8 karakter"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        minLength={8}
+                        required
+                        className="w-full rounded-xl border border-slate-800 bg-slate-950/60 py-2.5 pl-10 pr-3.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Error Message */}
                 {error && (
@@ -448,6 +624,35 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
                       <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
                       <span>{error}</span>
                     </div>
+
+                    {/* Quick action jika email sudah terdaftar */}
+                    {isDuplicateEmail && (
+                      <div className="mt-2 pt-2 border-t border-rose-500/20 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setView('sign-in')
+                            setError('')
+                            setIsDuplicateEmail(false)
+                          }}
+                          className="rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-teal-500"
+                        >
+                          Masuk Sekarang
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setView('forgot-password')
+                            setError('')
+                            setIsDuplicateEmail(false)
+                          }}
+                          className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-slate-700"
+                        >
+                          Lupa Kata Sandi?
+                        </button>
+                      </div>
+                    )}
+
                     {isEmailUnverified && (
                       <button
                         type="button"
@@ -486,6 +691,11 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
                       <Loader2 className="h-4 w-4 animate-spin" />
                       <span>Memproses...</span>
                     </>
+                  ) : isForgotPassword ? (
+                    <>
+                      <span>Kirim Tautan Reset Kata Sandi</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </>
                   ) : (
                     <>
                       <span>{signup ? 'Daftar Sekarang' : 'Masuk ke Dashboard'}</span>
@@ -496,16 +706,37 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
               </form>
 
               {/* Switch mode */}
-              <p className="mt-6 text-center text-xs sm:text-sm text-slate-400">
-                {signup ? 'Sudah punya akun? ' : 'Belum punya akun? '}
-                <Link
-                  id="switch-auth-mode-link"
-                  className="font-bold text-teal-400 hover:text-teal-300 hover:underline"
-                  href={signup ? '/sign-in' : '/sign-up'}
-                >
-                  {signup ? 'Masuk sekarang' : 'Daftar gratis'}
-                </Link>
-              </p>
+              <div className="mt-6 text-center text-xs sm:text-sm text-slate-400">
+                {isForgotPassword ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView('sign-in')
+                      setError('')
+                      setIsDuplicateEmail(false)
+                    }}
+                    className="font-bold text-teal-400 hover:text-teal-300 hover:underline"
+                  >
+                    Kembali ke Halaman Masuk
+                  </button>
+                ) : (
+                  <p>
+                    {signup ? 'Sudah punya akun? ' : 'Belum punya akun? '}
+                    <button
+                      type="button"
+                      id="switch-auth-mode-link"
+                      onClick={() => {
+                        setView(signup ? 'sign-in' : 'sign-up')
+                        setError('')
+                        setIsDuplicateEmail(false)
+                      }}
+                      className="font-bold text-teal-400 hover:text-teal-300 hover:underline"
+                    >
+                      {signup ? 'Masuk sekarang' : 'Daftar gratis'}
+                    </button>
+                  </p>
+                )}
+              </div>
             </>
           )}
         </div>
