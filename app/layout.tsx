@@ -6,11 +6,11 @@ import './globals.css'
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.qwarts.my.id'),
   title: {
-    default: 'Qwarts Finance — Dashboard & Aplikasi Pengelola Keuangan Pribadi',
+    default: 'Qwarts Finance — Catat Keuangan Pribadi & Budgeting',
     template: '%s | Qwarts Finance',
   },
   description:
-    'Kelola transaksi, dompet, rekening bank, anggaran bulanan, tagihan rutin, dan target impian finansial Anda dengan rapi, aman, dan mudah.',
+    'Catat pemasukan, pengeluaran & arus kas gratis. Upgrade ke PRO untuk budget, multi-dompet unlimited, target impian, dan ekspor data.',
   applicationName: 'Qwarts Finance',
   authors: [{ name: 'Qwarts Finance', url: 'https://www.qwarts.my.id' }],
   keywords: [
@@ -26,16 +26,16 @@ export const metadata: Metadata = {
     canonical: 'https://www.qwarts.my.id',
   },
   openGraph: {
-    title: 'Qwarts Finance — Dashboard & Aplikasi Pengelola Keuangan Pribadi',
+    title: 'Qwarts Finance — Catat Keuangan Pribadi & Budgeting',
     description:
-      'Catat transaksi, atur anggaran bulanan, kelola tagihan rutin, dan capai target impian finansialmu dengan mudah, rapi, dan aman.',
+      'Catat pemasukan, pengeluaran & arus kas harian tanpa biaya. Upgrade ke PRO saat siap mengatur budget, banyak dompet, dan target tabungan.',
     url: 'https://www.qwarts.my.id',
     siteName: 'Qwarts Finance',
     locale: 'id_ID',
     type: 'website',
     images: [
       {
-        url: '/og-image.png',
+        url: '/opengraph-image.png',
         width: 1200,
         height: 675,
         alt: 'Qwarts Finance - Personal Finance Dashboard',
@@ -45,10 +45,10 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Qwarts Finance — Dashboard & Aplikasi Pengelola Keuangan Pribadi',
+    title: 'Qwarts Finance — Catat Keuangan Pribadi & Budgeting',
     description:
-      'Catat transaksi, atur anggaran bulanan, kelola tagihan rutin, dan capai target impian finansialmu dengan mudah.',
-    images: ['/og-image.png'],
+      'Catat pemasukan, pengeluaran & arus kas harian tanpa biaya. Upgrade ke PRO saat siap mengatur budget, banyak dompet, dan target tabungan.',
+    images: ['/twitter-image.png'],
   },
   generator: 'v0.app',
   icons: {

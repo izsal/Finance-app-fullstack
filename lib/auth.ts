@@ -1,5 +1,5 @@
 import { betterAuth } from 'better-auth'
-import { Pool } from 'pg'
+import { pool } from './db'
 
 const origin = (value?: string) => value ? (value.startsWith('http') ? value : `https://${value}`) : undefined
 const defaultBaseUrl = process.env.NODE_ENV === 'production' ? 'https://www.qwarts.my.id' : 'http://localhost:3000'
@@ -20,7 +20,7 @@ const trustedOrigins = [
 export const auth = betterAuth({
   baseURL,
   trustedOrigins,
-  database: new Pool({ connectionString: process.env.DATABASE_URL }),
+  database: pool,
   secret: process.env.BETTER_AUTH_SECRET,
   emailAndPassword: {
     enabled: true,
