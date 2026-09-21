@@ -73,6 +73,7 @@ import {
   Search,
   Settings2,
   Shield,
+  ShieldCheck,
   Smartphone,
   Sparkles,
   Sun,
@@ -142,6 +143,7 @@ export default function Dashboard({
   const [currentUser, setCurrentUser] = useState(user)
   const isPro = currentUser.plan === 'pro'
   const [showUpgradeModal, setShowUpgradeModal] = useState<{ featureName?: string; description?: string } | null>(null)
+  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<'yearly' | 'monthly'>('yearly')
   const [data, setData] = useState<Data>({
     ...initialData,
     goals: initialData.goals || [],
@@ -273,6 +275,60 @@ export default function Dashboard({
       router.refresh()
     })
   }
+
+  const [isPayingDuitku, setIsPayingDuitku] = useState(false)
+
+  const handlePayWithDuitku = async () => {
+    setIsPayingDuitku(true)
+    try {
+      const res = await fetch('/api/payment/duitku/create-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ billingCycle: selectedUpgradePlan }),
+      })
+      const result = await res.json()
+      if (result.success && result.data?.paymentUrl) {
+        window.location.href = result.data.paymentUrl
+      } else {
+        alert(
+          result.message ||
+            (lang === 'en'
+              ? 'Failed to create Duitku invoice. Please ensure DUITKU_MERCHANT_CODE is set in .env.local.'
+              : 'Gagal membuat invoice Duitku. Pastikan DUITKU_MERCHANT_CODE sudah diset di file .env.local.')
+        )
+      }
+    } catch (err: any) {
+      alert(err?.message || (lang === 'en' ? 'Failed to connect to Duitku payment server' : 'Gagal menghubungi server pembayaran Duitku'))
+    } finally {
+      setIsPayingDuitku(false)
+    }
+  }
+
+  // Detect return from Duitku payment gateway
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('payment') === 'finish') {
+      const orderId = params.get('orderId')
+      if (orderId) {
+        fetch(`/api/payment/duitku/check-status?orderId=${encodeURIComponent(orderId)}`)
+          .then((res) => res.json())
+          .then((res) => {
+            if (res.success && res.data?.isPro) {
+              setCurrentUser((prev) => ({ ...prev, plan: 'pro' }))
+              showToast(
+                lang === 'en'
+                  ? 'Payment confirmed! Welcome to Qwarts Finance PRO 👑'
+                  : 'Pembayaran Duitku berhasil! Selamat datang di Qwarts Finance PRO 👑',
+                'success'
+              )
+            }
+          })
+          .catch(() => {})
+      }
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+  }, [lang])
 
   const testMobileApi = async () => {
     if (!isPro) {
@@ -3372,19 +3428,19 @@ export default function Dashboard({
         </ModalContainer>
       )}
 
-      {/* 10. Upgrade to PRO Paywall Modal */}
+      {/* 10. Upgrade to PRO Paywall Modal (Screen B Psychology & Zero Clutter) */}
       {showUpgradeModal && (
         <ModalContainer close={() => setShowUpgradeModal(null)}>
-          <div className="relative overflow-hidden rounded-3xl border border-amber-500/40 bg-slate-950 p-6 sm:p-8 text-white shadow-2xl">
+          <div className="relative overflow-hidden rounded-3xl border border-amber-500/40 bg-slate-950 p-6 sm:p-8 text-white shadow-2xl max-w-2xl w-full">
             {/* Background ambient glow */}
-            <div className="pointer-events-none absolute -top-24 -right-24 h-48 w-48 rounded-full bg-amber-500/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 -left-24 h-48 w-48 rounded-full bg-emerald-500/20 blur-3xl" />
+            <div className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full bg-amber-500/15 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-emerald-500/15 blur-3xl" />
 
             <div className="relative z-10">
               <div className="flex items-center justify-between">
                 <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/15 px-3 py-1 text-xs font-black text-amber-300">
                   <Sparkles className="h-3.5 w-3.5 fill-amber-300" />
-                  <span>{t('pro_exclusive', lang)}</span>
+                  <span>QWARTS FINANCE PRO</span>
                 </div>
                 <button
                   onClick={() => setShowUpgradeModal(null)}
@@ -3394,73 +3450,190 @@ export default function Dashboard({
                 </button>
               </div>
 
-              <h2 className="mt-4 text-2xl font-black text-white">
-                {t('paywall_title', lang)}
+              {/* 1. Reframe Heading (Solusi Layar B) */}
+              <h2 className="mt-4 text-2xl sm:text-3xl font-black text-white tracking-tight">
+                {lang === 'en' ? 'How Your Free Trial Works ✨' : 'Cara Uji Coba Gratis Bekerja ✨'}
               </h2>
-              <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
-                {showUpgradeModal.description || t('paywall_default_desc', lang)}
+              <p className="mt-1.5 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                {showUpgradeModal.description
+                  ? `${showUpgradeModal.description} ${lang === 'en' ? 'Experience all PRO features without risk before deciding.' : 'Coba seluruh fitur unggulan PRO tanpa risiko sebelum memutuskan.'}`
+                  : (lang === 'en' ? 'Experience all Qwarts Finance PRO features without risk before deciding.' : 'Coba seluruh fitur unggulan Qwarts Finance PRO secara gratis tanpa risiko sebelum memutuskan.')}
               </p>
 
-              {/* Feature Benefits List */}
-              <div className="mt-6 space-y-2.5 rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4 text-xs text-slate-200">
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
-                  <span><strong>{t('benefit_1_title', lang)}</strong> — {t('benefit_1_desc', lang)}</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
-                  <span><strong>{t('benefit_2_title', lang)}</strong> — {t('benefit_2_desc', lang)}</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
-                  <span><strong>{t('benefit_3_title', lang)}</strong> — {t('benefit_3_desc', lang)}</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
-                  <span><strong>{t('benefit_4_title', lang)}</strong> — {t('benefit_4_desc', lang)}</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
-                  <span><strong>{t('benefit_5_title', lang)}</strong> — {t('benefit_5_desc', lang)}</span>
+              {/* 2. Transparent Timeline (Transparency Bias: Day 1, 5, 7) */}
+              <div className="mt-5 rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+                <p className="text-xs font-bold text-slate-200 mb-3 flex items-center gap-1.5">
+                  <Calendar className="h-4 w-4 text-amber-400" />
+                  <span>{lang === 'en' ? 'Transparent Trial Timeline' : 'Lini Masa Uji Coba Transparan'}</span>
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="flex sm:flex-col items-start gap-2.5 sm:gap-1.5 rounded-xl bg-slate-950/60 p-3 border border-slate-800/80">
+                    <span className="inline-flex items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400 px-2 py-0.5 text-[11px] font-black">
+                      {lang === 'en' ? 'Day 1' : 'Hari 1'}
+                    </span>
+                    <div>
+                      <p className="text-xs font-bold text-white">{lang === 'en' ? 'Full Access Unlocked' : 'Akses Penuh Terbuka'}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                        {lang === 'en' ? 'Instant access to AI Scanner, Goals & Unlimited Wallets.' : 'Akses instan Target Impian, AI Struk & Unlimited Dompet.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex sm:flex-col items-start gap-2.5 sm:gap-1.5 rounded-xl bg-slate-950/60 p-3 border border-slate-800/80">
+                    <span className="inline-flex items-center justify-center rounded-lg bg-amber-500/20 text-amber-400 px-2 py-0.5 text-[11px] font-black">
+                      {lang === 'en' ? 'Day 5' : 'Hari 5'}
+                    </span>
+                    <div>
+                      <p className="text-xs font-bold text-white">{lang === 'en' ? 'Friendly Reminder' : 'Pengingat Ramah'}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                        {lang === 'en' ? 'We notify you 2 days before the trial period concludes.' : 'Notifikasi otomatis 2 hari sebelum masa trial berakhir.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex sm:flex-col items-start gap-2.5 sm:gap-1.5 rounded-xl bg-slate-950/60 p-3 border border-slate-800/80">
+                    <span className="inline-flex items-center justify-center rounded-lg bg-sky-500/20 text-sky-400 px-2 py-0.5 text-[11px] font-black">
+                      {lang === 'en' ? 'Day 7' : 'Hari 7'}
+                    </span>
+                    <div>
+                      <p className="text-xs font-bold text-white">{lang === 'en' ? 'Continue / Cancel' : 'Lanjut / Batal Bebas'}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                        {lang === 'en' ? 'Start your chosen plan or cancel freely anytime.' : 'Mulai paket pilihan atau batalkan bebas tanpa biaya.'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Pricing Cards */}
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-3.5 text-center">
+              {/* 3. Real Product Visual Previews (Bukan Ikon Abstrak) */}
+              <div className="mt-4">
+                <p className="text-xs font-bold text-slate-300 mb-2.5">
+                  {lang === 'en' ? 'Real Features You Will Receive' : 'Aset & Fitur Nyata Yang Anda Dapatkan'}
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-2.5">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <Target className="h-4 w-4 text-teal-400" />
+                      <span className="text-[9px] font-bold text-teal-400 bg-teal-500/15 px-1.5 py-0.5 rounded">78%</span>
+                    </div>
+                    <p className="text-[11px] font-bold text-white leading-snug">{lang === 'en' ? 'Dream Goals' : 'Target Impian'}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{lang === 'en' ? 'Auto accumulation' : 'Akumulasi tabungan'}</p>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-2.5">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <Camera className="h-4 w-4 text-sky-400" />
+                      <span className="text-[9px] font-bold text-sky-400 bg-sky-500/15 px-1.5 py-0.5 rounded">99%</span>
+                    </div>
+                    <p className="text-[11px] font-bold text-white leading-snug">{lang === 'en' ? 'AI Scanner' : 'AI Struk'}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{lang === 'en' ? 'Instant auto-fill' : 'Scan nota belanja'}</p>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-2.5">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <FileSpreadsheet className="h-4 w-4 text-purple-400" />
+                      <span className="text-[9px] font-bold text-purple-400 bg-purple-500/15 px-1.5 py-0.5 rounded">XLSX</span>
+                    </div>
+                    <p className="text-[11px] font-bold text-white leading-snug">{lang === 'en' ? 'Excel Export' : 'Ekspor Laporan'}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{lang === 'en' ? '1-Click download' : '1-Klik unduh kas'}</p>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-2.5">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <Wallet className="h-4 w-4 text-amber-400" />
+                      <span className="text-[9px] font-bold text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded">UNLIMITED</span>
+                    </div>
+                    <p className="text-[11px] font-bold text-white leading-snug">{lang === 'en' ? 'Multi Wallets' : 'Multi Rekening'}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{lang === 'en' ? 'Bank & e-wallets' : 'Semua bank & e-wallet'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Single Clear Pricing & Smart Badge */}
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedUpgradePlan('monthly')}
+                  className={`rounded-2xl border p-3.5 text-center transition cursor-pointer ${
+                    selectedUpgradePlan === 'monthly'
+                      ? 'border-teal-500 bg-teal-500/10 shadow-md'
+                      : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
+                  }`}
+                >
                   <span className="text-[11px] font-semibold text-slate-400">{t('pkg_monthly', lang)}</span>
                   <p className="mt-1 text-lg font-black text-white">{t('pkg_monthly_price', lang)}</p>
                   <span className="text-[10px] text-slate-400">{t('pkg_per_month', lang)}</span>
-                </div>
-                <div className="relative rounded-2xl border border-amber-500/50 bg-gradient-to-b from-amber-500/15 to-slate-900/80 p-3.5 text-center shadow-lg shadow-amber-500/10">
-                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-amber-500 px-2 py-0.2 text-[9px] font-black text-slate-950 uppercase">
-                    {t('pkg_save_badge', lang)}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedUpgradePlan('yearly')}
+                  className={`relative rounded-2xl border p-3.5 text-center transition cursor-pointer ${
+                    selectedUpgradePlan === 'yearly'
+                      ? 'border-amber-500 bg-gradient-to-b from-amber-500/20 to-slate-900/90 shadow-lg shadow-amber-500/15'
+                      : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
+                  }`}
+                >
+                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-black text-slate-950 uppercase tracking-wider">
+                    {lang === 'en' ? 'SAVE 35% • BEST VALUE' : 'HEMAT 35% • BEST VALUE'}
                   </span>
                   <span className="text-[11px] font-bold text-amber-300">{t('pkg_yearly', lang)}</span>
                   <p className="mt-1 text-lg font-black text-white">{t('pkg_yearly_price', lang)}</p>
                   <span className="text-[10px] text-emerald-400 font-semibold">{t('pkg_yearly_monthly_rate', lang)}</span>
-                </div>
+                </button>
               </div>
 
-              {/* Action Buttons */}
-              <div className="mt-6 flex flex-col gap-2.5">
-                <a
-                  href={`https://wa.me/6281776370728?text=${encodeURIComponent(
-                    lang === 'en'
-                      ? `Hello Admin Qwarts Finance, I would like to upgrade to Qwarts Finance PRO!\n\nName: ${currentUser.name}\nEmail: ${currentUser.email}\nPlan: Yearly (Rp 149.000) / Monthly (Rp 19.000)\n\nPlease provide payment information (Bank Transfer / QRIS).`
-                      : `Halo Admin Qwarts Finance, saya ingin upgrade ke akun Qwarts Finance PRO!\n\nNama: ${currentUser.name}\nEmail: ${currentUser.email}\nPaket: Tahunan (Rp 149.000) / Bulanan (Rp 19.000)\n\nMohon info nomor rekening / QRIS untuk pembayaran.`
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-400 py-3.5 text-sm font-black text-slate-950 shadow-lg shadow-teal-500/30 transition hover:brightness-110 active:scale-98"
+              {/* 5. Ownership Micro-copy CTA Button with Duitku Gateway & Uncertainty Reducer */}
+              <div className="mt-5 flex flex-col gap-2.5">
+                <button
+                  type="button"
+                  disabled={isPayingDuitku}
+                  onClick={handlePayWithDuitku}
+                  className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-400 py-3.5 text-sm font-black text-slate-950 shadow-lg shadow-teal-500/30 transition hover:brightness-110 active:scale-98 cursor-pointer disabled:opacity-60"
                 >
-                  <Sparkles className="h-4 w-4 fill-slate-950 text-slate-950" />
-                  <span>{t('btn_upgrade_whatsapp', lang)}</span>
-                </a>
+                  {isPayingDuitku ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin text-slate-950" />
+                      <span>{lang === 'en' ? 'Connecting to Duitku...' : 'Menghubungkan ke Duitku...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="h-4 w-4 text-slate-950" />
+                      <span>
+                        {lang === 'en'
+                          ? `Pay via Duitku (QRIS / VA / E-Wallet) • ${selectedUpgradePlan === 'yearly' ? 'Rp 149.000' : 'Rp 19.000'}`
+                          : `Bayar via Duitku (QRIS / VA / E-Wallet) • ${selectedUpgradePlan === 'yearly' ? 'Rp 149.000' : 'Rp 19.000'}`}
+                      </span>
+                    </>
+                  )}
+                </button>
+
+                <div className="flex items-center justify-between px-1">
+                  <p className="text-[11px] text-slate-400">
+                    {lang === 'en'
+                      ? 'Instant auto-activation • Secure Duitku checkout'
+                      : 'Aktivasi instan otomatis • Transaksi aman via Duitku'}
+                  </p>
+
+                  <a
+                    href={`https://wa.me/6281776370728?text=${encodeURIComponent(
+                      lang === 'en'
+                        ? `Hello Admin Qwarts Finance, I would like to pay for Qwarts Finance PRO via manual transfer / WhatsApp!\n\nName: ${currentUser.name}\nEmail: ${currentUser.email}\nPlan: ${selectedUpgradePlan === 'yearly' ? 'Yearly (Rp 149.000 / Save 35%)' : 'Monthly (Rp 19.000)'}`
+                        : `Halo Admin Qwarts Finance, saya ingin konfirmasi pembayaran Qwarts Finance PRO via WhatsApp!\n\nNama: ${currentUser.name}\nEmail: ${currentUser.email}\nPaket: ${selectedUpgradePlan === 'yearly' ? 'Tahunan (Rp 149.000 / Hemat 35%)' : 'Bulanan (Rp 19.000)'}`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] font-semibold text-teal-400 hover:underline inline-flex items-center gap-1"
+                  >
+                    <span>{lang === 'en' ? 'Or pay via WhatsApp' : 'Atau bayar via WhatsApp'}</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => setShowUpgradeModal(null)}
-                  className="w-full py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition cursor-pointer"
+                  className="w-full py-1 text-xs font-semibold text-slate-500 hover:text-slate-300 transition cursor-pointer mt-0.5"
                 >
                   {lang === 'en' ? 'Maybe Later' : 'Nanti Saja'}
                 </button>
@@ -3911,14 +4084,28 @@ function TransactionModal({
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition disabled:opacity-50"
+          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
         >
-          {submitting
-            ? (lang === 'en' ? 'Saving...' : 'Menyimpan...')
-            : editData
-              ? (lang === 'en' ? 'Update Transaction' : 'Perbarui Transaksi')
-              : (lang === 'en' ? 'Save Transaction' : 'Simpan Transaksi')}
+          {submitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>{lang === 'en' ? 'Saving...' : 'Menyimpan...'}</span>
+            </>
+          ) : (
+            <span>
+              {editData
+                ? (amount > 0
+                    ? `${lang === 'en' ? 'Update Transaction' : 'Perbarui Transaksi'} • ${formatRupiah(amount, true)}`
+                    : (lang === 'en' ? 'Update Transaction' : 'Perbarui Transaksi'))
+                : (amount > 0
+                    ? `${type === 'expense' ? (lang === 'en' ? 'Save Expense' : 'Simpan Pengeluaran') : (lang === 'en' ? 'Save Income' : 'Simpan Pemasukan')} • ${formatRupiah(amount, true)}`
+                    : (lang === 'en' ? 'Save Transaction' : 'Simpan Transaksi'))}
+            </span>
+          )}
         </button>
+        <p className="mt-2 text-center text-[11px] text-slate-500 dark:text-slate-400">
+          {lang === 'en' ? 'Instant recording • Wallet balance updates in real-time' : 'Pencatatan instan • Saldo dompet langsung ter-update'}
+        </p>
       </div>
     </form>
   )
@@ -4041,12 +4228,24 @@ function TransferModal({
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
+          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
         >
-          {submitting
-            ? (lang === 'en' ? 'Processing Transfer...' : 'Memproses Transfer...')
-            : (lang === 'en' ? 'Send Fund Transfer' : 'Kirim Transfer Saldo')}
+          {submitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>{lang === 'en' ? 'Processing Transfer...' : 'Memproses Transfer...'}</span>
+            </>
+          ) : (
+            <span>
+              {amount > 0 && data.wallets.find((w) => w.id === toWalletId)
+                ? `${lang === 'en' ? 'Transfer' : 'Transfer'} ${formatRupiah(amount, true)} ${lang === 'en' ? 'to' : 'ke'} ${data.wallets.find((w) => w.id === toWalletId)?.name}`
+                : (lang === 'en' ? 'Send Fund Transfer' : 'Kirim Transfer Saldo')}
+            </span>
+          )}
         </button>
+        <p className="mt-2 text-center text-[11px] text-slate-500 dark:text-slate-400">
+          {lang === 'en' ? 'Zero admin fee • Automated mutation recorded in both wallets' : 'Tanpa biaya admin • Mutasi otomatis tercatat di kedua dompet'}
+        </p>
       </div>
     </form>
   )

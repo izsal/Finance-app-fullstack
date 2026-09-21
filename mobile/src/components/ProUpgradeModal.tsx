@@ -33,9 +33,24 @@ export const ProUpgradeModal: React.FC<Props> = ({
   const { theme, isDark } = useAppTheme()
   const [selectedPlan, setSelectedPlan] = useState<'yearly' | 'monthly'>('yearly')
 
+  const [loadingPayment, setLoadingPayment] = useState(false)
   const currentUser = ApiService.getCurrentUser()
 
   const handleStartTrial = async () => {
+    setLoadingPayment(true)
+    try {
+      const duitkuRes = await ApiService.createDuitkuInvoice(selectedPlan)
+      if (duitkuRes.success && duitkuRes.paymentUrl) {
+        setLoadingPayment(false)
+        await Linking.openURL(duitkuRes.paymentUrl)
+        return
+      }
+    } catch {
+      // Fallback smoothly to WhatsApp
+    } finally {
+      setLoadingPayment(false)
+    }
+
     const planText =
       selectedPlan === 'yearly'
         ? 'Paket Tahunan (Rp 149.000/thn • Hemat 35%)'

@@ -115,9 +115,25 @@ export const subscriptions = pgTable('subscriptions', {
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 })
 
+export const payments = pgTable('payments', {
+  id: serial('id').primaryKey(),
+  orderId: text('orderId').notNull().unique(),
+  userId: text('userId').notNull(),
+  amount: integer('amount').notNull(),
+  plan: text('plan').notNull().default('pro'),
+  billingCycle: text('billingCycle').notNull().default('yearly'),
+  status: text('status').notNull().default('PENDING'),
+  paymentUrl: text('paymentUrl'),
+  reference: text('reference'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+})
+
 export type Wallet = typeof wallets.$inferSelect
 export type Category = typeof categories.$inferSelect
 export type Budget = typeof budgets.$inferSelect
 export type Transaction = typeof transactions.$inferSelect
 export type Goal = typeof goals.$inferSelect
 export type Subscription = typeof subscriptions.$inferSelect
+export type Payment = typeof payments.$inferSelect
+

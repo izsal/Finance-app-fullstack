@@ -8,10 +8,14 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
+  Clock,
   CreditCard,
   Download,
   FileSpreadsheet,
   Lock,
+  Mail,
+  MapPin,
+  Phone,
   PieChart,
   Quote,
   Shield,
@@ -148,6 +152,9 @@ export default function LandingPage() {
             </a>
             <a href="#faq" className="transition hover:text-white">
               FAQ
+            </a>
+            <a href="#kontak" className="transition hover:text-white">
+              Kontak
             </a>
           </nav>
 
@@ -952,36 +959,181 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer (Section K) */}
-      <footer className="relative z-10 border-t border-slate-800/80 py-10 text-center text-xs text-slate-500">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-500 text-white font-black text-xs">
-              Q
+      {/* Contact & Support Section (Persyaratan Merchant Payment Gateway) */}
+      <section id="kontak" className="relative z-10 border-t border-slate-800/80 bg-slate-900/40 py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-teal-400">
+              Layanan & Bantuan Pelanggan
+            </h2>
+            <p className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              Hubungi Kami
+            </p>
+            <p className="mt-4 text-sm sm:text-base text-slate-400">
+              Tim dukungan kami siap membantu kebutuhan kendala akun, pertanyaan fitur, dan pembayaran langganan Anda.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Email Support */}
+            <div className="flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-950/70 p-6 backdrop-blur-md transition hover:border-teal-500/50">
+              <div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-500/10 text-teal-400 mb-4">
+                  <Mail className="h-6 w-6" />
+                </div>
+                <h3 className="text-base font-bold text-white">Email Resmi Support</h3>
+                <p className="mt-1 text-xs text-slate-400">
+                  Kirimkan pertanyaan atau laporan kendala Anda melalui email resmi kami.
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-slate-800/80">
+                <a
+                  href="mailto:mails@qwarts.my.id"
+                  className="text-sm font-semibold text-teal-400 hover:text-teal-300 transition break-all"
+                >
+                  mails@qwarts.my.id
+                </a>
+              </div>
             </div>
-            <span className="font-bold text-slate-300">Qwarts Finance</span>
-            <span>— Dashboard Keuangan Pribadi</span>
+
+            {/* Telepon / WhatsApp */}
+            <div className="flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-950/70 p-6 backdrop-blur-md transition hover:border-teal-500/50">
+              <div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 mb-4">
+                  <Phone className="h-6 w-6" />
+                </div>
+                <h3 className="text-base font-bold text-white">WhatsApp & Telepon</h3>
+                <p className="mt-1 text-xs text-slate-400">
+                  Respon cepat bantuan pelanggan pada hari dan jam operasional.
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+                <a
+                  href="https://wa.me/6281776370728"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-semibold text-emerald-400 hover:text-emerald-300 transition"
+                >
+                  +62 817-7637-0728
+                </a>
+                <span className="text-[11px] text-slate-400">WhatsApp Aktif</span>
+              </div>
+            </div>
+
+            {/* Alamat Usaha / Kantor */}
+            <div className="flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-950/70 p-6 backdrop-blur-md transition hover:border-teal-500/50 sm:col-span-2 lg:col-span-1">
+              <div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 mb-4">
+                  <MapPin className="h-6 w-6" />
+                </div>
+                <h3 className="text-base font-bold text-white">Alamat Kantor / Domisili Usaha</h3>
+                <p className="mt-2 text-xs text-slate-300 leading-relaxed">
+                  Jl. Bambu Hitam No.5, RT.5/RW.5, Setu, Kec. Cipayung, Kota Jakarta Timur, Daerah Khusus Ibukota Jakarta 13890, Indonesia
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center gap-2 text-[11px] text-slate-400">
+                <Clock className="h-3.5 w-3.5 text-teal-400 shrink-0" />
+                <span>Senin – Minggu: 08:00 – 21:00 WIB</span>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            <a href="#fitur" className="hover:text-slate-300 transition">
-              Fitur
-            </a>
-            <a href="#harga" className="hover:text-slate-300 transition">
-              Harga
-            </a>
-            <a href="#faq" className="hover:text-slate-300 transition">
-              FAQ
-            </a>
-            <Link href="/privacy" className="hover:text-slate-300 transition">
-              Kebijakan Privasi
-            </Link>
-            <Link href="/sign-in" className="hover:text-slate-300 transition">
-              Masuk
-            </Link>
+          {/* Payment Gateway Trust Badge */}
+          <div className="mt-10 rounded-2xl border border-slate-800/80 bg-slate-950/50 p-5 text-center flex flex-col sm:flex-row items-center justify-center gap-4 text-xs text-slate-400">
+            <span className="font-semibold text-slate-200 flex items-center gap-1.5">
+              <ShieldCheck className="h-4 w-4 text-teal-400" />
+              Sistem Pembayaran Terverifikasi & Aman:
+            </span>
+            <span className="text-slate-300">
+              Didukung oleh <strong>Duitku Payment Gateway</strong> • QRIS (Semua Bank & E-Wallet), Virtual Account (BCA, Mandiri, BRI, BNI), ShopeePay & E-Wallet.
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer (Section K - Comprehensive Merchant Footer) */}
+      <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950 pt-16 pb-12 text-slate-400 text-xs">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-4 lg:gap-12 pb-12 border-b border-slate-800/80">
+            {/* Kolom 1: Brand & Profil Usaha */}
+            <div className="md:col-span-1 space-y-4">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-emerald-600 text-white font-black text-sm shadow-md shadow-teal-500/20">
+                  Q
+                </div>
+                <span className="text-lg font-black tracking-tight text-white">
+                  Qwarts <span className="text-teal-400">Finance</span>
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Platform aplikasi manajemen dan pencatatan keuangan pribadi pintar berbasis web dan mobile untuk kontrol arus kas, budgeting, dan tabungan impian.
+              </p>
+              <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/20 bg-teal-500/5 px-3 py-1 text-[11px] font-medium text-teal-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Operasional Layanan Aktif
+              </div>
+            </div>
+
+            {/* Kolom 2: Navigasi Halaman */}
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 mb-4">Navigasi</h4>
+              <ul className="space-y-2.5">
+                <li><a href="#fitur" className="hover:text-teal-400 transition">Fitur Utama</a></li>
+                <li><a href="#preview" className="hover:text-teal-400 transition">Tampilan Dashboard</a></li>
+                <li><a href="#harga" className="hover:text-teal-400 transition">Harga & Paket PRO</a></li>
+                <li><a href="#faq" className="hover:text-teal-400 transition">Pertanyaan (FAQ)</a></li>
+                <li><a href="#kontak" className="hover:text-teal-400 transition">Kontak Dukungan</a></li>
+              </ul>
+            </div>
+
+            {/* Kolom 3: Kontak Support Resmi */}
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 mb-4">Kontak Dukungan</h4>
+              <ul className="space-y-2.5">
+                <li className="flex items-start gap-2">
+                  <Mail className="h-4 w-4 text-teal-400 shrink-0 mt-0.5" />
+                  <a href="mailto:mails@qwarts.my.id" className="hover:text-teal-300 transition break-all">
+                    mails@qwarts.my.id
+                  </a>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Phone className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <a href="https://wa.me/6281776370728" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-300 transition">
+                    +62 817-7637-0728 (WhatsApp)
+                  </a>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Clock className="h-4 w-4 text-slate-500 shrink-0 mt-0.5" />
+                  <span>Senin – Minggu (08:00 – 21:00 WIB)</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Kolom 4: Alamat Usaha & Legal */}
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 mb-4">Alamat Usaha & Legalitas</h4>
+              <div className="space-y-2.5 text-xs text-slate-400 leading-relaxed">
+                <p className="flex items-start gap-2">
+                  <MapPin className="h-4 w-4 text-cyan-400 shrink-0 mt-0.5" />
+                  <span>Jl. Bambu Hitam No.5, RT.5/RW.5, Setu, Kec. Cipayung, Kota Jakarta Timur, DKI Jakarta 13890, Indonesia</span>
+                </p>
+                <div className="pt-2">
+                  <Link href="/privacy" className="font-medium text-teal-400 hover:text-teal-300 underline">
+                    Kebijakan Privasi
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <p>© {new Date().getFullYear()} Qwarts Finance. Seluruh hak cipta dilindungi.</p>
+          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+            <p>© {new Date().getFullYear()} Qwarts Finance. Hak cipta dilindungi undang-undang.</p>
+            <div className="flex items-center gap-6 text-slate-400">
+              <Link href="/privacy" className="hover:text-white transition">Kebijakan Privasi</Link>
+              <a href="#kontak" className="hover:text-white transition">Bantuan & Kontak</a>
+              <Link href="/sign-in" className="hover:text-white transition">Masuk ke Dashboard</Link>
+            </div>
+          </div>
         </div>
       </footer>
     </div>

@@ -729,7 +729,35 @@ export class ApiService {
     }
   }
 
+  static async createDuitkuInvoice(billingCycle: 'yearly' | 'monthly'): Promise<{
+    success: boolean
+    paymentUrl?: string
+    orderId?: string
+    message?: string
+  }> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/payment/duitku/create-invoice`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ billingCycle }),
+      })
+      const json = await res.json()
+      if (res.ok && json.success) {
+        return {
+          success: true,
+          paymentUrl: json.data?.paymentUrl,
+          orderId: json.data?.orderId,
+          message: json.message,
+        }
+      }
+      return { success: false, message: json.message || 'Gagal membuat tagihan Duitku' }
+    } catch (e: any) {
+      return { success: false, message: e?.message || 'Gagal menghubungi server pembayaran' }
+    }
+  }
+
   static formatRupiah(val: number): string {
     return 'Rp ' + Math.round(val || 0).toLocaleString('id-ID')
   }
 }
+

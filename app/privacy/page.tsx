@@ -95,20 +95,37 @@ export default function PrivacyPolicyPage() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-teal-400" />
-              5. Hubungi Kami
+              5. Hubungi Kami & Layanan Dukungan
             </h2>
             <p>
-              Jika Anda memiliki pertanyaan seputar kebijakan privasi atau perlakuan data Anda di Qwarts Finance, Anda dapat menghubungi kami melalui email resmi di{' '}
-              <a href="mailto:support@qwarts.my.id" className="text-teal-400 underline hover:text-teal-300">
-                support@qwarts.my.id
-              </a>.
+              Jika Anda memiliki pertanyaan seputar layanan, privasi data, transaksi, atau bantuan teknis di Qwarts Finance, silakan hubungi kami melalui saluran resmi berikut:
             </p>
+            <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-3 text-sm">
+              <p>
+                <strong className="text-white">Email Resmi:</strong>{' '}
+                <a href="mailto:mails@qwarts.my.id" className="text-teal-400 underline hover:text-teal-300">
+                  mails@qwarts.my.id
+                </a>
+              </p>
+              <p>
+                <strong className="text-white">WhatsApp / Telepon:</strong>{' '}
+                <a href="https://wa.me/6281776370728" target="_blank" rel="noopener noreferrer" className="text-teal-400 underline hover:text-teal-300">
+                  +62 817-7637-0728
+                </a>
+              </p>
+              <p>
+                <strong className="text-white">Alamat Usaha / Operasional:</strong><br />
+                <span className="text-slate-300">
+                  Jl. Bambu Hitam No.5, RT.5/RW.5, Setu, Kec. Cipayung, Kota Jakarta Timur, Daerah Khusus Ibukota Jakarta 13890, Indonesia
+                </span>
+              </p>
+            </div>
           </section>
         </div>
 
         {/* Footer info */}
         <div className="mt-12 pt-6 border-t border-slate-800 text-center text-xs text-slate-500">
-          <p>© 2026 Qwarts Finance. Hak cipta dilindungi undang-undang.</p>
+          <p>© {new Date().getFullYear()} Qwarts Finance. Hak cipta dilindungi undang-undang.</p>
         </div>
       </div>
     </div>
