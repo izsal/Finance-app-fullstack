@@ -12,13 +12,13 @@ import {
   ActivityIndicator,
 } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
-import { GlassCard } from './GlassCard'
 import { GlassInput } from './GlassInput'
 import { GlassButton } from './GlassButton'
 import { Ionicons } from '@expo/vector-icons'
 import { WalletItem } from '../services/mockData'
 import { ApiService } from '../services/api'
 import { useAppTheme } from '../theme/ThemeContext'
+import { SPACING, RADII, AMOUNT_PRESETS } from '../theme/designSystem'
 
 interface Props {
   visible: boolean
@@ -78,7 +78,6 @@ export const AddTransactionModal: React.FC<Props> = ({
       const asset = result.assets[0]
       let base64 = asset.base64
 
-      // Jika platform web atau base64 belum ada, ambil dari uri
       if (!base64 && asset.uri) {
         const fetchRes = await fetch(asset.uri)
         const blob = await fetchRes.blob()
@@ -99,7 +98,7 @@ export const AddTransactionModal: React.FC<Props> = ({
       }
 
       setScanning(true)
-      setScanNote('AI sedang memindai struk & membaca nominal...')
+      setScanNote('AI sedang membaca struk & mendeteksi nominal...')
       setError('')
 
       const scanRes = await ApiService.scanReceipt(base64, asset.mimeType || 'image/jpeg')
@@ -126,8 +125,14 @@ export const AddTransactionModal: React.FC<Props> = ({
     }
   }
 
+  // Micro-UX: Quick chip preset handler
+  const handleApplyPreset = (val: number) => {
+    setAmount(val.toLocaleString('id-ID'))
+  }
+
+  const numAmount = parseInt(amount.replace(/\D/g, ''), 10) || 0
+
   const handleSave = async () => {
-    const numAmount = parseInt(amount.replace(/\D/g, ''), 10)
     if (!numAmount || numAmount <= 0) {
       setError('Masukkan jumlah nominal yang valid')
       return
@@ -165,6 +170,11 @@ export const AddTransactionModal: React.FC<Props> = ({
     }
   }
 
+  // Feedback Harga & Aksi Transparan pada CTA Button
+  const ctaLabel = numAmount > 0
+    ? `${type === 'expense' ? 'Simpan Pengeluaran' : 'Simpan Pemasukan'} • Rp ${numAmount.toLocaleString('id-ID')}`
+    : 'Simpan Transaksi'
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
@@ -173,215 +183,331 @@ export const AddTransactionModal: React.FC<Props> = ({
       >
         <TouchableOpacity activeOpacity={1} onPress={onClose} style={styles.backdrop} />
 
-        <View style={styles.sheetContainer}>
-          <GlassCard
-            borderRadius={28}
-            style={[styles.glassSheet, { backgroundColor: theme.colors.surface }]}
-          >
-            <View style={[styles.handleBar, { backgroundColor: theme.colors.border }]} />
+        <View
+          style={[
+            styles.sheetContainer,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
+          {/* Handle Bar */}
+          <View
+            style={[
+              styles.handleBar,
+              { backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : '#cbd5e1' },
+            ]}
+          />
 
-            <View style={styles.header}>
+          {/* Header */}
+          <View style={styles.header}>
+            <View>
               <Text style={[styles.title, { color: theme.colors.text }]}>Catat Transaksi</Text>
-              <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.colors.surfaceElevated }]}>
-                <Ionicons name="close" size={18} color={theme.colors.textSecondary} />
-              </TouchableOpacity>
+              <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
+                Pencatatan pengeluaran & pemasukan instan
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={onClose}
+              style={[styles.closeBtn, { backgroundColor: theme.colors.surfaceElevated }]}
+            >
+              <Ionicons name="close" size={18} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Scrollable Form Body */}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollBody}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* SMART AI RECEIPT SCANNER CARD */}
+            <View
+              style={[
+                styles.scannerCard,
+                {
+                  backgroundColor: isDark ? 'rgba(20, 184, 166, 0.08)' : '#f0fdfa',
+                  borderColor: isDark ? 'rgba(20, 184, 166, 0.3)' : '#99f6e4',
+                },
+              ]}
+            >
+              <View style={styles.scannerTopRow}>
+                <View style={styles.scannerIconWrap}>
+                  <Ionicons name="scan-outline" size={18} color="#0d9488" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={[styles.scannerTitle, { color: theme.colors.text }]}>
+                      Pindai Struk / Bukti AI
+                    </Text>
+                    <View style={styles.scannerAiBadge}>
+                      <Text style={styles.scannerAiBadgeText}>AI ✨</Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.scannerSubtitle, { color: theme.colors.textSecondary }]}>
+                    Foto struk belanja untuk isi otomatis nominal & detail
+                  </Text>
+                </View>
+              </View>
+
+              {scanning ? (
+                <View style={styles.scanningStatusRow}>
+                  <ActivityIndicator size="small" color="#0d9488" />
+                  <Text style={[styles.scanningStatusText, { color: '#0d9488' }]}>
+                    {scanNote}
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.scannerActionsRow}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => handleScanReceipt(true)}
+                    style={[
+                      styles.scannerBtn,
+                      {
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#ffffff',
+                        borderColor: theme.colors.border,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="camera-outline" size={15} color={theme.colors.text} />
+                    <Text style={[styles.scannerBtnText, { color: theme.colors.text }]}>Kamera 📸</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => handleScanReceipt(false)}
+                    style={[
+                      styles.scannerBtn,
+                      {
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#ffffff',
+                        borderColor: theme.colors.border,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="images-outline" size={15} color={theme.colors.text} />
+                    <Text style={[styles.scannerBtnText, { color: theme.colors.text }]}>Galeri 🖼️</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {scanNote && !scanning ? (
+                <View style={styles.scanSuccessRow}>
+                  <Ionicons name="checkmark-circle" size={14} color="#10b981" />
+                  <Text style={styles.scanSuccessText}>{scanNote}</Text>
+                </View>
+              ) : null}
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-              {/* SMART AI RECEIPT SCANNER CARD */}
-              <View
+            {/* Type Switcher */}
+            <View
+              style={[
+                styles.typeSwitcher,
+                { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border },
+              ]}
+            >
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setType('expense')}
                 style={[
-                  styles.scannerCard,
-                  {
-                    backgroundColor: isDark ? 'rgba(20, 184, 166, 0.08)' : '#f0fdfa',
-                    borderColor: isDark ? 'rgba(20, 184, 166, 0.3)' : '#99f6e4',
+                  styles.typeBtn,
+                  type === 'expense' && {
+                    backgroundColor: theme.colors.expenseBg,
+                    borderColor: theme.colors.expense,
+                    borderWidth: 1,
                   },
                 ]}
               >
-                <View style={styles.scannerTopRow}>
-                  <View style={styles.scannerIconWrap}>
-                    <Ionicons name="scan-outline" size={18} color="#0d9488" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Text style={[styles.scannerTitle, { color: theme.colors.text }]}>
-                        Pindai Struk / Bukti AI
-                      </Text>
-                      <View style={styles.scannerAiBadge}>
-                        <Text style={styles.scannerAiBadgeText}>AI ✨</Text>
-                      </View>
-                    </View>
-                    <Text style={[styles.scannerSubtitle, { color: theme.colors.textSecondary }]}>
-                      Foto struk belanja / transfer untuk isi nominal otomatis
-                    </Text>
-                  </View>
-                </View>
-
-                {scanning ? (
-                  <View style={styles.scanningStatusRow}>
-                    <ActivityIndicator size="small" color="#0d9488" />
-                    <Text style={[styles.scanningStatusText, { color: '#0d9488' }]}>
-                      {scanNote}
-                    </Text>
-                  </View>
-                ) : (
-                  <View style={styles.scannerActionsRow}>
-                    <TouchableOpacity
-                      activeOpacity={0.8}
-                      onPress={() => handleScanReceipt(true)}
-                      style={[styles.scannerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#ffffff', borderColor: theme.colors.border }]}
-                    >
-                      <Ionicons name="camera" size={14} color={theme.colors.text} />
-                      <Text style={[styles.scannerBtnText, { color: theme.colors.text }]}>Kamera 📸</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      activeOpacity={0.8}
-                      onPress={() => handleScanReceipt(false)}
-                      style={[styles.scannerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#ffffff', borderColor: theme.colors.border }]}
-                    >
-                      <Ionicons name="images" size={14} color={theme.colors.text} />
-                      <Text style={[styles.scannerBtnText, { color: theme.colors.text }]}>Galeri 🖼️</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-
-                {scanNote && !scanning ? (
-                  <View style={styles.scanSuccessRow}>
-                    <Ionicons name="checkmark-circle" size={14} color="#10b981" />
-                    <Text style={styles.scanSuccessText}>{scanNote}</Text>
-                  </View>
-                ) : null}
-              </View>
-
-              {/* Type Switcher */}
-              <View style={[styles.typeSwitcher, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => setType('expense')}
+                <Ionicons
+                  name="arrow-down-circle"
+                  size={16}
+                  color={type === 'expense' ? theme.colors.expense : theme.colors.textMuted}
+                />
+                <Text
                   style={[
-                    styles.typeBtn,
-                    type === 'expense' && { backgroundColor: theme.colors.expenseBg, borderColor: theme.colors.expense, borderWidth: 1 },
+                    styles.typeText,
+                    {
+                      color: type === 'expense' ? theme.colors.expense : theme.colors.textSecondary,
+                      fontWeight: type === 'expense' ? '800' : '500',
+                    },
                   ]}
                 >
-                  <Ionicons
-                    name="arrow-down-circle"
-                    size={17}
-                    color={type === 'expense' ? theme.colors.expense : theme.colors.textMuted}
-                  />
-                  <Text
-                    style={[
-                      styles.typeText,
-                      { color: type === 'expense' ? theme.colors.expense : theme.colors.textSecondary, fontWeight: type === 'expense' ? '700' : '500' },
-                    ]}
-                  >
-                    Pengeluaran
-                  </Text>
-                </TouchableOpacity>
+                  Pengeluaran
+                </Text>
+              </TouchableOpacity>
 
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => setType('income')}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setType('income')}
+                style={[
+                  styles.typeBtn,
+                  type === 'income' && {
+                    backgroundColor: theme.colors.incomeBg,
+                    borderColor: theme.colors.income,
+                    borderWidth: 1,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name="arrow-up-circle"
+                  size={16}
+                  color={type === 'income' ? theme.colors.income : theme.colors.textMuted}
+                />
+                <Text
                   style={[
-                    styles.typeBtn,
-                    type === 'income' && { backgroundColor: theme.colors.incomeBg, borderColor: theme.colors.income, borderWidth: 1 },
+                    styles.typeText,
+                    {
+                      color: type === 'income' ? theme.colors.income : theme.colors.textSecondary,
+                      fontWeight: type === 'income' ? '800' : '500',
+                    },
                   ]}
                 >
-                  <Ionicons
-                    name="arrow-up-circle"
-                    size={17}
-                    color={type === 'income' ? theme.colors.income : theme.colors.textMuted}
-                  />
-                  <Text
-                    style={[
-                      styles.typeText,
-                      { color: type === 'income' ? theme.colors.income : theme.colors.textSecondary, fontWeight: type === 'income' ? '700' : '500' },
-                    ]}
-                  >
-                    Pemasukan
-                  </Text>
-                </TouchableOpacity>
-              </View>
+                  Pemasukan
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-              {/* Amount Input */}
-              <GlassInput
-                label="Nominal Transaksi"
-                placeholder="0"
-                keyboardType="numeric"
-                prefix="Rp"
-                value={amount}
-                onChangeText={(text) => {
-                  const cleaned = text.replace(/\D/g, '')
-                  setAmount(cleaned ? parseInt(cleaned, 10).toLocaleString('id-ID') : '')
-                }}
-              />
+            {/* Amount Input */}
+            <GlassInput
+              label="Nominal Transaksi"
+              placeholder="0"
+              keyboardType="numeric"
+              prefix="Rp"
+              value={amount}
+              onChangeText={(text) => {
+                const cleaned = text.replace(/\D/g, '')
+                setAmount(cleaned ? parseInt(cleaned, 10).toLocaleString('id-ID') : '')
+              }}
+            />
 
-              {/* Wallet Selector */}
-              <Text style={[styles.inputLabel, { color: theme.colors.textSecondary }]}>Pilih Dompet</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.walletScroll}>
-                {wallets.map((w) => {
-                  const selected = selectedWalletId === w.id
+            {/* MICRO-UX: Quick Chip Presets (Kurangi Langkah Pengguna) */}
+            <View style={styles.presetsSection}>
+              <Text style={[styles.inputLabel, { color: theme.colors.textSecondary }]}>
+                Pilihan Cepat Nominal
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
+                {AMOUNT_PRESETS.map((preset) => {
+                  const isMatch = numAmount === preset.value
                   return (
                     <TouchableOpacity
-                      key={w.id}
+                      key={preset.value}
                       activeOpacity={0.7}
-                      onPress={() => setSelectedWalletId(w.id)}
+                      onPress={() => handleApplyPreset(preset.value)}
                       style={[
-                        styles.walletChip,
+                        styles.quickChip,
                         {
-                          backgroundColor: selected ? (isDark ? 'rgba(20,184,166,0.15)' : '#ccfbf1') : theme.colors.surfaceElevated,
-                          borderColor: selected ? theme.colors.primary : theme.colors.border,
+                          backgroundColor: isMatch
+                            ? (isDark ? 'rgba(13, 148, 136, 0.25)' : '#ccfbf1')
+                            : theme.colors.surfaceElevated,
+                          borderColor: isMatch ? theme.colors.primary : theme.colors.border,
                         },
                       ]}
                     >
-                      <Ionicons
-                        name="wallet-outline"
-                        size={14}
-                        color={selected ? theme.colors.primary : theme.colors.textMuted}
-                      />
                       <Text
                         style={[
-                          styles.walletChipText,
+                          styles.quickChipText,
                           {
-                            color: selected ? theme.colors.primary : theme.colors.textSecondary,
-                            fontWeight: selected ? '700' : '500',
+                            color: isMatch ? theme.colors.primary : theme.colors.textSecondary,
+                            fontWeight: isMatch ? '800' : '600',
                           },
                         ]}
                       >
-                        {w.name}
+                        {preset.label}
                       </Text>
                     </TouchableOpacity>
                   )
                 })}
               </ScrollView>
+            </View>
 
-              {/* Description */}
-              <GlassInput
-                label="Catatan / Keperluan"
-                placeholder="Contoh: Belanja Bulanan, Makan Siang"
-                icon="document-text-outline"
-                value={description}
-                onChangeText={setDescription}
-              />
-
-              {error ? (
-                <View style={[styles.errorBox, { backgroundColor: theme.colors.expenseBg, borderColor: theme.colors.expense }]}>
-                  <Text style={[styles.errorText, { color: theme.colors.expense }]}>{error}</Text>
-                </View>
-              ) : null}
-
-              {/* Submit */}
-              <GlassButton
-                title="Simpan Mutasi"
-                onPress={handleSave}
-                loading={loading}
-                icon="checkmark-circle-outline"
-                variant={type === 'expense' ? 'danger' : 'primary'}
-                style={styles.submitBtn}
-                size="lg"
-              />
+            {/* Wallet Selector */}
+            <Text style={[styles.inputLabel, { color: theme.colors.textSecondary }]}>
+              Pilih Rekening Dompet
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.walletScroll}>
+              {wallets.map((w) => {
+                const selected = selectedWalletId === w.id
+                return (
+                  <TouchableOpacity
+                    key={w.id}
+                    activeOpacity={0.75}
+                    onPress={() => setSelectedWalletId(w.id)}
+                    style={[
+                      styles.walletChip,
+                      {
+                        backgroundColor: selected
+                          ? (isDark ? 'rgba(13,148,136,0.18)' : '#ccfbf1')
+                          : theme.colors.surfaceElevated,
+                        borderColor: selected ? theme.colors.primary : theme.colors.border,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name="wallet-outline"
+                      size={14}
+                      color={selected ? theme.colors.primary : theme.colors.textMuted}
+                    />
+                    <Text
+                      style={[
+                        styles.walletChipText,
+                        {
+                          color: selected ? theme.colors.primary : theme.colors.textSecondary,
+                          fontWeight: selected ? '800' : '500',
+                        },
+                      ]}
+                    >
+                      {w.name}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
             </ScrollView>
-          </GlassCard>
+
+            {/* Description */}
+            <GlassInput
+              label="Catatan / Keperluan"
+              placeholder="Contoh: Belanja Bulanan, Makan Siang, Gaji"
+              icon="document-text-outline"
+              value={description}
+              onChangeText={setDescription}
+            />
+
+            {error ? (
+              <View
+                style={[
+                  styles.errorBox,
+                  { backgroundColor: theme.colors.expenseBg, borderColor: theme.colors.expense },
+                ]}
+              >
+                <Ionicons name="alert-circle" size={15} color={theme.colors.expense} />
+                <Text style={[styles.errorText, { color: theme.colors.expense }]}>{error}</Text>
+              </View>
+            ) : null}
+          </ScrollView>
+
+          {/* STICKY CTA ACTION BAR (THUMB ZONE ERGONOMICS) */}
+          <View
+            style={[
+              styles.stickyActionBar,
+              {
+                backgroundColor: theme.colors.surface,
+                borderTopColor: theme.colors.border,
+              },
+            ]}
+          >
+            <GlassButton
+              title={loading ? 'Menyimpan Transaksi...' : ctaLabel}
+              onPress={handleSave}
+              loading={loading}
+              icon={type === 'expense' ? 'arrow-down-circle' : 'arrow-up-circle'}
+              variant={type === 'expense' ? 'danger' : 'primary'}
+              size="lg"
+            />
+            <Text style={[styles.reassuranceText, { color: theme.colors.textMuted }]}>
+              Pencatatan instan • Saldo langsung ter-update di dompet
+            </Text>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -395,50 +521,55 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   sheetContainer: {
-    maxHeight: '90%',
-  },
-  glassSheet: {
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    padding: 20,
-    paddingBottom: Platform.OS === 'ios' ? 36 : 20,
+    borderTopLeftRadius: RADII.sheet,
+    borderTopRightRadius: RADII.sheet,
+    borderWidth: 1,
+    maxHeight: '92%',
+    overflow: 'hidden',
   },
   handleBar: {
     width: 40,
     height: 4,
     borderRadius: 2,
     alignSelf: 'center',
-    marginBottom: 16,
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
   },
   title: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '800',
     letterSpacing: -0.2,
+  },
+  subtitle: {
+    fontSize: 11.5,
+    marginTop: 1,
   },
   closeBtn: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: RADII.full,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  scroll: {
-    paddingBottom: 16,
+  scrollBody: {
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.lg,
   },
   scannerCard: {
-    borderRadius: 16,
+    borderRadius: RADII.md,
     borderWidth: 1.2,
-    padding: 12,
-    marginBottom: 14,
+    padding: SPACING.sm + 4,
+    marginBottom: SPACING.md,
   },
   scannerTopRow: {
     flexDirection: 'row',
@@ -446,9 +577,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   scannerIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 36,
+    height: 36,
+    borderRadius: RADII.sm,
     backgroundColor: 'rgba(13, 148, 136, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -459,9 +590,9 @@ const styles = StyleSheet.create({
   },
   scannerAiBadge: {
     backgroundColor: '#0d9488',
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: RADII.xs,
   },
   scannerAiBadgeText: {
     color: '#ffffff',
@@ -471,14 +602,14 @@ const styles = StyleSheet.create({
   scannerSubtitle: {
     fontSize: 11,
     marginTop: 2,
-    lineHeight: 14,
+    lineHeight: 15,
   },
   scanningStatusRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 10,
-    paddingTop: 8,
+    marginTop: SPACING.sm,
+    paddingTop: SPACING.sm,
     borderTopWidth: 1,
     borderTopColor: 'rgba(13, 148, 136, 0.2)',
   },
@@ -489,7 +620,7 @@ const styles = StyleSheet.create({
   scannerActionsRow: {
     flexDirection: 'row',
     gap: 8,
-    marginTop: 10,
+    marginTop: SPACING.sm,
   },
   scannerBtn: {
     flex: 1,
@@ -497,8 +628,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 7,
-    borderRadius: 8,
+    paddingVertical: 8,
+    borderRadius: RADII.sm,
     borderWidth: 1,
   },
   scannerBtnText: {
@@ -509,9 +640,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 8,
-    padding: 6,
-    borderRadius: 6,
+    marginTop: SPACING.sm,
+    padding: 7,
+    borderRadius: RADII.xs,
     backgroundColor: 'rgba(16, 185, 129, 0.1)',
   },
   scanSuccessText: {
@@ -521,9 +652,9 @@ const styles = StyleSheet.create({
   },
   typeSwitcher: {
     flexDirection: 'row',
-    borderRadius: 12,
+    borderRadius: RADII.md,
     padding: 3,
-    marginBottom: 16,
+    marginBottom: SPACING.md,
     borderWidth: 1,
   },
   typeBtn: {
@@ -532,20 +663,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
-    borderRadius: 10,
+    borderRadius: RADII.sm,
     gap: 6,
   },
   typeText: {
     fontSize: 13,
   },
+  presetsSection: {
+    marginBottom: SPACING.md,
+  },
   inputLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11.5,
+    fontWeight: '700',
     marginBottom: 6,
+  },
+  chipsScroll: {
+    flexDirection: 'row',
+  },
+  quickChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: RADII.sm,
+    borderWidth: 1,
+    marginRight: 6,
+  },
+  quickChipText: {
+    fontSize: 11.5,
   },
   walletScroll: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: SPACING.md,
   },
   walletChip: {
     flexDirection: 'row',
@@ -554,24 +701,35 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 10,
+    borderRadius: RADII.sm,
     marginRight: 8,
   },
   walletChipText: {
     fontSize: 12,
   },
   errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     padding: 10,
-    borderRadius: 10,
+    borderRadius: RADII.sm,
     borderWidth: 1,
-    marginBottom: 12,
+    marginBottom: SPACING.sm,
   },
   errorText: {
     fontSize: 12,
     fontWeight: '600',
-    textAlign: 'center',
   },
-  submitBtn: {
-    marginTop: 4,
+  stickyActionBar: {
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.sm,
+    paddingBottom: Platform.OS === 'ios' ? 28 : SPACING.md,
+    borderTopWidth: 1,
+  },
+  reassuranceText: {
+    fontSize: 10.5,
+    textAlign: 'center',
+    marginTop: 6,
+    lineHeight: 14,
   },
 })

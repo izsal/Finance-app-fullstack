@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { TransactionItem, WalletItem } from '../services/mockData'
 import { ApiService } from '../services/api'
 import { useAppTheme } from '../theme/ThemeContext'
+import { SPACING, RADII, AMOUNT_PRESETS } from '../theme/designSystem'
 
 interface Props {
   visible: boolean
@@ -53,9 +54,10 @@ export const EditTransactionModal: React.FC<Props> = ({
     }
   }, [transaction, wallets])
 
+  const numAmount = parseInt(amount.replace(/\D/g, ''), 10) || 0
+
   const handleUpdate = async () => {
     if (!transaction) return
-    const numAmount = parseInt(amount.replace(/\D/g, ''), 10)
     if (!numAmount || numAmount <= 0) {
       setError('Masukkan jumlah nominal yang valid')
       return
@@ -94,7 +96,7 @@ export const EditTransactionModal: React.FC<Props> = ({
     if (!transaction) return
     Alert.alert(
       'Hapus Transaksi',
-      `Yakin ingin menghapus transaksi "${transaction.description}"? Saldo rekening akan disesuaikan kembali.`,
+      `Yakin ingin menghapus transaksi "${transaction.description}"? Saldo rekening akan disesuaikan kembali secara otomatis.`,
       [
         { text: 'Batal', style: 'cancel' },
         {
@@ -123,6 +125,10 @@ export const EditTransactionModal: React.FC<Props> = ({
 
   if (!transaction) return null
 
+  const ctaLabel = numAmount > 0
+    ? `Simpan Perubahan • Rp ${numAmount.toLocaleString('id-ID')}`
+    : 'Simpan Perubahan'
+
   return (
     <Modal
       visible={visible}
@@ -134,25 +140,44 @@ export const EditTransactionModal: React.FC<Props> = ({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.overlay}
       >
+        <TouchableOpacity activeOpacity={1} onPress={onClose} style={styles.backdrop} />
+
         <View
           style={[
-            styles.modalContainer,
+            styles.sheetContainer,
             {
               backgroundColor: theme.colors.surface,
               borderColor: theme.colors.border,
             },
           ]}
         >
+          {/* Handle Bar */}
+          <View
+            style={[
+              styles.handleBar,
+              { backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : '#cbd5e1' },
+            ]}
+          />
+
           {/* Header */}
           <View style={styles.header}>
-            <Text style={[styles.title, { color: theme.colors.text }]}>Edit Transaksi</Text>
+            <View>
+              <Text style={[styles.title, { color: theme.colors.text }]}>Edit Transaksi</Text>
+              <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
+                Ubah nominal, keterangan, atau rekening
+              </Text>
+            </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={20} color={theme.colors.textMuted} />
+              <Ionicons name="close" size={18} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Type Selector (Pengeluaran vs Pemasukan) */}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollBody}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Type Selector */}
             <View style={styles.typeRow}>
               <TouchableOpacity
                 activeOpacity={0.8}
@@ -168,7 +193,7 @@ export const EditTransactionModal: React.FC<Props> = ({
                 ]}
               >
                 <Ionicons
-                  name="arrow-up"
+                  name="arrow-down-circle"
                   size={15}
                   color={type === 'expense' ? theme.colors.expense : theme.colors.textMuted}
                 />
@@ -178,6 +203,7 @@ export const EditTransactionModal: React.FC<Props> = ({
                     {
                       color:
                         type === 'expense' ? theme.colors.expense : theme.colors.textSecondary,
+                      fontWeight: type === 'expense' ? '800' : '600',
                     },
                   ]}
                 >
@@ -199,7 +225,7 @@ export const EditTransactionModal: React.FC<Props> = ({
                 ]}
               >
                 <Ionicons
-                  name="arrow-down"
+                  name="arrow-up-circle"
                   size={15}
                   color={type === 'income' ? theme.colors.income : theme.colors.textMuted}
                 />
@@ -209,6 +235,7 @@ export const EditTransactionModal: React.FC<Props> = ({
                     {
                       color:
                         type === 'income' ? theme.colors.income : theme.colors.textSecondary,
+                      fontWeight: type === 'income' ? '800' : '600',
                     },
                   ]}
                 >
@@ -230,6 +257,46 @@ export const EditTransactionModal: React.FC<Props> = ({
               icon="cash-outline"
             />
 
+            {/* Micro-UX: Quick Chip Presets */}
+            <View style={styles.presetsSection}>
+              <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>
+                Pilihan Cepat Nominal
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
+                {AMOUNT_PRESETS.map((preset) => {
+                  const isMatch = numAmount === preset.value
+                  return (
+                    <TouchableOpacity
+                      key={preset.value}
+                      activeOpacity={0.7}
+                      onPress={() => setAmount(preset.value.toLocaleString('id-ID'))}
+                      style={[
+                        styles.quickChip,
+                        {
+                          backgroundColor: isMatch
+                            ? (isDark ? 'rgba(13, 148, 136, 0.25)' : '#ccfbf1')
+                            : theme.colors.surfaceElevated,
+                          borderColor: isMatch ? theme.colors.primary : theme.colors.border,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.quickChipText,
+                          {
+                            color: isMatch ? theme.colors.primary : theme.colors.textSecondary,
+                            fontWeight: isMatch ? '800' : '600',
+                          },
+                        ]}
+                      >
+                        {preset.label}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                })}
+              </ScrollView>
+            </View>
+
             {/* Description Input */}
             <GlassInput
               label="Deskripsi / Catatan"
@@ -242,7 +309,7 @@ export const EditTransactionModal: React.FC<Props> = ({
             {/* Date Input */}
             <GlassInput
               label="Tanggal (YYYY-MM-DD)"
-              placeholder="2026-09-12"
+              placeholder="2026-09-21"
               value={date}
               onChangeText={setDate}
               icon="calendar-outline"
@@ -264,7 +331,7 @@ export const EditTransactionModal: React.FC<Props> = ({
                       styles.walletItem,
                       {
                         backgroundColor: selected
-                          ? (isDark ? 'rgba(255,255,255,0.1)' : '#f4f4f5')
+                          ? (isDark ? 'rgba(13,148,136,0.18)' : '#ccfbf1')
                           : theme.colors.surfaceElevated,
                         borderColor: selected ? theme.colors.primary : theme.colors.border,
                       },
@@ -272,15 +339,15 @@ export const EditTransactionModal: React.FC<Props> = ({
                   >
                     <Ionicons
                       name="wallet-outline"
-                      size={16}
+                      size={14}
                       color={selected ? theme.colors.primary : theme.colors.textMuted}
                     />
                     <Text
                       style={[
                         styles.walletItemText,
                         {
-                          color: selected ? theme.colors.text : theme.colors.textSecondary,
-                          fontWeight: selected ? '700' : '500',
+                          color: selected ? theme.colors.primary : theme.colors.textSecondary,
+                          fontWeight: selected ? '800' : '500',
                         },
                       ]}
                     >
@@ -297,15 +364,25 @@ export const EditTransactionModal: React.FC<Props> = ({
                 <Text style={[styles.errorText, { color: theme.colors.expense }]}>{error}</Text>
               </View>
             ) : null}
+          </ScrollView>
 
-            {/* Action Buttons */}
+          {/* STICKY CTA FOOTER (THUMB ZONE) */}
+          <View
+            style={[
+              styles.stickyFooter,
+              {
+                backgroundColor: theme.colors.surface,
+                borderTopColor: theme.colors.border,
+              },
+            ]}
+          >
             <View style={styles.actionRow}>
               <GlassButton
-                title={loading ? 'Menyimpan...' : 'Simpan Perubahan'}
+                title={loading ? 'Menyimpan...' : ctaLabel}
                 onPress={handleUpdate}
                 loading={loading}
                 variant="primary"
-                size="md"
+                size="lg"
                 style={{ flex: 1 }}
               />
               <GlassButton
@@ -313,11 +390,14 @@ export const EditTransactionModal: React.FC<Props> = ({
                 onPress={handleDelete}
                 loading={deleting}
                 variant="danger"
-                size="md"
+                size="lg"
                 icon="trash-outline"
               />
             </View>
-          </ScrollView>
+            <Text style={[styles.reassuranceText, { color: theme.colors.textMuted }]}>
+              Perubahan langsung merevisi catatan keuangan & mutasi saldo
+            </Text>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -330,30 +410,52 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.65)',
     justifyContent: 'flex-end',
   },
-  modalContainer: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+  backdrop: {
+    ...StyleSheet.absoluteFill,
+  },
+  sheetContainer: {
+    borderTopLeftRadius: RADII.sheet,
+    borderTopRightRadius: RADII.sheet,
     borderWidth: 1,
-    padding: 20,
-    maxHeight: '90%',
+    maxHeight: '92%',
+    overflow: 'hidden',
+  },
+  handleBar: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
   },
   title: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  subtitle: {
+    fontSize: 11.5,
+    marginTop: 1,
   },
   closeBtn: {
     padding: 6,
+    borderRadius: RADII.full,
+  },
+  scrollBody: {
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.lg,
   },
   typeRow: {
     flexDirection: 'row',
     gap: 10,
-    marginBottom: 14,
+    marginBottom: SPACING.md,
   },
   typeBtn: {
     flex: 1,
@@ -362,24 +464,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: RADII.sm,
     borderWidth: 1,
   },
   typeBtnText: {
     fontSize: 13,
-    fontWeight: '700',
+  },
+  presetsSection: {
+    marginBottom: SPACING.md,
   },
   sectionLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 4,
-    marginBottom: 8,
+    fontSize: 11.5,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  chipsScroll: {
+    flexDirection: 'row',
+  },
+  quickChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: RADII.sm,
+    borderWidth: 1,
+    marginRight: 6,
+  },
+  quickChipText: {
+    fontSize: 11.5,
   },
   walletsList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 16,
+    marginBottom: SPACING.md,
   },
   walletItem: {
     flexDirection: 'row',
@@ -387,7 +503,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 10,
+    borderRadius: RADII.sm,
     borderWidth: 1,
   },
   walletItemText: {
@@ -398,17 +514,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     padding: 10,
-    borderRadius: 10,
-    marginBottom: 14,
+    borderRadius: RADII.sm,
+    marginBottom: SPACING.sm,
   },
   errorText: {
     fontSize: 12,
     fontWeight: '600',
   },
+  stickyFooter: {
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.sm,
+    paddingBottom: Platform.OS === 'ios' ? 28 : SPACING.md,
+    borderTopWidth: 1,
+  },
   actionRow: {
     flexDirection: 'row',
     gap: 10,
+  },
+  reassuranceText: {
+    fontSize: 10.5,
+    textAlign: 'center',
     marginTop: 6,
-    marginBottom: 16,
+    lineHeight: 14,
   },
 })
