@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   ArrowRight,
@@ -12,6 +12,7 @@ import {
   CreditCard,
   Download,
   FileSpreadsheet,
+  Languages,
   Lock,
   Mail,
   MapPin,
@@ -29,6 +30,7 @@ import {
   X,
   Zap,
 } from 'lucide-react'
+import { landingTranslations, type LandingLanguage } from '@/lib/landing-translations'
 
 function GoogleIcon({ className = 'h-5 w-5' }: { className?: string }) {
   return (
@@ -53,60 +55,89 @@ function GoogleIcon({ className = 'h-5 w-5' }: { className?: string }) {
   )
 }
 
-const faqs = [
-  {
-    q: 'Apakah ada versi gratis? Apa saja batasannya?',
-    a: 'Ya! Paket Starter 100% gratis selamanya untuk pencatatan transaksi harian tanpa batasan jumlah. Batasannya adalah maksimal 2 dompet/rekening dan belum mencakup fitur PRO seperti batas budget per kategori, target impian (tabungan), pengingat tagihan rutin, serta ekspor data Excel/PDF.',
-  },
-  {
-    q: 'Apakah saya bisa login langsung dengan akun Google?',
-    a: 'Tentu saja. Anda bisa langsung mendaftar atau masuk dengan satu kali klik menggunakan akun Google (Google OAuth2). Tidak perlu repot mengisi formulir manual atau mengingat kata sandi baru.',
-  },
-  {
-    q: 'Berapa jumlah dompet di paket Free vs PRO?',
-    a: 'Di Paket Starter (Free), Anda dapat membuat hingga 2 dompet atau rekening (misalnya 1 rekening bank dan 1 dompet uang tunai). Pada Paket PRO, Anda dapat menambahkan rekening dan e-wallet tanpa batas (unlimited), seperti BCA, Mandiri, BRI, GoPay, OVO, Dana, dan lainnya.',
-  },
-  {
-    q: 'Bagaimana keamanan data finansial saya?',
-    a: 'Data keuangan Anda tersimpan per akun dan dilindungi standar keamanan modern. Kami tidak pernah meminta informasi sensitif perbankan seperti PIN kartu ATM, kata sandi m-banking, maupun token transaksi. Anda mencatat secara mandiri dan privat.',
-  },
-  {
-    q: 'Apa saja fitur yang termasuk di dalam paket PRO?',
-    a: 'Paket PRO mencakup: unlimited dompet & rekening, pengaturan batas budget bulanan per kategori dengan peringatan overbudget, fitur Target Impian (savings goals) dengan visualisasi progres, pelacak tagihan rutin & pengingat jatuh tempo, serta ekspor laporan ke Excel (.xlsx) dan PDF.',
-  },
-  {
-    q: 'Apa perbedaan bayar bulanan vs tahunan untuk paket PRO?',
-    a: 'Paket PRO bulanan berbiaya Rp 19.000/bulan dengan fleksibilitas bayar setiap bulan. Paket tahunan berbiaya Rp 149.000/tahun (setara ~Rp 12.400/bulan), yang memberikan penghematan biaya sekitar 35% dibanding bayar bulanan.',
-  },
-  {
-    q: 'Bisakah saya mengekspor data atau menghapus akun?',
-    a: 'Pengguna Paket PRO dapat mengekspor seluruh catatan transaksi ke format Excel (.xlsx) atau PDF kapan pun dibutuhkan untuk arsip pribadi. Anda juga dapat mengelola dan menghapus data catatan finansial Anda kapan saja melalui dashboard.',
-  },
-]
-
-const testimonials = [
-  {
-    quote:
-      'Dulu sering bingung gaji habis ke mana. Sekarang tinggal buka di HP dan catat setiap habis belanja, arus kas bulanan langsung kelihatan jelas.',
-    author: '[PLACEHOLDER: Dimas R., Karyawan Swasta]',
-  },
-  {
-    quote:
-      'Paket Starter gratisnya sudah sangat cukup untuk pencatatan harian saya. Tampilannya bersih, ringan, dan tidak banyak tombol yang bikin pusing.',
-    author: '[PLACEHOLDER: Sarah A., Freelancer]',
-  },
-  {
-    quote:
-      'Saya ambil paket PRO tahunan karena butuh fitur batas budget per kategori dan ekspor Excel. Harganya murah banget dibanding manfaat yang didapat.',
-    author: '[PLACEHOLDER: Reza P., Product Designer]',
-  },
-]
-
 export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0)
+  const [lang, setLang] = useState<LandingLanguage>('id')
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('qwarts-lang')
+      if (saved === 'en' || saved === 'id') {
+        setLang(saved)
+      }
+    } catch {
+      // ignore localStorage restrictions
+    }
+  }, [])
+
+  const handleLanguageChange = (newLang: LandingLanguage) => {
+    setLang(newLang)
+    try {
+      localStorage.setItem('qwarts-lang', newLang)
+    } catch {
+      // ignore
+    }
+  }
+
+  const t = landingTranslations[lang]
+
+  // Rich JSON-LD Structured Data for Search Engines (FAQPage & WebApplication)
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebApplication',
+        '@id': 'https://www.qwarts.my.id/#app',
+        name: 'Qwarts Finance',
+        url: 'https://www.qwarts.my.id',
+        applicationCategory: 'FinanceApplication',
+        operatingSystem: 'All',
+        description:
+          'Aplikasi budgeting bulanan dan cara mencatat pengeluaran harian gratis. Atur pos anggaran, catat arus kas multi-dompet, dan capai target tabungan impian dengan mudah.',
+        offers: [
+          {
+            '@type': 'Offer',
+            price: '0',
+            priceCurrency: 'IDR',
+            name: 'Starter (Free)',
+          },
+          {
+            '@type': 'Offer',
+            price: '19000',
+            priceCurrency: 'IDR',
+            name: 'PRO Monthly',
+          },
+          {
+            '@type': 'Offer',
+            price: '149000',
+            priceCurrency: 'IDR',
+            name: 'PRO Yearly',
+          },
+        ],
+      },
+      {
+        '@type': 'FAQPage',
+        '@id': 'https://www.qwarts.my.id/#faq',
+        mainEntity: t.faq.items.map((item) => ({
+          '@type': 'Question',
+          name: item.q,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: item.a,
+          },
+        })),
+      },
+    ],
+  }
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-slate-950 text-slate-100 selection:bg-teal-500 selection:text-white">
+      {/* Schema.org Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       {/* Background Glows & Ambience */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-gradient-to-tr from-teal-500/20 via-emerald-500/15 to-cyan-500/10 blur-[130px]" />
@@ -136,40 +167,55 @@ export default function LandingPage() {
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
             <a href="#fitur" className="transition hover:text-white">
-              Fitur
+              {t.nav.features}
+            </a>
+            <a href="#panduan" className="transition hover:text-white">
+              {lang === 'id' ? 'Panduan' : 'Guide'}
             </a>
             <a href="#preview" className="transition hover:text-white">
-              Dashboard
+              {t.nav.dashboard}
             </a>
             <a href="#cara-kerja" className="transition hover:text-white">
-              Cara Kerja
+              {t.nav.howItWorks}
             </a>
             <a href="#harga" className="transition hover:text-white">
-              Harga
+              {t.nav.pricing}
             </a>
             <a href="#privasi" className="transition hover:text-white">
-              Privasi
+              {t.nav.privacy}
             </a>
             <a href="#faq" className="transition hover:text-white">
-              FAQ
+              {t.nav.faq}
             </a>
             <a href="#kontak" className="transition hover:text-white">
-              Kontak
+              {t.nav.contact}
             </a>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Language Switcher */}
+            <button
+              type="button"
+              onClick={() => handleLanguageChange(lang === 'id' ? 'en' : 'id')}
+              title={lang === 'id' ? 'Switch to English' : 'Beralih ke Bahasa Indonesia'}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-700/80 bg-slate-900/80 px-2.5 py-1.5 text-xs font-semibold text-slate-200 shadow-sm backdrop-blur-md transition hover:border-teal-500/50 hover:bg-slate-800 hover:text-white cursor-pointer"
+              aria-label={lang === 'id' ? 'Switch to English' : 'Beralih ke Bahasa Indonesia'}
+            >
+              <Languages className="h-4 w-4 text-teal-400" />
+              <span>{lang === 'id' ? '🇮🇩 ID' : '🇺🇸 EN'}</span>
+            </button>
+
             <Link
               href="/sign-in"
-              className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white"
+              className="rounded-xl px-3 py-2 sm:px-4 sm:py-2 text-sm font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white"
             >
-              Masuk
+              {t.nav.signIn}
             </Link>
             <Link
               href="/sign-in"
-              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-teal-500/20 transition hover:from-teal-400 hover:to-emerald-500 active:scale-95"
+              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 px-3.5 py-2 sm:px-4 sm:py-2 text-sm font-bold text-white shadow-lg shadow-teal-500/20 transition hover:from-teal-400 hover:to-emerald-500 active:scale-95"
             >
-              <span>Mulai gratis</span>
+              <span>{t.nav.getStarted}</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -179,27 +225,26 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="relative z-10 mx-auto max-w-7xl px-4 pt-16 pb-20 sm:px-6 lg:px-8 lg:pt-24">
         <div className="mx-auto max-w-3xl text-center">
-          {/* Badge Jujur */}
+          {/* SEO Badges */}
           <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold text-teal-300 shadow-sm backdrop-blur-md">
-            <span>Mulai gratis</span>
+            <span>{t.hero.badge1}</span>
             <span className="text-slate-500">•</span>
-            <span>Data per akun</span>
+            <span>{t.hero.badge2}</span>
             <span className="text-slate-500">•</span>
-            <span>Desktop & mobile</span>
+            <span>{t.hero.badge3}</span>
           </div>
 
-          {/* Heading Manfaat */}
+          {/* Heading Manfaat (Target Search Keywords: cara mencatat pengeluaran harian, aplikasi budgeting bulanan) */}
           <h1 className="mt-6 text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl text-white">
-            Catat Keuangan Pribadi dengan Mudah,{' '}
+            {t.hero.headlinePrefix}
             <span className="bg-gradient-to-r from-teal-300 via-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-              Mulai Gratis
+              {t.hero.headlineGradient}
             </span>
           </h1>
 
-          {/* Subtitle Jujur Free vs Nilai PRO */}
+          {/* Subtitle Solution & Value Proposition */}
           <p className="mt-6 text-base sm:text-lg leading-relaxed text-slate-300">
-            Catat pemasukan dan pengeluaran harianmu tanpa biaya. Upgrade ke PRO saat kamu siap
-            mengelola budget, banyak dompet, dan target tabungan.
+            {t.hero.subtitle}
           </p>
 
           {/* CTAs */}
@@ -209,14 +254,14 @@ export default function LandingPage() {
               className="flex w-full sm:w-auto items-center justify-center gap-2.5 rounded-2xl bg-white px-7 py-3.5 text-sm font-bold text-slate-950 shadow-xl shadow-white/10 transition hover:bg-slate-100 active:scale-95"
             >
               <GoogleIcon className="h-5 w-5" />
-              <span>Mulai gratis dengan Google</span>
+              <span>{t.hero.ctaGoogle}</span>
             </Link>
 
             <a
               href="#preview"
               className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/80 px-6 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 hover:border-slate-600 active:scale-95"
             >
-              <span>Lihat contoh dashboard</span>
+              <span>{t.hero.ctaPreview}</span>
               <ChevronDown className="h-4 w-4 text-slate-400" />
             </a>
           </div>
@@ -225,15 +270,15 @@ export default function LandingPage() {
           <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400">
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-              <span>Gratis untuk pencatatan harian</span>
+              <span>{t.hero.trust1}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <ShieldCheck className="h-4 w-4 text-teal-400" />
-              <span>Data per akun & terisolasi</span>
+              <span>{t.hero.trust2}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Zap className="h-4 w-4 text-cyan-400" />
-              <span>Bisa diakses di HP & desktop</span>
+              <span>{t.hero.trust3}</span>
             </div>
           </div>
         </div>
@@ -248,12 +293,12 @@ export default function LandingPage() {
                 <span className="h-3 w-3 rounded-full bg-amber-500/80" />
                 <span className="h-3 w-3 rounded-full bg-emerald-500/80" />
                 <span className="ml-2 text-xs font-medium text-slate-500">
-                  finance.qwarts.my.id/dashboard
+                  {t.hero.mockupWindow}
                 </span>
               </div>
               <div className="flex items-center gap-2 text-xs font-semibold text-teal-400">
                 <span className="h-2 w-2 rounded-full bg-teal-400" />
-                <span>Ilustrasi Dashboard</span>
+                <span>{t.hero.mockupBadge}</span>
               </div>
             </div>
 
@@ -262,59 +307,59 @@ export default function LandingPage() {
               {/* Card 1: Total Saldo */}
               <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shadow-lg">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Total Kekayaan Bersih
+                  {t.hero.mockupNetWorthTitle}
                 </p>
                 <p className="mt-2 text-3xl font-black text-white">Rp 28.750.000</p>
                 <div className="mt-3 flex items-center gap-2 text-xs text-emerald-400 font-semibold">
                   <TrendingUp className="h-3.5 w-3.5" />
-                  <span>+18.4% bulan ini</span>
+                  <span>{t.hero.mockupNetWorthGrowth}</span>
                 </div>
                 <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-                  <span>Dompet Aktif</span>
-                  <span className="text-teal-400 font-medium">BCA, Mandiri, Cash</span>
+                  <span>{t.hero.mockupActiveWallets}</span>
+                  <span className="text-teal-400 font-medium">{t.hero.mockupActiveWalletsValue}</span>
                 </div>
               </div>
 
               {/* Card 2: Pemasukan & Pengeluaran */}
               <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shadow-lg">
                 <div className="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  <span>Arus Kas Bulan Ini</span>
-                  <span className="rounded bg-teal-500/10 px-2 py-0.5 text-teal-400">Maret 2026</span>
+                  <span>{t.hero.mockupCashFlowTitle}</span>
+                  <span className="rounded bg-teal-500/10 px-2 py-0.5 text-teal-400">{t.hero.mockupCashFlowMonth}</span>
                 </div>
                 <div className="mt-3 space-y-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-300">Pemasukan</span>
+                    <span className="text-slate-300">{t.hero.mockupIncome}</span>
                     <span className="font-bold text-emerald-400">+Rp 12.500.000</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-300">Pengeluaran</span>
+                    <span className="text-slate-300">{t.hero.mockupExpense}</span>
                     <span className="font-bold text-rose-400">-Rp 4.050.000</span>
                   </div>
                   <div className="w-full bg-slate-800 rounded-full h-2 mt-2">
                     <div className="bg-teal-400 h-2 rounded-full w-[32%]" />
                   </div>
                 </div>
-                <p className="mt-3 text-[11px] text-slate-400">Tercatat rapi di grafik bulanan</p>
+                <p className="mt-3 text-[11px] text-slate-400">{t.hero.mockupChartNote}</p>
               </div>
 
               {/* Card 3: Target Impian (Goals - PRO) */}
               <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shadow-lg">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Target Impian (Fitur PRO)
+                    {t.hero.mockupGoalsTitle}
                   </span>
                   <Target className="h-4 w-4 text-teal-400" />
                 </div>
-                <p className="mt-2 text-lg font-bold text-white">Dana Darurat 6 Bulan</p>
+                <p className="mt-2 text-lg font-bold text-white">{t.hero.mockupGoalsName}</p>
                 <div className="mt-2 flex items-center justify-between text-xs font-semibold">
                   <span className="text-teal-300">Rp 17.000.000</span>
-                  <span className="text-slate-400">Target Rp 20.000.000</span>
+                  <span className="text-slate-400">{t.hero.mockupGoalsTarget}</span>
                 </div>
                 <div className="w-full bg-slate-800 rounded-full h-2 mt-2">
                   <div className="bg-gradient-to-r from-teal-400 to-emerald-400 h-2 rounded-full w-[85%]" />
                 </div>
                 <p className="mt-2 text-[11px] text-emerald-400 font-medium">
-                  85% Tercapai • Sisa Rp 3.000.000 lagi
+                  {t.hero.mockupGoalsAchieved}
                 </p>
               </div>
             </div>
@@ -322,8 +367,8 @@ export default function LandingPage() {
             {/* Bottom mini showcase: Recent transactions */}
             <div className="mt-4 rounded-2xl border border-slate-800/80 bg-slate-950/50 p-4">
               <div className="flex items-center justify-between mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                <span>Catatan Transaksi Terakhir</span>
-                <span className="text-slate-500 font-medium text-[11px]">Contoh simulasi catatan</span>
+                <span>{t.hero.mockupTxTitle}</span>
+                <span className="text-slate-500 font-medium text-[11px]">{t.hero.mockupTxSub}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="flex items-center justify-between rounded-xl bg-slate-900/80 p-3 border border-slate-800">
@@ -332,8 +377,8 @@ export default function LandingPage() {
                       <TrendingUp className="h-4 w-4" />
                     </div>
                     <div className="text-left">
-                      <p className="text-xs font-bold text-white">Gaji Bulanan</p>
-                      <p className="text-[10px] text-slate-400">BCA • Pemasukan</p>
+                      <p className="text-xs font-bold text-white">{t.hero.mockupTx1Title}</p>
+                      <p className="text-[10px] text-slate-400">{t.hero.mockupTx1Cat}</p>
                     </div>
                   </div>
                   <span className="text-xs font-bold text-emerald-400">+10.000.000</span>
@@ -345,8 +390,8 @@ export default function LandingPage() {
                       <CreditCard className="h-4 w-4" />
                     </div>
                     <div className="text-left">
-                      <p className="text-xs font-bold text-white">Belanja Bulanan</p>
-                      <p className="text-[10px] text-slate-400">Mandiri • Makanan</p>
+                      <p className="text-xs font-bold text-white">{t.hero.mockupTx2Title}</p>
+                      <p className="text-[10px] text-slate-400">{t.hero.mockupTx2Cat}</p>
                     </div>
                   </div>
                   <span className="text-xs font-bold text-rose-400">-750.000</span>
@@ -358,8 +403,8 @@ export default function LandingPage() {
                       <Zap className="h-4 w-4" />
                     </div>
                     <div className="text-left">
-                      <p className="text-xs font-bold text-white">Internet & WiFi</p>
-                      <p className="text-[10px] text-slate-400">Tagihan Rutin</p>
+                      <p className="text-xs font-bold text-white">{t.hero.mockupTx3Title}</p>
+                      <p className="text-[10px] text-slate-400">{t.hero.mockupTx3Cat}</p>
                     </div>
                   </div>
                   <span className="text-xs font-bold text-rose-400">-375.000</span>
@@ -369,8 +414,68 @@ export default function LandingPage() {
 
             {/* Explicit Caption Under Demo Mockup */}
             <p className="mt-3 text-center text-xs font-medium text-slate-500">
-              *Contoh data — bukan saldo akunmu
+              {t.hero.mockupDisclaimer}
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Educational SEO Guide Section: Mengapa Cara Mencatat Pengeluaran & Budgeting Penting */}
+      <section id="panduan" className="relative z-10 border-t border-slate-800/80 bg-slate-900/30 py-16 sm:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold text-teal-300">
+              <Sparkles className="h-3.5 w-3.5 text-teal-400" />
+              <span>{t.seoSection.tag}</span>
+            </div>
+            <h2 className="mt-4 text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white">
+              {t.seoSection.title}
+            </h2>
+            <p className="mt-4 text-sm sm:text-base text-slate-300 leading-relaxed">
+              {t.seoSection.subtitle}
+            </p>
+          </div>
+
+          <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto">
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 backdrop-blur-sm transition hover:border-teal-500/40">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-500/10 text-teal-400 mb-4">
+                <TrendingUp className="h-5 w-5" />
+              </div>
+              <h3 className="text-base font-bold text-white">{t.seoSection.card1Title}</h3>
+              <p className="mt-2 text-xs sm:text-sm text-slate-400 leading-relaxed">
+                {t.seoSection.card1Desc}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 backdrop-blur-sm transition hover:border-teal-500/40">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 mb-4">
+                <PieChart className="h-5 w-5" />
+              </div>
+              <h3 className="text-base font-bold text-white">{t.seoSection.card2Title}</h3>
+              <p className="mt-2 text-xs sm:text-sm text-slate-400 leading-relaxed">
+                {t.seoSection.card2Desc}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 backdrop-blur-sm transition hover:border-teal-500/40">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 mb-4">
+                <Wallet className="h-5 w-5" />
+              </div>
+              <h3 className="text-base font-bold text-white">{t.seoSection.card3Title}</h3>
+              <p className="mt-2 text-xs sm:text-sm text-slate-400 leading-relaxed">
+                {t.seoSection.card3Desc}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 backdrop-blur-sm transition hover:border-teal-500/40">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400 mb-4">
+                <Target className="h-5 w-5" />
+              </div>
+              <h3 className="text-base font-bold text-white">{t.seoSection.card4Title}</h3>
+              <p className="mt-2 text-xs sm:text-sm text-slate-400 leading-relaxed">
+                {t.seoSection.card4Desc}
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -381,10 +486,10 @@ export default function LandingPage() {
           <div className="mx-auto max-w-3xl text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/20 bg-teal-500/5 px-3.5 py-1 text-xs font-semibold text-teal-400">
               <Users className="h-3.5 w-3.5" />
-              <span>Dibuat untuk Pengelolaan Finansial yang Masuk Akal</span>
+              <span>{t.socialProof.tag}</span>
             </div>
             <h2 className="mt-4 text-2xl sm:text-3xl font-extrabold text-white">
-              Cocok untuk Siapa Saja yang Ingin Finansial Lebih Rapi
+              {t.socialProof.title}
             </h2>
           </div>
 
@@ -392,32 +497,32 @@ export default function LandingPage() {
           <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-6">
               <div className="h-2 w-10 bg-teal-400 rounded-full mb-4" />
-              <h3 className="text-base font-bold text-white">Pencatat Keuangan Pemula</h3>
+              <h3 className="text-base font-bold text-white">{t.socialProof.card1Title}</h3>
               <p className="mt-2 text-xs sm:text-sm text-slate-400 leading-relaxed">
-                Beralih dari catatan manual di buku atau spreadsheet yang membingungkan ke dashboard web yang ringan dan otomatis.
+                {t.socialProof.card1Desc}
               </p>
             </div>
 
             <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-6">
               <div className="h-2 w-10 bg-emerald-400 rounded-full mb-4" />
-              <h3 className="text-base font-bold text-white">Pekerja & Freelancer</h3>
+              <h3 className="text-base font-bold text-white">{t.socialProof.card2Title}</h3>
               <p className="mt-2 text-xs sm:text-sm text-slate-400 leading-relaxed">
-                Memisahkan uang operasional harian, rekening tabungan, dan dana cadangan agar arus kas tidak saling tercampur.
+                {t.socialProof.card2Desc}
               </p>
             </div>
 
             <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-6">
               <div className="h-2 w-10 bg-cyan-400 rounded-full mb-4" />
-              <h3 className="text-base font-bold text-white">Pengatur Budget Bulanan</h3>
+              <h3 className="text-base font-bold text-white">{t.socialProof.card3Title}</h3>
               <p className="mt-2 text-xs sm:text-sm text-slate-400 leading-relaxed">
-                Ingin membatasi pos pengeluaran tertentu (makanan, gaya hidup) agar tidak overbudget di tengah bulan.
+                {t.socialProof.card3Desc}
               </p>
             </div>
           </div>
 
-          {/* 3 Placeholder Testimonials */}
+          {/* Testimonials */}
           <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {testimonials.map((item, idx) => (
+            {t.socialProof.testimonials.map((item, idx) => (
               <div
                 key={idx}
                 className="relative rounded-2xl border border-slate-800/80 bg-slate-900/40 p-6 flex flex-col justify-between"
@@ -441,19 +546,19 @@ export default function LandingPage() {
       <section id="fitur" className="relative z-10 border-t border-slate-800/80 bg-slate-900/40 py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-teal-400">
-              Fitur Produk
+            <div className="text-xs font-bold uppercase tracking-widest text-teal-400">
+              {t.features.tag}
+            </div>
+            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              {t.features.title}
             </h2>
-            <p className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-              Semua yang Kamu Butuhkan untuk Mengelola Arus Kas
-            </p>
             <p className="mt-4 text-slate-400 text-sm sm:text-base">
-              Mulai dari pencatatan harian tanpa biaya, hingga fitur otomatisasi anggaran di paket PRO.
+              {t.features.subtitle}
             </p>
           </div>
 
           <div className="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Feature 1: Free */}
+            {/* Feature 1 */}
             <div className="group rounded-3xl border border-slate-800 bg-slate-950/70 p-7 shadow-lg transition hover:border-teal-500/40 hover:bg-slate-900/80 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between">
@@ -461,17 +566,17 @@ export default function LandingPage() {
                     <TrendingUp className="h-6 w-6" />
                   </div>
                   <span className="rounded-full bg-teal-500/10 border border-teal-500/20 px-3 py-1 text-xs font-bold text-teal-300">
-                    Free
+                    {t.features.f1Badge}
                   </span>
                 </div>
-                <h3 className="mt-5 text-xl font-bold text-white">Catat Pemasukan & Pengeluaran</h3>
+                <h3 className="mt-5 text-xl font-bold text-white">{t.features.f1Title}</h3>
                 <p className="mt-2 text-sm text-slate-400 leading-relaxed">
-                  Catat setiap transaksi harianmu tanpa batasan jumlah. Pantau pemasukan dan pengeluaran secara visual lewat grafik arus kas bulanan yang mudah dipahami.
+                  {t.features.f1Desc}
                 </p>
               </div>
             </div>
 
-            {/* Feature 2: Free 2 / PRO Unlimited */}
+            {/* Feature 2 */}
             <div className="group rounded-3xl border border-slate-800 bg-slate-950/70 p-7 shadow-lg transition hover:border-teal-500/40 hover:bg-slate-900/80 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between">
@@ -479,17 +584,17 @@ export default function LandingPage() {
                     <CreditCard className="h-6 w-6" />
                   </div>
                   <span className="rounded-full bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 text-[11px] font-bold text-cyan-300">
-                    Free (2) · PRO (Unlimited)
+                    {t.features.f2Badge}
                   </span>
                 </div>
-                <h3 className="mt-5 text-xl font-bold text-white">Multi-Dompet & Rekening Bank</h3>
+                <h3 className="mt-5 text-xl font-bold text-white">{t.features.f2Title}</h3>
                 <p className="mt-2 text-sm text-slate-400 leading-relaxed">
-                  Pisahkan uang tunai di dompet, rekening bank (BCA, Mandiri, BRI), atau e-wallet (GoPay, OVO). Akun Starter mendukung hingga 2 dompet; buka tanpa batas di PRO.
+                  {t.features.f2Desc}
                 </p>
               </div>
             </div>
 
-            {/* Feature 3: PRO */}
+            {/* Feature 3 */}
             <div className="group rounded-3xl border border-slate-800 bg-slate-950/70 p-7 shadow-lg transition hover:border-teal-500/40 hover:bg-slate-900/80 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between">
@@ -497,17 +602,17 @@ export default function LandingPage() {
                     <PieChart className="h-6 w-6" />
                   </div>
                   <span className="rounded-full bg-amber-500/20 border border-amber-500/30 px-3 py-1 text-xs font-extrabold text-amber-300">
-                    PRO
+                    {t.features.f3Badge}
                   </span>
                 </div>
-                <h3 className="mt-5 text-xl font-bold text-white">Budget & Peringatan Overbudget</h3>
+                <h3 className="mt-5 text-xl font-bold text-white">{t.features.f3Title}</h3>
                 <p className="mt-2 text-sm text-slate-400 leading-relaxed">
-                  Tetapkan pagu anggaran per kategori (makanan, transportasi, hiburan) dan pantau persentase belanja agar tidak melebihi kemampuan finansialmu.
+                  {t.features.f3Desc}
                 </p>
               </div>
             </div>
 
-            {/* Feature 4: PRO */}
+            {/* Feature 4 */}
             <div className="group rounded-3xl border border-slate-800 bg-slate-950/70 p-7 shadow-lg transition hover:border-teal-500/40 hover:bg-slate-900/80 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between">
@@ -515,17 +620,17 @@ export default function LandingPage() {
                     <Target className="h-6 w-6" />
                   </div>
                   <span className="rounded-full bg-amber-500/20 border border-amber-500/30 px-3 py-1 text-xs font-extrabold text-amber-300">
-                    PRO
+                    {t.features.f4Badge}
                   </span>
                 </div>
-                <h3 className="mt-5 text-xl font-bold text-white">Target Impian (Savings Goals)</h3>
+                <h3 className="mt-5 text-xl font-bold text-white">{t.features.f4Title}</h3>
                 <p className="mt-2 text-sm text-slate-400 leading-relaxed">
-                  Rencanakan dana darurat, beli gadget baru, atau liburan. Pantau progress bar tabungan secara visual hingga nominal impian tercapai.
+                  {t.features.f4Desc}
                 </p>
               </div>
             </div>
 
-            {/* Feature 5: PRO */}
+            {/* Feature 5 */}
             <div className="group rounded-3xl border border-slate-800 bg-slate-950/70 p-7 shadow-lg transition hover:border-teal-500/40 hover:bg-slate-900/80 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between">
@@ -533,17 +638,17 @@ export default function LandingPage() {
                     <Zap className="h-6 w-6" />
                   </div>
                   <span className="rounded-full bg-amber-500/20 border border-amber-500/30 px-3 py-1 text-xs font-extrabold text-amber-300">
-                    PRO
+                    {t.features.f5Badge}
                   </span>
                 </div>
-                <h3 className="mt-5 text-xl font-bold text-white">Tagihan Rutin & Pengingat</h3>
+                <h3 className="mt-5 text-xl font-bold text-white">{t.features.f5Title}</h3>
                 <p className="mt-2 text-sm text-slate-400 leading-relaxed">
-                  Catat pengeluaran rutin bulanan seperti WiFi, listrik, atau langganan aplikasi. Lengkap dengan tanggal jatuh tempo agar tidak terkena denda keterlambatan.
+                  {t.features.f5Desc}
                 </p>
               </div>
             </div>
 
-            {/* Feature 6: PRO */}
+            {/* Feature 6 */}
             <div className="group rounded-3xl border border-slate-800 bg-slate-950/70 p-7 shadow-lg transition hover:border-teal-500/40 hover:bg-slate-900/80 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between">
@@ -551,12 +656,12 @@ export default function LandingPage() {
                     <Download className="h-6 w-6" />
                   </div>
                   <span className="rounded-full bg-amber-500/20 border border-amber-500/30 px-3 py-1 text-xs font-extrabold text-amber-300">
-                    PRO
+                    {t.features.f6Badge}
                   </span>
                 </div>
-                <h3 className="mt-5 text-xl font-bold text-white">Ekspor Laporan Excel & PDF</h3>
+                <h3 className="mt-5 text-xl font-bold text-white">{t.features.f6Title}</h3>
                 <p className="mt-2 text-sm text-slate-400 leading-relaxed">
-                  Unduh rekapitulasi data keuangan bulanan dalam format Excel (.xlsx) atau PDF kapan saja untuk arsip pribadi maupun evaluasi keuangan tahunan.
+                  {t.features.f6Desc}
                 </p>
               </div>
             </div>
@@ -568,12 +673,12 @@ export default function LandingPage() {
       <section id="cara-kerja" className="relative z-10 py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-teal-400">
-              Alur Praktis
+            <div className="text-xs font-bold uppercase tracking-widest text-teal-400">
+              {t.howItWorks.tag}
+            </div>
+            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              {t.howItWorks.title}
             </h2>
-            <p className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-              Mulai Rapi Finansial dalam 3 Langkah
-            </p>
           </div>
 
           <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -581,9 +686,9 @@ export default function LandingPage() {
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-500/10 text-2xl font-black text-teal-400 border border-teal-500/20">
                 1
               </div>
-              <h3 className="mt-6 text-lg font-bold text-white">Masuk dengan Akun Google</h3>
+              <h3 className="mt-6 text-lg font-bold text-white">{t.howItWorks.step1Title}</h3>
               <p className="mt-2 text-sm text-slate-400">
-                Cukup satu klik dengan akun Google Anda tanpa perlu menghafal password baru. Dashboard siap dalam hitungan detik.
+                {t.howItWorks.step1Desc}
               </p>
             </div>
 
@@ -591,19 +696,19 @@ export default function LandingPage() {
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-2xl font-black text-emerald-400 border border-emerald-500/20">
                 2
               </div>
-              <h3 className="mt-6 text-lg font-bold text-white">Atur Dompet & Kategori</h3>
+              <h3 className="mt-6 text-lg font-bold text-white">{t.howItWorks.step2Title}</h3>
               <p className="mt-2 text-sm text-slate-400">
-                Tambahkan hingga 2 dompet di paket Free (misal: Rekening Utama & Tunai) serta sesuaikan kategori transaksi sesuai kebutuhanmu.
+                {t.howItWorks.step2Desc}
               </p>
             </div>
 
             <div className="relative rounded-3xl border border-slate-800 bg-slate-900/40 p-8 text-center backdrop-blur-sm">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-500/10 text-2xl font-black text-cyan-400 border border-cyan-500/20">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
                 3
               </div>
-              <h3 className="mt-6 text-lg font-bold text-white">Catat Rutin & Upgrade saat Siap</h3>
+              <h3 className="mt-6 text-lg font-bold text-white">{t.howItWorks.step3Title}</h3>
               <p className="mt-2 text-sm text-slate-400">
-                Catat pengeluaran harian secara konsisten. Upgrade ke PRO kapan saja saat kamu butuh pagu budget, target impian, atau ekspor data.
+                {t.howItWorks.step3Desc}
               </p>
             </div>
           </div>
@@ -616,14 +721,13 @@ export default function LandingPage() {
           <div className="mx-auto max-w-3xl text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold text-teal-300 shadow-sm backdrop-blur-md">
               <Sparkles className="h-3.5 w-3.5 text-teal-400" />
-              <span>Transparan & Sangat Terjangkau</span>
+              <span>{t.pricing.badge}</span>
             </div>
             <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
-              Pilihan Paket yang Jujur dan Masuk Akal
+              {t.pricing.title}
             </h2>
-            {/* Intro Kebenaran 1 Kalimat Sesuai Brief */}
             <p className="mt-4 text-sm sm:text-base text-slate-300 leading-relaxed font-medium">
-              Gratis untuk pencatatan harian; upgrade ke PRO untuk budget, multi-dompet unlimited, target tabungan, dan ekspor data.
+              {t.pricing.subtitle}
             </p>
           </div>
 
@@ -632,67 +736,67 @@ export default function LandingPage() {
             <div className="relative flex flex-col justify-between rounded-3xl border border-slate-800 bg-slate-900/50 p-8 sm:p-10 backdrop-blur-xl transition hover:border-slate-700">
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold text-white">Paket Starter (Free)</span>
+                  <span className="text-lg font-bold text-white">{t.pricing.freeTitle}</span>
                   <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-300">
-                    Gratis Selamanya
+                    {t.pricing.freeBadge}
                   </span>
                 </div>
                 <p className="mt-3 text-xs sm:text-sm text-slate-400 leading-relaxed">
-                  Cocok untuk siapa saja yang ingin mulai membiasakan diri mencatat pemasukan dan pengeluaran harian tanpa ribet.
+                  {t.pricing.freeDesc}
                 </p>
 
                 <div className="mt-6 flex items-baseline gap-1">
-                  <span className="text-4xl sm:text-5xl font-black text-white">Rp 0</span>
-                  <span className="text-xs font-medium text-slate-400">/ selamanya</span>
+                  <span className="text-4xl sm:text-5xl font-black text-white">{t.pricing.freePrice}</span>
+                  <span className="text-xs font-medium text-slate-400">{t.pricing.freePricePeriod}</span>
                 </div>
 
                 <div className="mt-8 space-y-3.5 border-t border-slate-800/80 pt-8 text-xs sm:text-sm text-slate-300">
                   <p className="font-semibold text-teal-400 text-xs uppercase tracking-wider mb-2">
-                    Fitur Termasuk:
+                    {t.pricing.includedTitle}
                   </p>
                   <div className="flex items-center gap-3">
                     <Check className="h-4 w-4 shrink-0 text-teal-400" />
-                    <span>Pencatatan Pemasukan & Pengeluaran Unlimited</span>
+                    <span>{t.pricing.fInc1}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Check className="h-4 w-4 shrink-0 text-teal-400" />
-                    <span>Maksimal 2 Dompet / Rekening Bank</span>
+                    <span>{t.pricing.fInc2}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Check className="h-4 w-4 shrink-0 text-teal-400" />
-                    <span>Kategori Transaksi Lengkap</span>
+                    <span>{t.pricing.fInc3}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Check className="h-4 w-4 shrink-0 text-teal-400" />
-                    <span>Grafik Arus Kas & Statistik Bulanan</span>
+                    <span>{t.pricing.fInc4}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Check className="h-4 w-4 shrink-0 text-teal-400" />
-                    <span>Login Cepat dengan Akun Google (OAuth2)</span>
+                    <span>{t.pricing.fInc5}</span>
                   </div>
 
                   <p className="font-semibold text-slate-500 text-xs uppercase tracking-wider pt-3 mb-2">
-                    Tidak Termasuk (Ada di PRO):
+                    {t.pricing.notIncludedTitle}
                   </p>
                   <div className="flex items-center gap-3 text-slate-500">
                     <X className="h-4 w-4 shrink-0 text-slate-600" />
-                    <span>Lebih dari 2 dompet / rekening</span>
+                    <span>{t.pricing.fExc1}</span>
                   </div>
                   <div className="flex items-center gap-3 text-slate-500">
                     <X className="h-4 w-4 shrink-0 text-slate-600" />
-                    <span>Batas budget per kategori & overbudget alert</span>
+                    <span>{t.pricing.fExc2}</span>
                   </div>
                   <div className="flex items-center gap-3 text-slate-500">
                     <X className="h-4 w-4 shrink-0 text-slate-600" />
-                    <span>Target Impian (tabungan masa depan)</span>
+                    <span>{t.pricing.fExc3}</span>
                   </div>
                   <div className="flex items-center gap-3 text-slate-500">
                     <X className="h-4 w-4 shrink-0 text-slate-600" />
-                    <span>Pelacak tagihan rutin & pengingat</span>
+                    <span>{t.pricing.fExc4}</span>
                   </div>
                   <div className="flex items-center gap-3 text-slate-500">
                     <X className="h-4 w-4 shrink-0 text-slate-600" />
-                    <span>Ekspor laporan ke Excel (.xlsx) & PDF</span>
+                    <span>{t.pricing.fExc5}</span>
                   </div>
                 </div>
               </div>
@@ -702,7 +806,7 @@ export default function LandingPage() {
                   href="/sign-in"
                   className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-800/80 py-3.5 text-sm font-bold text-white transition hover:bg-slate-700 hover:text-white"
                 >
-                  <span>Mulai Gratis Sekarang</span>
+                  <span>{t.pricing.freeCta}</span>
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
@@ -713,85 +817,90 @@ export default function LandingPage() {
               <div className="absolute -top-3.5 right-8">
                 <span className="rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-3.5 py-1 text-xs font-black text-slate-950 uppercase tracking-wider shadow-md shadow-amber-500/30 flex items-center gap-1">
                   <Sparkles className="h-3 w-3 fill-slate-950 text-slate-950" />
-                  Paling Dipilih
+                  {t.pricing.proPopularBadge}
                 </span>
               </div>
 
               <div>
                 <div className="flex items-center justify-between">
                   <span className="text-lg font-bold text-white flex items-center gap-2">
-                    <span>Paket Qwarts Finance PRO</span>
+                    <span>{t.pricing.proTitle}</span>
                     <span className="rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-extrabold px-2 py-0.5 border border-amber-500/30">
                       PRO
                     </span>
                   </span>
                 </div>
                 <p className="mt-3 text-xs sm:text-sm text-slate-400 leading-relaxed">
-                  Kendali penuh atas keuanganmu dengan sistem otomatisasi batas budget, target tabungan, dan ekspor data.
+                  {t.pricing.proDesc}
                 </p>
 
-                {/* Harga Bulanan dan Tahunan Berdampingan Sesuai Brief */}
+                {/* Harga Bulanan dan Tahunan Berdampingan */}
                 <div className="mt-6 rounded-2xl border border-teal-500/30 bg-teal-950/30 p-4">
                   <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-teal-500/20 pb-3">
                     <div>
-                      <span className="text-xs text-slate-400">Opsi Bulanan:</span>
+                      <span className="text-xs text-slate-400">{t.pricing.proMonthlyLabel}</span>
                       <div className="flex items-baseline gap-1 mt-0.5">
-                        <span className="text-3xl font-black text-white">Rp 19.000</span>
-                        <span className="text-xs font-medium text-slate-400">/ bulan</span>
+                        <span className="text-3xl font-black text-white">{t.pricing.proMonthlyPrice}</span>
+                        <span className="text-xs font-medium text-slate-400">{t.pricing.proMonthlyPeriod}</span>
                       </div>
                     </div>
                     <div className="text-left sm:text-right">
-                      <span className="text-xs text-amber-300 font-semibold">Opsi Tahunan (Hemat ~35%):</span>
+                      <span className="text-xs text-amber-300 font-semibold">{t.pricing.proYearlyLabel}</span>
                       <div className="flex items-baseline gap-1 mt-0.5 sm:justify-end">
-                        <span className="text-2xl font-black text-emerald-400">Rp 149.000</span>
-                        <span className="text-xs font-medium text-slate-400">/ tahun</span>
+                        <span className="text-2xl font-black text-emerald-400">{t.pricing.proYearlyPrice}</span>
+                        <span className="text-xs font-medium text-slate-400">{t.pricing.proYearlyPeriod}</span>
                       </div>
                     </div>
                   </div>
                   <p className="mt-2 text-xs text-teal-300 font-medium">
-                    ⚡ Paket tahunan setara hanya ~Rp 12.400/bulan
+                    {t.pricing.proYearlyEquivalent}
                   </p>
                 </div>
 
                 <div className="mt-8 space-y-3.5 border-t border-teal-500/20 pt-8 text-xs sm:text-sm text-slate-200">
                   <div className="flex items-center gap-3">
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
-                    <span className="font-semibold text-white">Semua Fitur Paket Starter (Free)</span>
+                    <span className="font-semibold text-white">{t.pricing.proFeature1}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
                     <span>
-                      <strong className="text-white">Unlimited Dompet & Rekening</strong> (BCA, Mandiri, BRI, GoPay, OVO, Dana)
+                      <strong className="text-white">{t.pricing.proFeature2Bold}</strong>
+                      {t.pricing.proFeature2Text}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
                     <span>
-                      <strong className="text-white">Batas Budget Bulanan</strong> per Kategori & Peringatan Overbudget
+                      <strong className="text-white">{t.pricing.proFeature3Bold}</strong>
+                      {t.pricing.proFeature3Text}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
                     <span>
-                      <strong className="text-white">Target Impian & Tabungan</strong> dengan Progress Bar Visual
+                      <strong className="text-white">{t.pricing.proFeature4Bold}</strong>
+                      {t.pricing.proFeature4Text}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
                     <span>
-                      <strong className="text-white">Pelacak Tagihan Rutin</strong> & Pengingat Jatuh Tempo
+                      <strong className="text-white">{t.pricing.proFeature5Bold}</strong>
+                      {t.pricing.proFeature5Text}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
                     <span>
-                      <strong className="text-white">Ekspor Laporan Lengkap</strong> ke Excel (.xlsx) & PDF Otomatis
+                      <strong className="text-white">{t.pricing.proFeature6Bold}</strong>
+                      {t.pricing.proFeature6Text}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-400" />
                     <span>
-                      <strong className="text-white">Lencana Eksklusif PRO Member ⭐</strong>
+                      <strong className="text-white">{t.pricing.proFeature7Bold}</strong>
                     </span>
                   </div>
                 </div>
@@ -803,15 +912,15 @@ export default function LandingPage() {
                   className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-400 py-3.5 text-sm font-bold text-slate-950 shadow-lg shadow-teal-500/25 transition hover:brightness-110 active:scale-95"
                 >
                   <Sparkles className="h-4 w-4" />
-                  <span>Pilih Paket PRO</span>
+                  <span>{t.pricing.proCta}</span>
                 </Link>
               </div>
             </div>
           </div>
 
-          {/* Catatan di Bawah Kartu Sesuai Brief */}
+          {/* Catatan di Bawah Kartu */}
           <p className="mt-8 text-center text-xs text-slate-400 max-w-xl mx-auto">
-            Data keuangan tetap milikmu sepenuhnya. Mulai Starter tanpa kartu kredit. Upgrade atau batalkan langganan kapan saja langsung dari dashboard.
+            {t.pricing.bottomNote}
           </p>
         </div>
       </section>
@@ -822,25 +931,25 @@ export default function LandingPage() {
           <div className="mx-auto max-w-3xl text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold text-teal-300">
               <Shield className="h-3.5 w-3.5 text-teal-400" />
-              <span>Privasi Pengguna</span>
+              <span>{t.privacy.tag}</span>
             </div>
             <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-              Data Keuanganmu adalah Milik Pribadimu
+              {t.privacy.title}
             </h2>
             <p className="mt-3 text-sm sm:text-base text-slate-400">
-              Kami mengutamakan privasi dan transparansi tanpa membuat klaim keamanan yang berlebihan.
+              {t.privacy.subtitle}
             </p>
           </div>
 
-          {/* 4 Poin Konkret Sesuai Brief */}
+          {/* 4 Poin Konkret */}
           <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500/10 text-teal-400 mb-4">
                 <Lock className="h-5 w-5" />
               </div>
-              <h3 className="text-base font-bold text-white">Login via Google OAuth2</h3>
+              <h3 className="text-base font-bold text-white">{t.privacy.card1Title}</h3>
               <p className="mt-2 text-xs text-slate-400 leading-relaxed">
-                Kami tidak menyimpan password akun Anda. Autentikasi ditangani langsung oleh sistem resmi Google yang terpercaya.
+                {t.privacy.card1Desc}
               </p>
             </div>
 
@@ -848,9 +957,9 @@ export default function LandingPage() {
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 mb-4">
                 <ShieldCheck className="h-5 w-5" />
               </div>
-              <h3 className="text-base font-bold text-white">Data Privat Per Akun</h3>
+              <h3 className="text-base font-bold text-white">{t.privacy.card2Title}</h3>
               <p className="mt-2 text-xs text-slate-400 leading-relaxed">
-                Setiap catatan transaksi tersimpan secara terisolasi per pengguna dan tidak pernah dibagikan atau dijual ke pihak mana pun.
+                {t.privacy.card2Desc}
               </p>
             </div>
 
@@ -858,9 +967,9 @@ export default function LandingPage() {
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 mb-4">
                 <CreditCard className="h-5 w-5" />
               </div>
-              <h3 className="text-base font-bold text-white">Tanpa Akses Rekening Bank</h3>
+              <h3 className="text-base font-bold text-white">{t.privacy.card3Title}</h3>
               <p className="mt-2 text-xs text-slate-400 leading-relaxed">
-                Kami tidak pernah meminta nomor PIN kartu, kata sandi m-banking, maupun hak debit mutasi bank Anda.
+                {t.privacy.card3Desc}
               </p>
             </div>
 
@@ -868,9 +977,9 @@ export default function LandingPage() {
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400 mb-4">
                 <FileSpreadsheet className="h-5 w-5" />
               </div>
-              <h3 className="text-base font-bold text-white">Kontrol Data di Tangan Anda</h3>
+              <h3 className="text-base font-bold text-white">{t.privacy.card4Title}</h3>
               <p className="mt-2 text-xs text-slate-400 leading-relaxed">
-                Anda memiliki kendali penuh untuk menambah, mengedit, mengekspor laporan, atau menghapus data transaksi kapan saja.
+                {t.privacy.card4Desc}
               </p>
             </div>
           </div>
@@ -880,27 +989,27 @@ export default function LandingPage() {
               href="/privacy"
               className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-teal-400 hover:text-teal-300 transition"
             >
-              <span>Baca kebijakan privasi lengkap</span>
+              <span>{t.privacy.readPolicy}</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
       </section>
 
-      {/* FAQ Section (Section I - Wajib Lengkap Min. 6) */}
+      {/* FAQ Section */}
       <section id="faq" className="relative z-10 border-t border-slate-800/80 bg-slate-900/30 py-20 sm:py-28">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-teal-400">
-              Pertanyaan Populer
+            <div className="text-xs font-bold uppercase tracking-widest text-teal-400">
+              {t.faq.tag}
+            </div>
+            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              {t.faq.title}
             </h2>
-            <p className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-              Pertanyaan yang Sering Diajukan (FAQ)
-            </p>
           </div>
 
           <div className="mt-12 space-y-4">
-            {faqs.map((faq, idx) => {
+            {t.faq.items.map((faq, idx) => {
               const isOpen = openFaq === idx
               return (
                 <div
@@ -910,7 +1019,7 @@ export default function LandingPage() {
                   <button
                     type="button"
                     onClick={() => setOpenFaq(isOpen ? null : idx)}
-                    className="flex w-full items-center justify-between p-5 text-left text-base font-semibold text-white transition hover:text-teal-300"
+                    className="flex w-full items-center justify-between p-5 text-left text-base font-semibold text-white transition hover:text-teal-300 cursor-pointer"
                   >
                     <span>{faq.q}</span>
                     <ChevronDown
@@ -937,10 +1046,10 @@ export default function LandingPage() {
           <div className="relative overflow-hidden rounded-3xl border border-teal-500/30 bg-gradient-to-r from-teal-950/80 via-slate-900/90 to-emerald-950/80 p-8 text-center sm:p-14 shadow-2xl backdrop-blur-xl">
             <div className="relative z-10 mx-auto max-w-2xl">
               <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-                Mulai Rapikan Keuangan Pribadimu Hari Ini
+                {t.ctaBanner.title}
               </h2>
               <p className="mt-4 text-slate-300 text-sm sm:text-base">
-                Gratis untuk pencatatan harian, upgrade ke PRO kapan pun kamu siap mengontrol budget dan tabungan impian.
+                {t.ctaBanner.subtitle}
               </p>
               <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link
@@ -948,29 +1057,29 @@ export default function LandingPage() {
                   className="flex w-full sm:w-auto items-center justify-center gap-2.5 rounded-xl bg-white px-8 py-4 text-sm font-bold text-slate-950 shadow-xl transition hover:bg-slate-100 active:scale-95"
                 >
                   <GoogleIcon className="h-5 w-5" />
-                  <span>Mulai gratis dengan Google</span>
+                  <span>{t.ctaBanner.cta}</span>
                 </Link>
               </div>
               <p className="mt-4 text-xs text-slate-400">
-                Tanpa kartu kredit untuk Starter • Setup instan dalam 1 menit
+                {t.ctaBanner.note}
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Contact & Support Section (Persyaratan Merchant Payment Gateway) */}
+      {/* Contact & Support Section */}
       <section id="kontak" className="relative z-10 border-t border-slate-800/80 bg-slate-900/40 py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-teal-400">
-              Layanan & Bantuan Pelanggan
+            <div className="text-xs font-bold uppercase tracking-widest text-teal-400">
+              {t.contact.tag}
+            </div>
+            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              {t.contact.title}
             </h2>
-            <p className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-              Hubungi Kami
-            </p>
             <p className="mt-4 text-sm sm:text-base text-slate-400">
-              Tim dukungan kami siap membantu kebutuhan kendala akun, pertanyaan fitur, dan pembayaran langganan Anda.
+              {t.contact.subtitle}
             </p>
           </div>
 
@@ -981,9 +1090,9 @@ export default function LandingPage() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-500/10 text-teal-400 mb-4">
                   <Mail className="h-6 w-6" />
                 </div>
-                <h3 className="text-base font-bold text-white">Email Resmi Support</h3>
+                <h3 className="text-base font-bold text-white">{t.contact.emailTitle}</h3>
                 <p className="mt-1 text-xs text-slate-400">
-                  Kirimkan pertanyaan atau laporan kendala Anda melalui email resmi kami.
+                  {t.contact.emailDesc}
                 </p>
               </div>
               <div className="mt-6 pt-4 border-t border-slate-800/80">
@@ -1002,9 +1111,9 @@ export default function LandingPage() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 mb-4">
                   <Phone className="h-6 w-6" />
                 </div>
-                <h3 className="text-base font-bold text-white">WhatsApp & Telepon</h3>
+                <h3 className="text-base font-bold text-white">{t.contact.phoneTitle}</h3>
                 <p className="mt-1 text-xs text-slate-400">
-                  Respon cepat bantuan pelanggan pada hari dan jam operasional.
+                  {t.contact.phoneDesc}
                 </p>
               </div>
               <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
@@ -1016,7 +1125,7 @@ export default function LandingPage() {
                 >
                   +62 817-7637-0728
                 </a>
-                <span className="text-[11px] text-slate-400">WhatsApp Aktif</span>
+                <span className="text-[11px] text-slate-400">{t.contact.phoneBadge}</span>
               </div>
             </div>
 
@@ -1026,14 +1135,14 @@ export default function LandingPage() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 mb-4">
                   <MapPin className="h-6 w-6" />
                 </div>
-                <h3 className="text-base font-bold text-white">Alamat Kantor / Domisili Usaha</h3>
+                <h3 className="text-base font-bold text-white">{t.contact.addressTitle}</h3>
                 <p className="mt-2 text-xs text-slate-300 leading-relaxed">
-                  Jl. Bambu Hitam No.5, RT.5/RW.5, Setu, Kec. Cipayung, Kota Jakarta Timur, Daerah Khusus Ibukota Jakarta 13890, Indonesia
+                  {t.contact.addressDesc}
                 </p>
               </div>
               <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center gap-2 text-[11px] text-slate-400">
                 <Clock className="h-3.5 w-3.5 text-teal-400 shrink-0" />
-                <span>Senin – Minggu: 08:00 – 21:00 WIB</span>
+                <span>{t.contact.officeHours}</span>
               </div>
             </div>
           </div>
@@ -1042,16 +1151,16 @@ export default function LandingPage() {
           <div className="mt-10 rounded-2xl border border-slate-800/80 bg-slate-950/50 p-5 text-center flex flex-col sm:flex-row items-center justify-center gap-4 text-xs text-slate-400">
             <span className="font-semibold text-slate-200 flex items-center gap-1.5">
               <ShieldCheck className="h-4 w-4 text-teal-400" />
-              Sistem Pembayaran Terverifikasi & Aman:
+              {t.contact.paymentGatewayBadge}
             </span>
             <span className="text-slate-300">
-              Didukung oleh <strong>Duitku Payment Gateway</strong> • QRIS (Semua Bank & E-Wallet), Virtual Account (BCA, Mandiri, BRI, BNI), ShopeePay & E-Wallet.
+              {t.contact.paymentGatewayDesc}
             </span>
           </div>
         </div>
       </section>
 
-      {/* Footer (Section K - Comprehensive Merchant Footer) */}
+      {/* Footer */}
       <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950 pt-16 pb-12 text-slate-400 text-xs">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 gap-10 md:grid-cols-4 lg:gap-12 pb-12 border-b border-slate-800/80">
@@ -1066,29 +1175,34 @@ export default function LandingPage() {
                 </span>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Platform aplikasi manajemen dan pencatatan keuangan pribadi pintar berbasis web dan mobile untuk kontrol arus kas, budgeting, dan tabungan impian.
+                {t.footer.brandDesc}
               </p>
               <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/20 bg-teal-500/5 px-3 py-1 text-[11px] font-medium text-teal-300">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Operasional Layanan Aktif
+                {t.footer.statusActive}
               </div>
             </div>
 
             {/* Kolom 2: Navigasi Halaman */}
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 mb-4">Navigasi</h4>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 mb-4">
+                {t.footer.colNavTitle}
+              </h4>
               <ul className="space-y-2.5">
-                <li><a href="#fitur" className="hover:text-teal-400 transition">Fitur Utama</a></li>
-                <li><a href="#preview" className="hover:text-teal-400 transition">Tampilan Dashboard</a></li>
-                <li><a href="#harga" className="hover:text-teal-400 transition">Harga & Paket PRO</a></li>
-                <li><a href="#faq" className="hover:text-teal-400 transition">Pertanyaan (FAQ)</a></li>
-                <li><a href="#kontak" className="hover:text-teal-400 transition">Kontak Dukungan</a></li>
+                <li><a href="#fitur" className="hover:text-teal-400 transition">{t.footer.navFeatures}</a></li>
+                <li><a href="#panduan" className="hover:text-teal-400 transition">{lang === 'id' ? 'Panduan Budgeting' : 'Budgeting Guide'}</a></li>
+                <li><a href="#preview" className="hover:text-teal-400 transition">{t.footer.navDashboard}</a></li>
+                <li><a href="#harga" className="hover:text-teal-400 transition">{t.footer.navPricing}</a></li>
+                <li><a href="#faq" className="hover:text-teal-400 transition">{t.footer.navFaq}</a></li>
+                <li><a href="#kontak" className="hover:text-teal-400 transition">{t.footer.navContact}</a></li>
               </ul>
             </div>
 
             {/* Kolom 3: Kontak Support Resmi */}
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 mb-4">Kontak Dukungan</h4>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 mb-4">
+                {t.footer.colContactTitle}
+              </h4>
               <ul className="space-y-2.5">
                 <li className="flex items-start gap-2">
                   <Mail className="h-4 w-4 text-teal-400 shrink-0 mt-0.5" />
@@ -1104,22 +1218,24 @@ export default function LandingPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <Clock className="h-4 w-4 text-slate-500 shrink-0 mt-0.5" />
-                  <span>Senin – Minggu (08:00 – 21:00 WIB)</span>
+                  <span>{t.contact.officeHours}</span>
                 </li>
               </ul>
             </div>
 
             {/* Kolom 4: Alamat Usaha & Legal */}
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 mb-4">Alamat Usaha & Legalitas</h4>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 mb-4">
+                {t.footer.colAddressTitle}
+              </h4>
               <div className="space-y-2.5 text-xs text-slate-400 leading-relaxed">
                 <p className="flex items-start gap-2">
                   <MapPin className="h-4 w-4 text-cyan-400 shrink-0 mt-0.5" />
-                  <span>Jl. Bambu Hitam No.5, RT.5/RW.5, Setu, Kec. Cipayung, Kota Jakarta Timur, DKI Jakarta 13890, Indonesia</span>
+                  <span>{t.contact.addressDesc}</span>
                 </p>
                 <div className="pt-2">
                   <Link href="/privacy" className="font-medium text-teal-400 hover:text-teal-300 underline">
-                    Kebijakan Privasi
+                    {t.footer.privacyPolicy}
                   </Link>
                 </div>
               </div>
@@ -1127,11 +1243,19 @@ export default function LandingPage() {
           </div>
 
           <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-            <p>© {new Date().getFullYear()} Qwarts Finance. Hak cipta dilindungi undang-undang.</p>
-            <div className="flex items-center gap-6 text-slate-400">
-              <Link href="/privacy" className="hover:text-white transition">Kebijakan Privasi</Link>
-              <a href="#kontak" className="hover:text-white transition">Bantuan & Kontak</a>
-              <Link href="/sign-in" className="hover:text-white transition">Masuk ke Dashboard</Link>
+            <p>© {new Date().getFullYear()} {t.footer.copyright}</p>
+            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-slate-400">
+              <button
+                type="button"
+                onClick={() => handleLanguageChange(lang === 'id' ? 'en' : 'id')}
+                className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-300 hover:border-teal-500/40 hover:text-white transition cursor-pointer"
+              >
+                <Languages className="h-3.5 w-3.5 text-teal-400" />
+                <span>{lang === 'id' ? 'English (US)' : 'Bahasa Indonesia'}</span>
+              </button>
+              <Link href="/privacy" className="hover:text-white transition">{t.footer.privacyPolicy}</Link>
+              <a href="#kontak" className="hover:text-white transition">{t.footer.helpContact}</a>
+              <Link href="/sign-in" className="hover:text-white transition">{t.footer.enterDashboard}</Link>
             </div>
           </div>
         </div>
