@@ -16,7 +16,7 @@ export const landingTranslations = {
     hero: {
       badge1: 'Aplikasi Budgeting Gratis',
       badge2: 'Catat Pengeluaran Harian',
-      badge3: 'Akses HP & Desktop',
+      badge3: 'Aplikasi Mobile (Segera Hadir)',
       headlinePrefix: 'Cara Mudah Mencatat Pengeluaran Harian & ',
       headlineGradient: 'Aplikasi Budgeting Bulanan',
       subtitle:
@@ -25,7 +25,7 @@ export const landingTranslations = {
       ctaPreview: 'Lihat contoh dashboard',
       trust1: 'Gratis pencatatan pengeluaran harian',
       trust2: 'Data per akun privat & aman',
-      trust3: 'Bisa diakses di HP & desktop',
+      trust3: 'Web responsif (Aplikasi Mobile Segera Hadir)',
       mockupWindow: 'finance.qwarts.my.id/dashboard',
       mockupBadge: 'Ilustrasi Dashboard Budgeting',
       mockupNetWorthTitle: 'Total Kekayaan Bersih',
@@ -312,7 +312,7 @@ export const landingTranslations = {
     hero: {
       badge1: 'Free Budgeting App',
       badge2: 'Daily Expense Tracker',
-      badge3: 'Web & Mobile Access',
+      badge3: 'Mobile App (Coming Soon)',
       headlinePrefix: 'Effortless Daily Expense Tracking & ',
       headlineGradient: 'Monthly Budgeting App',
       subtitle:
@@ -321,7 +321,7 @@ export const landingTranslations = {
       ctaPreview: 'View dashboard demo',
       trust1: 'Free unlimited daily expense tracking',
       trust2: 'Isolated & secure per-account data',
-      trust3: 'Accessible on mobile & desktop',
+      trust3: 'Responsive Web (Mobile App Coming Soon)',
       mockupWindow: 'finance.qwarts.my.id/dashboard',
       mockupBadge: 'Budgeting Dashboard Illustration',
       mockupNetWorthTitle: 'Total Net Worth',

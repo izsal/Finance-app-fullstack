@@ -58,6 +58,7 @@ function GoogleIcon({ className = 'h-5 w-5' }: { className?: string }) {
 export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0)
   const [lang, setLang] = useState<LandingLanguage>('id')
+  const [previewTab, setPreviewTab] = useState<'interactive' | 'overview' | 'budget' | 'goals' | 'mobile'>('interactive')
 
   useEffect(() => {
     try {
@@ -225,13 +226,30 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="relative z-10 mx-auto max-w-7xl px-4 pt-16 pb-20 sm:px-6 lg:px-8 lg:pt-24">
         <div className="mx-auto max-w-3xl text-center">
-          {/* SEO Badges */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold text-teal-300 shadow-sm backdrop-blur-md">
-            <span>{t.hero.badge1}</span>
-            <span className="text-slate-500">•</span>
-            <span>{t.hero.badge2}</span>
-            <span className="text-slate-500">•</span>
-            <span>{t.hero.badge3}</span>
+          {/* Top Badges Row: Product Hunt Launch Badge + Feature Badges */}
+          <div className="flex flex-wrap items-center justify-center gap-2.5">
+            <a
+              href="https://www.producthunt.com/products/qwarts-finance"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-3.5 py-1 text-xs font-semibold text-orange-300 shadow-sm backdrop-blur-md transition hover:border-orange-500/60 hover:bg-orange-500/20 hover:scale-105 cursor-pointer"
+            >
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#FF6154] text-white font-black text-[10px] shadow-sm">
+                P
+              </span>
+              <span>Featured on <strong className="text-white font-bold">Product Hunt</strong></span>
+              <span className="text-orange-500/60">•</span>
+              <span className="text-orange-400 font-normal">Upvote 🚀</span>
+            </a>
+
+            {/* SEO Badges */}
+            <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1 text-xs font-semibold text-teal-300 shadow-sm backdrop-blur-md">
+              <span>{t.hero.badge1}</span>
+              <span className="text-slate-500">•</span>
+              <span>{t.hero.badge2}</span>
+              <span className="text-slate-500">•</span>
+              <span>{t.hero.badge3}</span>
+            </div>
           </div>
 
           {/* Heading Manfaat (Target Search Keywords: cara mencatat pengeluaran harian, aplikasi budgeting bulanan) */}
@@ -283,8 +301,74 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Dashboard Preview Mockup Showcase */}
+        {/* Dashboard Preview Mockup Showcase with Product Hunt Gallery Tabs */}
         <div id="preview" className="mt-16 sm:mt-20">
+          {/* Gallery Switcher Tabs */}
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+            <button
+              type="button"
+              onClick={() => setPreviewTab('interactive')}
+              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
+                previewTab === 'interactive'
+                  ? 'bg-teal-500 text-slate-950 shadow-md shadow-teal-500/25'
+                  : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+              }`}
+            >
+              {lang === 'id' ? '⚡ Simulasi Interaktif' : '⚡ Interactive Demo'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreviewTab('overview')}
+              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
+                previewTab === 'overview'
+                  ? 'bg-teal-500 text-slate-950 shadow-md shadow-teal-500/25'
+                  : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+              }`}
+            >
+              {lang === 'id' ? '📊 Dashboard Utama' : '📊 Dashboard Overview'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreviewTab('budget')}
+              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
+                previewTab === 'budget'
+                  ? 'bg-teal-500 text-slate-950 shadow-md shadow-teal-500/25'
+                  : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+              }`}
+            >
+              {lang === 'id' ? '🎯 Budget Planner' : '🎯 Budget Planner'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreviewTab('goals')}
+              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
+                previewTab === 'goals'
+                  ? 'bg-teal-500 text-slate-950 shadow-md shadow-teal-500/25'
+                  : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+              }`}
+            >
+              {lang === 'id' ? '🏆 Target Impian' : '🏆 Savings Goals'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreviewTab('mobile')}
+              className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
+                previewTab === 'mobile'
+                  ? 'bg-teal-500 text-slate-950 shadow-md shadow-teal-500/25'
+                  : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+              }`}
+            >
+              <span>{lang === 'id' ? '📱 Mobile App' : '📱 Mobile App'}</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider ${
+                previewTab === 'mobile'
+                  ? 'bg-slate-950/20 text-slate-950'
+                  : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+              }`}>
+                {lang === 'id' ? 'Segera Hadir' : 'Coming Soon'}
+              </span>
+            </button>
+          </div>
+
           <div className="relative mx-auto max-w-5xl rounded-3xl border border-slate-800/80 bg-slate-900/60 p-3 sm:p-5 shadow-2xl shadow-teal-950/60 backdrop-blur-2xl">
             {/* Top window bar */}
             <div className="mb-4 flex items-center justify-between border-b border-slate-800/70 pb-3 px-2">
@@ -298,124 +382,243 @@ export default function LandingPage() {
               </div>
               <div className="flex items-center gap-2 text-xs font-semibold text-teal-400">
                 <span className="h-2 w-2 rounded-full bg-teal-400" />
-                <span>{t.hero.mockupBadge}</span>
+                <span>
+                  {previewTab === 'interactive'
+                    ? t.hero.mockupBadge
+                    : previewTab === 'overview'
+                    ? 'Preview: Dashboard Overview'
+                    : previewTab === 'budget'
+                    ? 'Preview: Budget Planner'
+                    : previewTab === 'goals'
+                    ? 'Preview: Target Impian (Savings Goals)'
+                    : 'Preview: Mobile App Showcase'}
+                </span>
               </div>
             </div>
 
-            {/* Mockup Dashboard Content */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Card 1: Total Saldo */}
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shadow-lg">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  {t.hero.mockupNetWorthTitle}
+            {/* Tab 1: Interactive Live Mockup */}
+            {previewTab === 'interactive' && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Card 1: Total Saldo */}
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shadow-lg">
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      {t.hero.mockupNetWorthTitle}
+                    </p>
+                    <p className="mt-2 text-3xl font-black text-white">Rp 28.750.000</p>
+                    <div className="mt-3 flex items-center gap-2 text-xs text-emerald-400 font-semibold">
+                      <TrendingUp className="h-3.5 w-3.5" />
+                      <span>{t.hero.mockupNetWorthGrowth}</span>
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+                      <span>{t.hero.mockupActiveWallets}</span>
+                      <span className="text-teal-400 font-medium">{t.hero.mockupActiveWalletsValue}</span>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Pemasukan & Pengeluaran */}
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shadow-lg">
+                    <div className="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      <span>{t.hero.mockupCashFlowTitle}</span>
+                      <span className="rounded bg-teal-500/10 px-2 py-0.5 text-teal-400">{t.hero.mockupCashFlowMonth}</span>
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-300">{t.hero.mockupIncome}</span>
+                        <span className="font-bold text-emerald-400">+Rp 12.500.000</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-300">{t.hero.mockupExpense}</span>
+                        <span className="font-bold text-rose-400">-Rp 4.050.000</span>
+                      </div>
+                      <div className="w-full bg-slate-800 rounded-full h-2 mt-2">
+                        <div className="bg-teal-400 h-2 rounded-full w-[32%]" />
+                      </div>
+                    </div>
+                    <p className="mt-3 text-[11px] text-slate-400">{t.hero.mockupChartNote}</p>
+                  </div>
+
+                  {/* Card 3: Target Impian (Goals - PRO) */}
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shadow-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                        {t.hero.mockupGoalsTitle}
+                      </span>
+                      <Target className="h-4 w-4 text-teal-400" />
+                    </div>
+                    <p className="mt-2 text-lg font-bold text-white">{t.hero.mockupGoalsName}</p>
+                    <div className="mt-2 flex items-center justify-between text-xs font-semibold">
+                      <span className="text-teal-300">Rp 17.000.000</span>
+                      <span className="text-slate-400">{t.hero.mockupGoalsTarget}</span>
+                    </div>
+                    <div className="w-full bg-slate-800 rounded-full h-2 mt-2">
+                      <div className="bg-gradient-to-r from-teal-400 to-emerald-400 h-2 rounded-full w-[85%]" />
+                    </div>
+                    <p className="mt-2 text-[11px] text-emerald-400 font-medium">
+                      {t.hero.mockupGoalsAchieved}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Bottom mini showcase: Recent transactions */}
+                <div className="mt-4 rounded-2xl border border-slate-800/80 bg-slate-950/50 p-4">
+                  <div className="flex items-center justify-between mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    <span>{t.hero.mockupTxTitle}</span>
+                    <span className="text-slate-500 font-medium text-[11px]">{t.hero.mockupTxSub}</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="flex items-center justify-between rounded-xl bg-slate-900/80 p-3 border border-slate-800">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+                          <TrendingUp className="h-4 w-4" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-xs font-bold text-white">{t.hero.mockupTx1Title}</p>
+                          <p className="text-[10px] text-slate-400">{t.hero.mockupTx1Cat}</p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-emerald-400">+10.000.000</span>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl bg-slate-900/80 p-3 border border-slate-800">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-400">
+                          <CreditCard className="h-4 w-4" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-xs font-bold text-white">{t.hero.mockupTx2Title}</p>
+                          <p className="text-[10px] text-slate-400">{t.hero.mockupTx2Cat}</p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-rose-400">-750.000</span>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl bg-slate-900/80 p-3 border border-slate-800">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
+                          <Zap className="h-4 w-4" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-xs font-bold text-white">{t.hero.mockupTx3Title}</p>
+                          <p className="text-[10px] text-slate-400">{t.hero.mockupTx3Cat}</p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-rose-400">-375.000</span>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="mt-3 text-center text-xs font-medium text-slate-500">
+                  {t.hero.mockupDisclaimer}
                 </p>
-                <p className="mt-2 text-3xl font-black text-white">Rp 28.750.000</p>
-                <div className="mt-3 flex items-center gap-2 text-xs text-emerald-400 font-semibold">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  <span>{t.hero.mockupNetWorthGrowth}</span>
+              </>
+            )}
+
+            {/* Tab 2: Dashboard Overview Screenshot */}
+            {previewTab === 'overview' && (
+              <div className="space-y-3">
+                <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
+                  <img
+                    src="/product-hunt/1-dashboard-overview.jpg"
+                    alt="Qwarts Finance - Dashboard Overview"
+                    className="w-full h-auto object-cover rounded-2xl"
+                  />
                 </div>
-                <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-                  <span>{t.hero.mockupActiveWallets}</span>
-                  <span className="text-teal-400 font-medium">{t.hero.mockupActiveWalletsValue}</span>
+                <div className="flex items-center justify-between px-2 text-xs text-slate-400">
+                  <span>Dashboard Overview — Net Worth, Cash Flow, Multi-Wallets</span>
+                  <a
+                    href="/product-hunt/1-dashboard-overview.jpg"
+                    download="qwarts-finance-dashboard.jpg"
+                    className="inline-flex items-center gap-1.5 text-teal-400 hover:text-teal-300 font-semibold"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    <span>Download Image</span>
+                  </a>
                 </div>
               </div>
+            )}
 
-              {/* Card 2: Pemasukan & Pengeluaran */}
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shadow-lg">
-                <div className="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  <span>{t.hero.mockupCashFlowTitle}</span>
-                  <span className="rounded bg-teal-500/10 px-2 py-0.5 text-teal-400">{t.hero.mockupCashFlowMonth}</span>
+            {/* Tab 3: Budget Planner Screenshot */}
+            {previewTab === 'budget' && (
+              <div className="space-y-3">
+                <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
+                  <img
+                    src="/product-hunt/2-budget-analytics.jpg"
+                    alt="Qwarts Finance - Budget Planner & Analytics"
+                    className="w-full h-auto object-cover rounded-2xl"
+                  />
                 </div>
-                <div className="mt-3 space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-300">{t.hero.mockupIncome}</span>
-                    <span className="font-bold text-emerald-400">+Rp 12.500.000</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-300">{t.hero.mockupExpense}</span>
-                    <span className="font-bold text-rose-400">-Rp 4.050.000</span>
-                  </div>
-                  <div className="w-full bg-slate-800 rounded-full h-2 mt-2">
-                    <div className="bg-teal-400 h-2 rounded-full w-[32%]" />
-                  </div>
+                <div className="flex items-center justify-between px-2 text-xs text-slate-400">
+                  <span>Monthly Budget Planner — Category Spending Caps & Overbudget Warning</span>
+                  <a
+                    href="/product-hunt/2-budget-analytics.jpg"
+                    download="qwarts-finance-budget-planner.jpg"
+                    className="inline-flex items-center gap-1.5 text-teal-400 hover:text-teal-300 font-semibold"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    <span>Download Image</span>
+                  </a>
                 </div>
-                <p className="mt-3 text-[11px] text-slate-400">{t.hero.mockupChartNote}</p>
               </div>
+            )}
 
-              {/* Card 3: Target Impian (Goals - PRO) */}
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shadow-lg">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    {t.hero.mockupGoalsTitle}
+            {/* Tab 4: Savings Goals Screenshot */}
+            {previewTab === 'goals' && (
+              <div className="space-y-3">
+                <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
+                  <img
+                    src="/product-hunt/3-savings-goals.jpg"
+                    alt="Qwarts Finance - Savings Goals (Target Impian)"
+                    className="w-full h-auto object-cover rounded-2xl"
+                  />
+                </div>
+                <div className="flex items-center justify-between px-2 text-xs text-slate-400">
+                  <span>Savings Goals (Target Impian) — Milestone Visualizer & Emergency Fund</span>
+                  <a
+                    href="/product-hunt/3-savings-goals.jpg"
+                    download="qwarts-finance-savings-goals.jpg"
+                    className="inline-flex items-center gap-1.5 text-teal-400 hover:text-teal-300 font-semibold"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    <span>Download Image</span>
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 5: Mobile App Screenshot */}
+            {previewTab === 'mobile' && (
+              <div className="space-y-3">
+                <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
+                  <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-10 flex items-center gap-2 rounded-full border border-amber-500/40 bg-slate-950/80 px-3 py-1.5 backdrop-blur-md shadow-lg">
+                    <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+                    <span className="text-xs font-bold text-amber-300">
+                      {lang === 'id' ? 'Dalam Pengembangan (Segera Hadir)' : 'In Active Development (Coming Soon)'}
+                    </span>
+                  </div>
+                  <img
+                    src="/product-hunt/4-mobile-screens.jpg"
+                    alt="Qwarts Finance - Mobile App Coming Soon"
+                    className="w-full h-auto object-cover rounded-2xl"
+                  />
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-2 text-xs text-slate-400">
+                  <span>
+                    {lang === 'id' 
+                      ? '📱 Pratinjau Tampilan Mobile Native (iOS & Android) — Akan dirilis segera setelah tahap beta selesai.' 
+                      : '📱 Native Mobile App Preview (iOS & Android) — Releasing soon after beta optimization.'}
                   </span>
-                  <Target className="h-4 w-4 text-teal-400" />
-                </div>
-                <p className="mt-2 text-lg font-bold text-white">{t.hero.mockupGoalsName}</p>
-                <div className="mt-2 flex items-center justify-between text-xs font-semibold">
-                  <span className="text-teal-300">Rp 17.000.000</span>
-                  <span className="text-slate-400">{t.hero.mockupGoalsTarget}</span>
-                </div>
-                <div className="w-full bg-slate-800 rounded-full h-2 mt-2">
-                  <div className="bg-gradient-to-r from-teal-400 to-emerald-400 h-2 rounded-full w-[85%]" />
-                </div>
-                <p className="mt-2 text-[11px] text-emerald-400 font-medium">
-                  {t.hero.mockupGoalsAchieved}
-                </p>
-              </div>
-            </div>
-
-            {/* Bottom mini showcase: Recent transactions */}
-            <div className="mt-4 rounded-2xl border border-slate-800/80 bg-slate-950/50 p-4">
-              <div className="flex items-center justify-between mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                <span>{t.hero.mockupTxTitle}</span>
-                <span className="text-slate-500 font-medium text-[11px]">{t.hero.mockupTxSub}</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="flex items-center justify-between rounded-xl bg-slate-900/80 p-3 border border-slate-800">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
-                      <TrendingUp className="h-4 w-4" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-xs font-bold text-white">{t.hero.mockupTx1Title}</p>
-                      <p className="text-[10px] text-slate-400">{t.hero.mockupTx1Cat}</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold text-emerald-400">+10.000.000</span>
-                </div>
-
-                <div className="flex items-center justify-between rounded-xl bg-slate-900/80 p-3 border border-slate-800">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-400">
-                      <CreditCard className="h-4 w-4" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-xs font-bold text-white">{t.hero.mockupTx2Title}</p>
-                      <p className="text-[10px] text-slate-400">{t.hero.mockupTx2Cat}</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold text-rose-400">-750.000</span>
-                </div>
-
-                <div className="flex items-center justify-between rounded-xl bg-slate-900/80 p-3 border border-slate-800">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
-                      <Zap className="h-4 w-4" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-xs font-bold text-white">{t.hero.mockupTx3Title}</p>
-                      <p className="text-[10px] text-slate-400">{t.hero.mockupTx3Cat}</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold text-rose-400">-375.000</span>
+                  <a
+                    href="/product-hunt/4-mobile-screens.jpg"
+                    download="qwarts-finance-mobile-app.jpg"
+                    className="inline-flex items-center gap-1.5 text-teal-400 hover:text-teal-300 font-semibold shrink-0"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    <span>Download Image</span>
+                  </a>
                 </div>
               </div>
-            </div>
-
-            {/* Explicit Caption Under Demo Mockup */}
-            <p className="mt-3 text-center text-xs font-medium text-slate-500">
-              {t.hero.mockupDisclaimer}
-            </p>
+            )}
           </div>
         </div>
       </section>
@@ -1177,10 +1380,14 @@ export default function LandingPage() {
               <p className="text-xs text-slate-400 leading-relaxed">
                 {t.footer.brandDesc}
               </p>
-              <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/20 bg-teal-500/5 px-3 py-1 text-[11px] font-medium text-teal-300">
+              <Link
+                href="/status"
+                title={lang === 'id' ? 'Lihat status sistem & uptime' : 'View live system status & uptime'}
+                className="inline-flex items-center gap-2 rounded-full border border-teal-500/20 bg-teal-500/5 px-3 py-1 text-[11px] font-medium text-teal-300 hover:border-teal-500/50 hover:bg-teal-500/10 transition"
+              >
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 {t.footer.statusActive}
-              </div>
+              </Link>
             </div>
 
             {/* Kolom 2: Navigasi Halaman */}
@@ -1194,6 +1401,7 @@ export default function LandingPage() {
                 <li><a href="#preview" className="hover:text-teal-400 transition">{t.footer.navDashboard}</a></li>
                 <li><a href="#harga" className="hover:text-teal-400 transition">{t.footer.navPricing}</a></li>
                 <li><a href="#faq" className="hover:text-teal-400 transition">{t.footer.navFaq}</a></li>
+                <li><Link href="/status" className="hover:text-teal-400 transition">{lang === 'id' ? 'Status Sistem' : 'System Status'}</Link></li>
                 <li><a href="#kontak" className="hover:text-teal-400 transition">{t.footer.navContact}</a></li>
               </ul>
             </div>
@@ -1253,6 +1461,7 @@ export default function LandingPage() {
                 <Languages className="h-3.5 w-3.5 text-teal-400" />
                 <span>{lang === 'id' ? 'English (US)' : 'Bahasa Indonesia'}</span>
               </button>
+              <Link href="/status" className="hover:text-white transition">{lang === 'id' ? 'Status Sistem' : 'System Status'}</Link>
               <Link href="/privacy" className="hover:text-white transition">{t.footer.privacyPolicy}</Link>
               <a href="#kontak" className="hover:text-white transition">{t.footer.helpContact}</a>
               <Link href="/sign-in" className="hover:text-white transition">{t.footer.enterDashboard}</Link>
