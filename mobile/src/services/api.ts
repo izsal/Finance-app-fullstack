@@ -9,9 +9,17 @@ import {
   SummaryData,
   TransactionItem,
   WalletItem,
+  BudgetItem,
+  BudgetResponse,
 } from './mockData'
 
-const DEFAULT_LOCAL_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000'
+const ENV_API_URL = process.env.EXPO_PUBLIC_API_URL
+const DEFAULT_LOCAL_URL = ENV_API_URL
+  ? ENV_API_URL.replace(/\/$/, '')
+  : Platform.OS === 'android'
+    ? 'http://10.0.2.2:3000'
+    : 'http://localhost:3000'
+
 const STORAGE_KEY_BASE_URL = '@qwarts_api_base_url'
 const STORAGE_KEY_AUTH_TOKEN = '@qwarts_auth_token'
 const LEGACY_STORAGE_KEY_BASE_URL = '@dompetku_api_base_url'
@@ -753,6 +761,72 @@ export class ApiService {
       return { success: false, message: json.message || 'Gagal membuat tagihan Duitku' }
     } catch (e: any) {
       return { success: false, message: e?.message || 'Gagal menghubungi server pembayaran' }
+    }
+  }
+
+  // ================= BUDGETS API =================
+  static async getBudgets(month?: string): Promise<BudgetResponse> {
+    const targetMonth = month || new Date().toISOString().slice(0, 7)
+    if (!this.token) {
+      return {
+        month: targetMonth,
+        summary: { totalBudget: 0, totalSpent: 0, totalRemaining: 0, overallPercentage: 0 },
+        budgets: [],
+      }
+    }
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/budgets?month=${encodeURIComponent(targetMonth)}`, {
+        headers: this.getHeaders(),
+      })
+      const json = await res.json()
+      if (res.ok && json.success && json.data) {
+        return json.data
+      }
+    } catch (e) {
+      console.warn('Gagal memuat budget dari server:', e)
+    }
+    return {
+      month: targetMonth,
+      summary: { totalBudget: 0, totalSpent: 0, totalRemaining: 0, overallPercentage: 0 },
+      budgets: [],
+    }
+  }
+
+  static async saveBudget(
+    categoryId: number,
+    amount: number,
+    month?: string
+  ): Promise<{ success: boolean; message: string; data?: any }> {
+    const targetMonth = month || new Date().toISOString().slice(0, 7)
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/budgets`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ categoryId, amount, month: targetMonth }),
+      })
+      const json = await res.json()
+      if (res.ok && json.success) {
+        return { success: true, message: json.message || 'Anggaran berhasil disimpan', data: json.data }
+      }
+      return { success: false, message: json.message || 'Gagal menyimpan anggaran' }
+    } catch (e: any) {
+      return { success: false, message: e?.message || 'Gagal terhubung ke server' }
+    }
+  }
+
+  static async deleteBudget(id: number): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/budgets/${id}`, {
+        method: 'DELETE',
+        headers: this.getHeaders(),
+      })
+      const json = await res.json()
+      if (res.ok && json.success) {
+        return { success: true, message: json.message || 'Anggaran berhasil dihapus' }
+      }
+      return { success: false, message: json.message || 'Gagal menghapus anggaran' }
+    } catch (e: any) {
+      return { success: false, message: e?.message || 'Gagal terhubung ke server' }
     }
   }
 

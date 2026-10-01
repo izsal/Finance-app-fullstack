@@ -14,6 +14,7 @@ import { StatGlassCard } from '../components/StatGlassCard'
 import { AddTransactionModal } from '../components/AddTransactionModal'
 import { TransferModal } from '../components/TransferModal'
 import { ProUpgradeModal } from '../components/ProUpgradeModal'
+import { BudgetModal } from '../components/BudgetModal'
 import { AppLogo } from '../components/AppLogo'
 import { SummaryData } from '../services/mockData'
 import { ApiService } from '../services/api'
@@ -41,6 +42,7 @@ export const DashboardScreen: React.FC<Props> = ({
   const [transferVisible, setTransferVisible] = useState(false)
   const [transferFromWalletId, setTransferFromWalletId] = useState<number>(1)
   const [upgradeModalVisible, setUpgradeModalVisible] = useState(false)
+  const [budgetModalVisible, setBudgetModalVisible] = useState(false)
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -280,10 +282,19 @@ export const DashboardScreen: React.FC<Props> = ({
           </ScrollView>
         )}
 
-        {/* EXPENSE CATEGORIES BREAKDOWN (MONEY+ CUTE STYLE) */}
+        {/* EXPENSE CATEGORIES BREAKDOWN & BUDGETS */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Pengeluaran per Kategori</Text>
-          <Text style={[styles.sectionSubtitle, { color: theme.colors.textMuted }]}>Bulan Ini</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Pengeluaran & Anggaran</Text>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setBudgetModalVisible(true)}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+          >
+            <Ionicons name="pie-chart" size={13} color={theme.colors.primary} />
+            <Text style={[styles.sectionLink, { color: theme.colors.primary, fontWeight: '700' }]}>
+              Atur Pagu
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <GlassCard borderRadius={18} style={styles.breakdownCard}>
@@ -456,6 +467,13 @@ export const DashboardScreen: React.FC<Props> = ({
       <ProUpgradeModal
         visible={upgradeModalVisible}
         onClose={() => setUpgradeModalVisible(false)}
+        onSuccess={onRefresh}
+      />
+
+      {/* Budget Modal */}
+      <BudgetModal
+        visible={budgetModalVisible}
+        onClose={() => setBudgetModalVisible(false)}
         onSuccess={onRefresh}
       />
     </View>

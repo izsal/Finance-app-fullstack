@@ -8,16 +8,32 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#050814",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#050814"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.qwarts.finance",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Qwarts Finance memerlukan akses kamera untuk memindai bukti struk belanja secara instan menggunakan AI.",
+        "NSPhotoLibraryUsageDescription": "Qwarts Finance memerlukan akses galeri foto untuk memilih file struk transaksi."
+      }
     },
     "android": {
+      "package": "com.qwarts.finance",
       "adaptiveIcon": {
         "backgroundColor": "#050814",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -25,7 +41,14 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Qwarts Finance memerlukan akses galeri foto untuk memilih file struk transaksi.",
+          "cameraPermission": "Qwarts Finance memerlukan akses kamera untuk memindai bukti struk belanja secara instan menggunakan AI."
+        }
+      ]
     ]
   }
 }

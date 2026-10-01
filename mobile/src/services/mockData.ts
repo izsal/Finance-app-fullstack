@@ -49,6 +49,31 @@ export interface TransactionItem {
   createdAt?: string
 }
 
+export interface BudgetItem {
+  id: number
+  categoryId: number
+  categoryName: string
+  categoryColor: string
+  month: string
+  amount: number
+  spent: number
+  remaining: number
+  percentage: number
+  isOverbudget: boolean
+  createdAt?: string
+}
+
+export interface BudgetResponse {
+  month: string
+  summary: {
+    totalBudget: number
+    totalSpent: number
+    totalRemaining: number
+    overallPercentage: number
+  }
+  budgets: BudgetItem[]
+}
+
 export interface GoalItem {
   id: number
   name: string
