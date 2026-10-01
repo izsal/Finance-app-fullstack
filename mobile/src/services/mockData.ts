@@ -92,6 +92,9 @@ export interface SubscriptionItem {
   walletId: number
   reminderDaysBefore: number
   active?: boolean
+  lastPaidAt?: string | Date | null
+  isPaidThisMonth?: boolean
+  paymentStatus?: 'paid' | 'overdue' | 'due_soon' | 'unpaid'
 }
 
 export interface SummaryData {

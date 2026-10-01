@@ -112,6 +112,7 @@ export const subscriptions = pgTable('subscriptions', {
   walletId: integer('walletId'),
   isActive: boolean('isActive').notNull().default(true),
   reminderDaysBefore: integer('reminderDaysBefore').notNull().default(3),
+  lastPaidAt: timestamp('lastPaidAt'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 })
 

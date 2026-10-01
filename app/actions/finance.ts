@@ -542,6 +542,7 @@ export async function paySubscription(form: {
   subscriptionId: number;
   walletId: number;
   date?: string;
+  markAsPaid?: boolean;
 }) {
   await ensureTahap2Tables();
   const uid = await userId();
@@ -573,6 +574,8 @@ export async function paySubscription(form: {
     }
   }
 
+  const paymentDate = form.date ? new Date(form.date) : new Date();
+
   await db.insert(transactions).values({
     userId: uid,
     walletId: form.walletId,
@@ -580,9 +583,27 @@ export async function paySubscription(form: {
     type: "expense",
     amount: sub.amount,
     description: `Pembayaran: ${sub.name}`,
-    date: form.date ? new Date(form.date) : new Date(),
+    date: paymentDate,
   });
 
+  if (form.markAsPaid !== false) {
+    await db
+      .update(subscriptions)
+      .set({ lastPaidAt: paymentDate })
+      .where(and(eq(subscriptions.id, form.subscriptionId), eq(subscriptions.userId, uid)));
+  }
+
+  revalidatePath("/");
+  return getFinanceData();
+}
+
+export async function resetSubscriptionPayment(subscriptionId: number) {
+  await ensureTahap2Tables();
+  const uid = await userId();
+  await db
+    .update(subscriptions)
+    .set({ lastPaidAt: null })
+    .where(and(eq(subscriptions.id, subscriptionId), eq(subscriptions.userId, uid)));
   revalidatePath("/");
   return getFinanceData();
 }

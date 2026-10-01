@@ -33,8 +33,11 @@ export async function ensureTahap2Tables() {
           "walletId" INTEGER,
           "isActive" BOOLEAN NOT NULL DEFAULT TRUE,
           "reminderDaysBefore" INTEGER NOT NULL DEFAULT 3,
+          "lastPaidAt" TIMESTAMP,
           "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
         );
+
+        ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS "lastPaidAt" TIMESTAMP;
       `)
       isInitialized = true
     } finally {

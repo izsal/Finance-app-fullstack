@@ -302,6 +302,14 @@ export const GoalsScreen: React.FC<Props> = ({
           ) : (
             subscriptions.map((sub) => {
               const badge = getCategoryCuteBadge(sub.name, 'expense', theme)
+              const now = new Date()
+              const isPaid = sub.isPaidThisMonth ?? (
+                sub.lastPaidAt
+                  ? (new Date(sub.lastPaidAt).getMonth() === now.getMonth() && new Date(sub.lastPaidAt).getFullYear() === now.getFullYear())
+                  : false
+              )
+              const isOverdue = !isPaid && now.getDate() > sub.dueDate
+
               return (
                 <GlassCard
                   key={sub.id}
@@ -325,6 +333,24 @@ export const GoalsScreen: React.FC<Props> = ({
                       <Text style={[styles.subDue, { color: theme.colors.textMuted }]}>
                         Tempo setiap tgl {sub.dueDate}
                       </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3 }}>
+                        {isPaid ? (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#10b98120', paddingHorizontal: 6, paddingVertical: 1.5, borderRadius: 6 }}>
+                            <Ionicons name="checkmark-circle" size={11} color="#10b981" />
+                            <Text style={{ fontSize: 10, fontWeight: '700', color: '#10b981', marginLeft: 3 }}>Lunas</Text>
+                          </View>
+                        ) : isOverdue ? (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#ef444420', paddingHorizontal: 6, paddingVertical: 1.5, borderRadius: 6 }}>
+                            <Ionicons name="alert-circle" size={11} color="#ef4444" />
+                            <Text style={{ fontSize: 10, fontWeight: '700', color: '#ef4444', marginLeft: 3 }}>Lewat Tempo</Text>
+                          </View>
+                        ) : (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#f59e0b20', paddingHorizontal: 6, paddingVertical: 1.5, borderRadius: 6 }}>
+                            <Ionicons name="time" size={11} color="#f59e0b" />
+                            <Text style={{ fontSize: 10, fontWeight: '700', color: '#f59e0b', marginLeft: 3 }}>Belum Bayar</Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
 
                     <View style={styles.subRight}>
@@ -350,10 +376,20 @@ export const GoalsScreen: React.FC<Props> = ({
                           activeOpacity={0.8}
                           disabled={payingSubId === sub.id}
                           onPress={() => handlePaySub(sub)}
-                          style={[styles.payBtn, { backgroundColor: theme.colors.primary }]}
+                          style={[
+                            styles.payBtn,
+                            isPaid
+                              ? { backgroundColor: '#10b98120', borderWidth: 1, borderColor: '#10b98150' }
+                              : { backgroundColor: theme.colors.primary }
+                          ]}
                         >
-                          <Text style={[styles.payBtnText, { color: theme.colors.primaryForeground }]}>
-                            {payingSubId === sub.id ? '...' : 'Bayar'}
+                          <Text style={[
+                            styles.payBtnText,
+                            isPaid
+                              ? { color: '#10b981', fontWeight: 'bold' }
+                              : { color: theme.colors.primaryForeground }
+                          ]}>
+                            {payingSubId === sub.id ? '...' : isPaid ? '✓ Lunas' : 'Bayar'}
                           </Text>
                         </TouchableOpacity>
                       </View>

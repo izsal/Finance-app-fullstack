@@ -17,6 +17,7 @@ import {
   depositToGoal,
   getFinanceData,
   paySubscription,
+  resetSubscriptionPayment,
   seedDefaults,
   transferBetweenWallets,
   updateCategory,
@@ -70,6 +71,7 @@ import {
   Receipt,
   RefreshCw,
   Repeat,
+  RotateCcw,
   Search,
   Settings2,
   Shield,
@@ -419,24 +421,59 @@ export default function Dashboard({
 
   // Subscriptions Metrics
   const subsList = data.subscriptions || []
-  const totalMonthlyBills = useMemo(() => {
-    return subsList
-      .filter((s) => s.isActive)
-      .reduce((sum, s) => {
-        if (s.billingCycle === 'yearly') return sum + Math.round(s.amount / 12)
-        if (s.billingCycle === 'weekly') return sum + s.amount * 4
-        return sum + s.amount
-      }, 0)
-  }, [subsList])
+  const today = new Date()
+  const todayDate = today.getDate()
+  const currentMonth = today.getMonth()
+  const currentYear = today.getFullYear()
 
-  const todayDate = new Date().getDate()
+  const isSubPaidThisMonth = (s: { lastPaidAt?: Date | string | null }) => {
+    if (!s.lastPaidAt) return false
+    const d = new Date(s.lastPaidAt)
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear
+  }
+
+  const activeSubs = useMemo(() => subsList.filter((s) => s.isActive), [subsList])
+
+  const totalMonthlyBills = useMemo(() => {
+    return activeSubs.reduce((sum, s) => {
+      if (s.billingCycle === 'yearly') return sum + Math.round(s.amount / 12)
+      if (s.billingCycle === 'weekly') return sum + s.amount * 4
+      return sum + s.amount
+    }, 0)
+  }, [activeSubs])
+
+  const paidSubsThisMonth = useMemo(() => {
+    return activeSubs.filter((s) => isSubPaidThisMonth(s))
+  }, [activeSubs, currentMonth, currentYear])
+
+  const unpaidActiveSubs = useMemo(() => {
+    return activeSubs.filter((s) => !isSubPaidThisMonth(s))
+  }, [activeSubs, currentMonth, currentYear])
+
+  const totalMonthlyPaid = useMemo(() => {
+    return paidSubsThisMonth.reduce((sum, s) => {
+      if (s.billingCycle === 'yearly') return sum + Math.round(s.amount / 12)
+      if (s.billingCycle === 'weekly') return sum + s.amount * 4
+      return sum + s.amount
+    }, 0)
+  }, [paidSubsThisMonth])
+
   const dueSoonSubs = useMemo(() => {
     return subsList.filter((s) => {
       if (!s.isActive) return false
+      if (isSubPaidThisMonth(s)) return false
       const daysUntilDue = s.dueDate >= todayDate ? s.dueDate - todayDate : 30 - (todayDate - s.dueDate)
       return daysUntilDue <= (s.reminderDaysBefore || 3)
     })
-  }, [subsList, todayDate])
+  }, [subsList, todayDate, currentMonth, currentYear])
+
+  const overdueSubs = useMemo(() => {
+    return subsList.filter((s) => {
+      if (!s.isActive) return false
+      if (isSubPaidThisMonth(s)) return false
+      return todayDate > s.dueDate
+    })
+  }, [subsList, todayDate, currentMonth, currentYear])
 
   // Filtered Transactions
   const filteredTransactions = useMemo(() => {
@@ -1942,17 +1979,62 @@ export default function Dashboard({
                 </div>
 
                 {/* Subscriptions Metrics */}
-                <div className="grid gap-4 sm:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
                     <p className="text-xs text-slate-400 font-semibold">{t('total_monthly_bills', lang)}</p>
                     <p className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1">{formatRupiah(totalMonthlyBills)}</p>
-                    <p className="text-[11px] text-slate-400 mt-2">{subsList.filter((s) => s.isActive).length} {t('active_subs_count', lang)}</p>
+                    <p className="text-[11px] text-slate-400 mt-2">
+                      {lang === 'en' ? 'Paid: ' : 'Terbayar: '}
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatRupiah(totalMonthlyPaid)}</span>
+                    </p>
+                  </div>
+
+                  <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-slate-400 font-semibold">{t('sub_progress_title', lang)}</p>
+                      <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
+                        {activeSubs.length > 0 ? Math.round((paidSubsThisMonth.length / activeSubs.length) * 100) : 0}%
+                      </span>
+                    </div>
+                    <p className="text-xl font-black text-slate-900 dark:text-white mt-1">
+                      {paidSubsThisMonth.length} / {activeSubs.length} <span className="text-xs font-semibold text-slate-400">{t('sub_progress_desc', lang)}</span>
+                    </p>
+                    <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden mt-2.5">
+                      <div
+                        className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                        style={{ width: `${activeSubs.length > 0 ? Math.min(100, Math.round((paidSubsThisMonth.length / activeSubs.length) * 100)) : 0}%` }}
+                      />
+                    </div>
                   </div>
 
                   <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
                     <p className="text-xs text-slate-400 font-semibold">{t('due_soon_alert', lang)}</p>
-                    <p className="text-xl font-black text-amber-500 mt-1">{dueSoonSubs.length} {lang === 'en' ? 'Bills' : 'Tagihan'}</p>
-                    <p className="text-[11px] text-slate-400 mt-2">{t('due_soon_sub', lang)}</p>
+                    {overdueSubs.length > 0 ? (
+                      <>
+                        <p className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1 flex items-center gap-1.5">
+                          <AlertCircle className="h-5 w-5" /> {overdueSubs.length} {lang === 'en' ? 'Overdue' : 'Lewat Tempo'}
+                        </p>
+                        <p className="text-[11px] text-rose-500 dark:text-rose-400 font-medium mt-2">
+                          {lang === 'en' ? 'Immediate payment required' : 'Perlu segera dilunasi'}
+                        </p>
+                      </>
+                    ) : dueSoonSubs.length > 0 ? (
+                      <>
+                        <p className="text-xl font-black text-amber-500 mt-1">
+                          {dueSoonSubs.length} {lang === 'en' ? 'Bills Due Soon' : 'Tagihan'}
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-2">{t('due_soon_sub', lang)}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
+                          <CheckCircle2 className="h-5 w-5" /> {lang === 'en' ? 'All Clear' : 'Semua Aman'}
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-2">
+                          {lang === 'en' ? 'No urgent bills pending' : 'Tidak ada tagihan mendesak'}
+                        </p>
+                      </>
+                    )}
                   </div>
 
                   <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
@@ -1974,66 +2056,135 @@ export default function Dashboard({
                             <th className="pb-3 pl-2">{t('sub_col_date', lang)}</th>
                             <th className="pb-3">{t('sub_col_name', lang)}</th>
                             <th className="pb-3">{t('sub_col_cycle', lang)}</th>
-                            <th className="pb-3">{t('sub_col_status', lang)}</th>
+                            <th className="pb-3">{t('sub_col_payment_status', lang)}</th>
                             <th className="pb-3 text-right">{t('sub_col_cost', lang)}</th>
                             <th className="pb-3 pr-2 text-right">{t('sub_col_action', lang)}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
                           {subsList.map((s) => {
+                            const isPaid = isSubPaidThisMonth(s)
                             const daysLeft = s.dueDate >= todayDate ? s.dueDate - todayDate : 30 - (todayDate - s.dueDate)
-                            const isDueSoon = s.isActive && daysLeft <= (s.reminderDaysBefore || 3)
+                            const isDueSoon = s.isActive && !isPaid && daysLeft <= (s.reminderDaysBefore || 3)
+                            const isOverdue = s.isActive && !isPaid && todayDate > s.dueDate
 
                             return (
                               <tr key={s.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
                                 <td className="py-4 pl-2 whitespace-nowrap">
                                   <div className="flex items-center gap-2.5">
                                     <div
-                                      className={`flex h-9 w-9 items-center justify-center rounded-xl font-black text-xs ${isDueSoon
-                                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 ring-2 ring-rose-500/20'
-                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
-                                        }`}
+                                      className={`flex h-9 w-9 items-center justify-center rounded-xl font-black text-xs ${
+                                        isPaid
+                                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400'
+                                          : isOverdue
+                                          ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 ring-2 ring-rose-500/30'
+                                          : isDueSoon
+                                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400 ring-2 ring-amber-500/30'
+                                          : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
+                                      }`}
                                     >
                                       {s.dueDate}
                                     </div>
                                     <div>
                                       <p className="font-bold text-slate-800 dark:text-slate-200">{lang === 'en' ? `${s.dueDate}th each month` : `Tgl ${s.dueDate} tiap bulan`}</p>
-                                      <p className={`text-[10px] ${isDueSoon ? 'text-rose-500 font-bold' : 'text-slate-400'}`}>
-                                        {daysLeft === 0 ? t('sub_due_today', lang) : `${daysLeft} ${t('days_left', lang)}`}
+                                      <p className={`text-[10px] ${
+                                        isPaid
+                                          ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                                          : isOverdue
+                                          ? 'text-rose-500 font-bold'
+                                          : isDueSoon
+                                          ? 'text-amber-600 dark:text-amber-400 font-bold'
+                                          : 'text-slate-400'
+                                      }`}>
+                                        {isPaid
+                                          ? (s.lastPaidAt ? `${t('sub_paid_on', lang)} ${new Date(s.lastPaidAt).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short' })}` : t('sub_status_paid', lang))
+                                          : daysLeft === 0
+                                          ? t('sub_due_today', lang)
+                                          : isOverdue
+                                          ? (lang === 'en' ? `Overdue by ${todayDate - s.dueDate} days` : `Lewat ${todayDate - s.dueDate} hari`)
+                                          : `${daysLeft} ${t('days_left', lang)}`}
                                       </p>
                                     </div>
                                   </div>
                                 </td>
-                                <td className="py-4 font-bold text-slate-900 dark:text-white text-sm">{s.name}</td>
+                                <td className="py-4">
+                                  <p className="font-bold text-slate-900 dark:text-white text-sm">{s.name}</p>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span className={`h-1.5 w-1.5 rounded-full ${s.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                                    <span className="text-[11px] font-medium text-slate-400">
+                                      {s.isActive ? t('sub_status_active', lang) : t('sub_status_inactive', lang)}
+                                    </span>
+                                  </div>
+                                </td>
                                 <td className="py-4 whitespace-nowrap">
                                   <span className="inline-block rounded-lg bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300">
                                     {s.billingCycle === 'monthly' ? t('sub_cycle_monthly', lang) : s.billingCycle === 'yearly' ? t('sub_cycle_yearly', lang) : t('sub_cycle_weekly', lang)}
                                   </span>
                                 </td>
                                 <td className="py-4 whitespace-nowrap">
-                                  <span
-                                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${s.isActive
-                                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400'
-                                      : 'bg-slate-100 text-slate-500 dark:bg-slate-800'
-                                      }`}
-                                  >
-                                    <span className={`h-1.5 w-1.5 rounded-full ${s.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-                                    {s.isActive ? t('sub_status_active', lang) : t('sub_status_inactive', lang)}
-                                  </span>
+                                  {isPaid ? (
+                                    <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
+                                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                                      <span>{t('sub_status_paid', lang)}</span>
+                                    </span>
+                                  ) : isOverdue ? (
+                                    <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60">
+                                      <AlertCircle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+                                      <span>{t('sub_status_overdue', lang)}</span>
+                                    </span>
+                                  ) : isDueSoon ? (
+                                    <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400 border border-amber-200 dark:border-amber-900/60">
+                                      <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                                      <span>{t('sub_status_due_soon', lang)}</span>
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                                      <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                                      <span>{t('sub_status_unpaid', lang)}</span>
+                                    </span>
+                                  )}
                                 </td>
                                 <td className="py-4 text-right font-black text-slate-900 dark:text-white text-sm whitespace-nowrap">
                                   {formatRupiah(s.amount)}
                                 </td>
                                 <td className="py-4 pr-2 text-right whitespace-nowrap">
-                                  <div className="flex items-center justify-end gap-2">
-                                    <button
-                                      onClick={() => setShowModal({ type: 'paySubscription', subscription: s })}
-                                      className="flex items-center gap-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 transition"
-                                      title={lang === 'en' ? 'Record Payment' : 'Catat Pembayaran Tagihan Ini'}
-                                    >
-                                      <Zap className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                                      <span>{t('pay_bill', lang)}</span>
-                                    </button>
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    {isPaid ? (
+                                      <div className="flex items-center gap-1">
+                                        <span className="inline-flex items-center gap-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                                          <Check className="h-3.5 w-3.5" />
+                                          <span>{t('sub_paid_badge', lang)}</span>
+                                        </span>
+                                        <button
+                                          onClick={() => setShowModal({ type: 'paySubscription', subscription: s })}
+                                          className="rounded-lg p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition"
+                                          title={lang === 'en' ? 'Record another payment' : 'Catat pembayaran lagi'}
+                                        >
+                                          <Zap className="h-3.5 w-3.5" />
+                                        </button>
+                                        <button
+                                          onClick={async () => {
+                                            if (confirm(t('sub_mark_unpaid_confirm', lang))) {
+                                              const fresh = await resetSubscriptionPayment(s.id)
+                                              handleSuccess(lang === 'en' ? 'Payment status reset' : 'Status pembayaran direset', fresh)
+                                            }
+                                          }}
+                                          className="rounded-lg p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition"
+                                          title={t('sub_mark_unpaid', lang)}
+                                        >
+                                          <RotateCcw className="h-3.5 w-3.5" />
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={() => setShowModal({ type: 'paySubscription', subscription: s })}
+                                        className="flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow px-3 py-1.5 text-xs font-bold transition"
+                                        title={lang === 'en' ? 'Record Payment' : 'Catat Pembayaran Tagihan Ini'}
+                                      >
+                                        <Zap className="h-3.5 w-3.5 text-white" />
+                                        <span>{t('pay_bill', lang)}</span>
+                                      </button>
+                                    )}
 
                                     <button
                                       onClick={() => setShowModal({ type: 'subscription', editData: s })}
@@ -4992,7 +5143,18 @@ function PaySubscriptionModal({
 }) {
   const [walletId, setWalletId] = useState<number>(subscription.walletId || wallets[0]?.id || 0)
   const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10))
+  const [markAsPaid, setMarkAsPaid] = useState<boolean>(true)
   const [submitting, setSubmitting] = useState(false)
+
+  const now = new Date()
+  const currentMonth = now.getMonth()
+  const currentYear = now.getFullYear()
+  const isAlreadyPaid = !!(
+    subscription.lastPaidAt &&
+    new Date(subscription.lastPaidAt).getMonth() === currentMonth &&
+    new Date(subscription.lastPaidAt).getFullYear() === currentYear
+  )
+  const isOverdue = !isAlreadyPaid && now.getDate() > subscription.dueDate
 
   const walletOptions: OptionType<number>[] = wallets.map((w) => ({
     value: w.id,
@@ -5011,11 +5173,12 @@ function PaySubscriptionModal({
         subscriptionId: subscription.id,
         walletId,
         date,
+        markAsPaid,
       })
       done(
         lang === 'en'
-          ? `Payment of ${formatRupiah(subscription.amount)} for "${subscription.name}" recorded!`
-          : `Pembayaran tagihan "${subscription.name}" sebesar ${formatRupiah(subscription.amount)} berhasil dicatat!`,
+          ? `Payment of ${formatRupiah(subscription.amount)} for "${subscription.name}" recorded! Status: Paid.`
+          : `Pembayaran tagihan "${subscription.name}" sebesar ${formatRupiah(subscription.amount)} berhasil dicatat & status tagihan kini Lunas!`,
         fresh
       )
       close()
@@ -5066,15 +5229,58 @@ function PaySubscriptionModal({
         lang={lang}
       />
 
+      {/* Status Transition & Confirmation Banner */}
+      <div className="rounded-2xl border border-emerald-500/20 bg-emerald-50/60 dark:bg-emerald-950/25 p-4 space-y-3">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-semibold text-slate-600 dark:text-slate-300">
+            {lang === 'en' ? 'Monthly Bill Status:' : 'Status Pelunasan Tagihan:'}
+          </span>
+          <div className="flex items-center gap-1.5 font-bold text-xs">
+            <span className={isAlreadyPaid ? 'text-emerald-600 dark:text-emerald-400' : isOverdue ? 'text-rose-500 font-bold' : 'text-slate-500 dark:text-slate-400'}>
+              {isAlreadyPaid ? (lang === 'en' ? 'Paid' : 'Lunas') : isOverdue ? (lang === 'en' ? 'Overdue' : 'Lewat Tempo') : (lang === 'en' ? 'Unpaid' : 'Belum Dibayar')}
+            </span>
+            <span className="text-slate-400">➔</span>
+            <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/70 px-2.5 py-0.5 rounded-full font-bold">
+              <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+              {lang === 'en' ? 'Marked as Paid' : 'Status: Lunas'}
+            </span>
+          </div>
+        </div>
+
+        <label className="flex items-start gap-2.5 pt-2.5 border-t border-emerald-500/15 dark:border-emerald-800/40 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={markAsPaid}
+            onChange={(e) => setMarkAsPaid(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+          />
+          <div className="text-xs">
+            <p className="font-bold text-slate-800 dark:text-slate-200">
+              {lang === 'en'
+                ? 'Update subscription status to "Paid" for this month'
+                : 'Tandai status tagihan menjadi "Sudah Dibayar" (Lunas)'}
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+              {lang === 'en'
+                ? 'Status in the list will become Paid, and due date alerts will be dismissed for this month.'
+                : 'Status pada list tagihan akan langsung berubah menjadi Lunas dan notifikasi jatuh tempo otomatis dihentikan untuk bulan ini.'}
+            </p>
+          </div>
+        </label>
+      </div>
+
       <div className="pt-2">
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
         >
-          {submitting
-            ? (lang === 'en' ? 'Processing Transaction...' : 'Memproses Transaksi...')
-            : (lang === 'en' ? 'Confirm & Record Payment' : 'Konfirmasi & Catat Pembayaran')}
+          <Zap className="h-4 w-4 text-white" />
+          <span>
+            {submitting
+              ? (lang === 'en' ? 'Processing Transaction...' : 'Memproses Transaksi...')
+              : (lang === 'en' ? 'Confirm & Mark as Paid' : 'Konfirmasi & Tandai Sudah Dibayar')}
+          </span>
         </button>
       </div>
     </form>

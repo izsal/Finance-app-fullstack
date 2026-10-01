@@ -14,7 +14,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     if (isNaN(subId)) return apiError('ID tagihan tidak valid', 400)
 
     const body = await req.json().catch(() => ({}))
-    const { walletId, date } = body
+    const { walletId, date, markAsPaid = true } = body
 
     const [sub] = await db
       .select()
@@ -65,9 +65,19 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       })
       .returning()
 
+    let updatedSub = sub
+    if (markAsPaid !== false) {
+      const [res] = await db
+        .update(subscriptions)
+        .set({ lastPaidAt: txDate })
+        .where(and(eq(subscriptions.id, subId), eq(subscriptions.userId, user.id)))
+        .returning()
+      if (res) updatedSub = res
+    }
+
     return apiSuccess(
       {
-        subscription: sub,
+        subscription: updatedSub || sub,
         transaction: createdTx,
       },
       `Pembayaran tagihan "${sub.name}" berhasil dicatat`,
