@@ -5229,44 +5229,56 @@ function PaySubscriptionModal({
         lang={lang}
       />
 
-      {/* Status Transition & Confirmation Banner */}
-      <div className="rounded-2xl border border-emerald-500/20 bg-emerald-50/60 dark:bg-emerald-950/25 p-4 space-y-3">
-        <div className="flex items-center justify-between text-xs">
-          <span className="font-semibold text-slate-600 dark:text-slate-300">
-            {lang === 'en' ? 'Monthly Bill Status:' : 'Status Pelunasan Tagihan:'}
-          </span>
-          <div className="flex items-center gap-1.5 font-bold text-xs">
-            <span className={isAlreadyPaid ? 'text-emerald-600 dark:text-emerald-400' : isOverdue ? 'text-rose-500 font-bold' : 'text-slate-500 dark:text-slate-400'}>
-              {isAlreadyPaid ? (lang === 'en' ? 'Paid' : 'Lunas') : isOverdue ? (lang === 'en' ? 'Overdue' : 'Lewat Tempo') : (lang === 'en' ? 'Unpaid' : 'Belum Dibayar')}
-            </span>
-            <span className="text-slate-400">➔</span>
-            <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/70 px-2.5 py-0.5 rounded-full font-bold">
-              <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-              {lang === 'en' ? 'Marked as Paid' : 'Status: Lunas'}
-            </span>
+      {/* Modern iOS-Style Toggle Card */}
+      <div className={`rounded-2xl border transition-all duration-200 p-4 ${
+        markAsPaid 
+          ? 'border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20' 
+          : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40'
+      }`}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <span className={`flex h-6 w-6 items-center justify-center rounded-lg text-xs font-bold transition-colors ${
+                markAsPaid 
+                  ? 'bg-emerald-500 text-white shadow-xs' 
+                  : 'bg-slate-200 dark:bg-slate-800 text-slate-400'
+              }`}>
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              </span>
+              <p className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                {lang === 'en'
+                  ? 'Mark as Paid This Month'
+                  : 'Tandai Lunas Periode Ini'}
+              </p>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 pl-8 leading-relaxed">
+              {markAsPaid
+                ? (lang === 'en'
+                    ? 'Status in the list will become Paid & due date warnings will be muted.'
+                    : 'Status di list tagihan otomatis menjadi Lunas dan notifikasi tempo dihentikan.')
+                : (lang === 'en'
+                    ? 'Only the transaction will be recorded (status remains unpaid).'
+                    : 'Hanya mencatat transaksi pengeluaran (status tagihan tetap belum lunas).')}
+            </p>
           </div>
-        </div>
 
-        <label className="flex items-start gap-2.5 pt-2.5 border-t border-emerald-500/15 dark:border-emerald-800/40 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={markAsPaid}
-            onChange={(e) => setMarkAsPaid(e.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-          />
-          <div className="text-xs">
-            <p className="font-bold text-slate-800 dark:text-slate-200">
-              {lang === 'en'
-                ? 'Update subscription status to "Paid" for this month'
-                : 'Tandai status tagihan menjadi "Sudah Dibayar" (Lunas)'}
-            </p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-              {lang === 'en'
-                ? 'Status in the list will become Paid, and due date alerts will be dismissed for this month.'
-                : 'Status pada list tagihan akan langsung berubah menjadi Lunas dan notifikasi jatuh tempo otomatis dihentikan untuk bulan ini.'}
-            </p>
-          </div>
-        </label>
+          {/* iOS-Style Toggle Pill */}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={markAsPaid}
+            onClick={() => setMarkAsPaid(!markAsPaid)}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${
+              markAsPaid ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                markAsPaid ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
       </div>
 
       <div className="pt-2">
@@ -5279,7 +5291,9 @@ function PaySubscriptionModal({
           <span>
             {submitting
               ? (lang === 'en' ? 'Processing Transaction...' : 'Memproses Transaksi...')
-              : (lang === 'en' ? 'Confirm & Mark as Paid' : 'Konfirmasi & Tandai Sudah Dibayar')}
+              : markAsPaid
+              ? (lang === 'en' ? 'Confirm & Mark as Paid' : 'Konfirmasi & Tandai Lunas')
+              : (lang === 'en' ? 'Record Expense Only' : 'Catat Pengeluaran Saja')}
           </span>
         </button>
       </div>
