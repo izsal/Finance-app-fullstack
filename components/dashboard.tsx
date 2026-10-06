@@ -51,6 +51,9 @@ import {
   Download,
   Edit3,
   ExternalLink,
+  Eye,
+  EyeOff,
+  Building2,
   FileSpreadsheet,
   Filter,
   Globe,
@@ -178,15 +181,19 @@ export default function Dashboard({
   // Resend email verification state
   const [isResendingEmail, setIsResendingEmail] = useState(false)
   const [emailStatus, setEmailStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [hideBalance, setHideBalance] = useState(false)
 
-  // Initialize and persist theme, language & sidebar state
+  // Initialize and persist theme, language, sidebar & privacy state
   useEffect(() => {
     const savedTheme = ((localStorage.getItem('qwarts-theme') || localStorage.getItem('dompetku-theme')) as 'light' | 'dark' | 'system') || 'light'
     const savedSidebar = (localStorage.getItem('qwarts-sidebar') ?? localStorage.getItem('dompetku-sidebar')) === 'true'
     const savedLang = ((localStorage.getItem('qwarts-lang') || localStorage.getItem('dompetku-lang')) as Language) || 'en'
+    const savedHideBalance = localStorage.getItem('qwarts-hide-balance') === 'true'
+
     setTheme(savedTheme)
     setSidebarCollapsed(savedSidebar)
     setLang(savedLang)
+    setHideBalance(savedHideBalance)
 
     applyTheme(savedTheme)
   }, [])
@@ -220,6 +227,22 @@ export default function Dashboard({
     localStorage.setItem('qwarts-sidebar', String(next))
   }
 
+  const toggleHideBalance = () => {
+    const next = !hideBalance
+    setHideBalance(next)
+    localStorage.setItem('qwarts-hide-balance', String(next))
+    showToast(
+      next
+        ? (lang === 'en' ? 'Balances hidden for privacy' : 'Nominal saldo disembunyikan untuk privasi')
+        : (lang === 'en' ? 'Balances displayed' : 'Nominal saldo ditampilkan'),
+      'info'
+    )
+  }
+
+  const maskBalance = (amount: number) => {
+    return hideBalance ? '••••••••' : formatRupiah(amount)
+  }
+
   // Keep state synced with server components
   useEffect(() => {
     if (initialData) {
@@ -233,7 +256,7 @@ export default function Dashboard({
 
   // Modal states
   const [showModal, setShowModal] = useState<
-    | { type: 'transaction'; editData?: Transaction }
+    | { type: 'transaction'; editData?: Transaction | { type?: 'income' | 'expense' } }
     | { type: 'transfer' }
     | { type: 'wallet'; editData?: WalletType }
     | { type: 'category'; editData?: Category }
@@ -294,9 +317,9 @@ export default function Dashboard({
       } else {
         alert(
           result.message ||
-            (lang === 'en'
-              ? 'Failed to create Duitku invoice. Please ensure DUITKU_MERCHANT_CODE is set in .env.local.'
-              : 'Gagal membuat invoice Duitku. Pastikan DUITKU_MERCHANT_CODE sudah diset di file .env.local.')
+          (lang === 'en'
+            ? 'Failed to create Duitku invoice. Please ensure DUITKU_MERCHANT_CODE is set in .env.local.'
+            : 'Gagal membuat invoice Duitku. Pastikan DUITKU_MERCHANT_CODE sudah diset di file .env.local.')
         )
       }
     } catch (err: any) {
@@ -326,7 +349,7 @@ export default function Dashboard({
               )
             }
           })
-          .catch(() => {})
+          .catch(() => { })
       }
       window.history.replaceState({}, document.title, window.location.pathname)
     }
@@ -601,6 +624,66 @@ export default function Dashboard({
         }
       })
   }, [data.budgets, data.transactions, selectedMonth, categoryMap])
+
+  // Overview Quick Metrics: Today's expense, recent transactions, greeting, and current month budget
+  const todayExpense = useMemo(() => {
+    const todayStr = new Date().toISOString().slice(0, 10)
+    return data.transactions
+      .filter((t) => t.type === 'expense' && new Date(t.date).toISOString().slice(0, 10) === todayStr)
+      .reduce((sum, t) => sum + t.amount, 0)
+  }, [data.transactions])
+
+  const recentTransactions = useMemo(() => {
+    return [...data.transactions]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 6)
+  }, [data.transactions])
+
+  const greetingText = useMemo(() => {
+    const hour = new Date().getHours()
+    if (hour >= 4 && hour < 11) return t('greeting_morning', lang)
+    if (hour >= 11 && hour < 15) return t('greeting_afternoon', lang)
+    if (hour >= 15 && hour < 18) return t('greeting_evening', lang)
+    return t('greeting_night', lang)
+  }, [lang])
+
+  const currentMonthBudgets = useMemo(() => {
+    return data.budgets
+      .filter((b) => b.month === currentMonthStr)
+      .map((b) => {
+        const cat = categoryMap.get(b.categoryId)
+        const spent = data.transactions
+          .filter((t) => {
+            const matchCat = t.categoryId === b.categoryId
+            const matchMonth = new Date(t.date).toISOString().slice(0, 7) === b.month
+            return matchCat && matchMonth && t.type === 'expense'
+          })
+          .reduce((sum, t) => sum + t.amount, 0)
+        const remaining = b.amount - spent
+        const percentage = b.amount > 0 ? Math.round((spent / b.amount) * 100) : 0
+        return {
+          ...b,
+          categoryName: cat?.name || `Kategori ${b.categoryId}`,
+          spent,
+          remaining,
+          percentage,
+        }
+      })
+  }, [data.budgets, data.transactions, currentMonthStr, categoryMap])
+
+  const totalCurrentBudgetAmount = useMemo(
+    () => currentMonthBudgets.reduce((sum, b) => sum + b.amount, 0),
+    [currentMonthBudgets]
+  )
+  const totalCurrentBudgetSpent = useMemo(
+    () => currentMonthBudgets.reduce((sum, b) => sum + b.spent, 0),
+    [currentMonthBudgets]
+  )
+  const totalCurrentBudgetRemaining = totalCurrentBudgetAmount - totalCurrentBudgetSpent
+  const overallCurrentBudgetPct =
+    totalCurrentBudgetAmount > 0
+      ? Math.round((totalCurrentBudgetSpent / totalCurrentBudgetAmount) * 100)
+      : 0
 
   // Export Handlers
   const handleExportExcel = () => {
@@ -906,13 +989,13 @@ export default function Dashboard({
             </button>
 
             {/* Quick Add Transaction Button */}
-            <button
+            {/* <button
               onClick={() => setShowModal({ type: 'transaction' })}
               className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition active:scale-95"
             >
               <Plus className="h-4 w-4" />
               <span>{t('add_transaction', lang)}</span>
-            </button>
+            </button> */}
           </div>
         </header>
 
@@ -1021,7 +1104,15 @@ export default function Dashboard({
                     {t('overview_subtitle', lang)}
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={toggleHideBalance}
+                    title={hideBalance ? t('show_balance', lang) : t('hide_balance', lang)}
+                    className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                  >
+                    {hideBalance ? <EyeOff className="h-4 w-4 text-slate-500" /> : <Eye className="h-4 w-4 text-slate-500" />}
+                    <span>{hideBalance ? t('show_balance', lang) : t('hide_balance', lang)}</span>
+                  </button>
                   <button
                     onClick={() => {
                       if (data.wallets.length < 2) {
@@ -1030,28 +1121,95 @@ export default function Dashboard({
                       }
                       setShowModal({ type: 'transfer' })
                     }}
-                    className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                    className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                   >
                     <ArrowLeftRight className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     <span>{t('transfer_balance', lang)}</span>
                   </button>
                   <button
-                    onClick={() => {
-                      if (!isPro) {
-                        setShowUpgradeModal({
-                          featureName: 'Target Impian',
-                          description: 'Fitur Target Impian membantu Anda menabung untuk membeli rumah, kendaraan, atau dana darurat dengan indikator visual otomatis di Qwarts Finance PRO.'
-                        })
-                        return
-                      }
-                      setShowModal({ type: 'goal' })
-                    }}
-                    className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                    onClick={() => setShowModal({ type: 'transaction' })}
+                    className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-3.5 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:from-emerald-700 hover:to-teal-700 transition"
                   >
-                    <Target className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>{t('nav_goals', lang)}</span>
-                    {!isPro && <span className="text-[9px] font-bold text-amber-500">PRO</span>}
+                    <Plus className="h-4 w-4" />
+                    <span>{t('quick_action_add_tx', lang)}</span>
                   </button>
+                </div>
+              </div>
+
+              {/* Personalized Greeting & Daily Pulse Banner */}
+              <div className="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-white/50 dark:to-slate-900/50 p-5 sm:p-6 backdrop-blur-sm shadow-sm">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                  <div className="flex items-center gap-3.5">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-black text-lg shadow-md shadow-emerald-500/25">
+                      {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg">
+                          {greetingText}, {currentUser.name || 'Pengguna'} 👋
+                        </h3>
+                        {isPro ? (
+                          <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] font-black text-amber-600 dark:text-amber-400">
+                            PRO
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-slate-200/80 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                            FREE
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                        <span>{formatIndoDate(new Date())}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Fast Glance Pulse Badges & Inline Shortcut Buttons */}
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                    <div className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 px-3.5 py-2 shadow-xs">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('today_spending', lang)}</p>
+                      <p className="text-xs sm:text-sm font-black text-rose-600 dark:text-rose-400 mt-0.5">
+                        {maskBalance(todayExpense)}
+                      </p>
+                    </div>
+                    {totalCurrentBudgetAmount > 0 && (
+                      <div className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 px-3.5 py-2 shadow-xs">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('budget_remaining_label', lang)}</p>
+                        <p className={`text-xs sm:text-sm font-black mt-0.5 ${totalCurrentBudgetRemaining < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                          {maskBalance(totalCurrentBudgetRemaining)}
+                        </p>
+                      </div>
+                    )}
+                    {dueSoonSubs.length > 0 && (
+                      <div className="rounded-2xl border border-amber-200/70 dark:border-amber-900/40 bg-amber-50/90 dark:bg-amber-950/40 px-3.5 py-2 shadow-xs">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">{lang === 'en' ? 'Due Bills' : 'Tagihan Jatuh Tempo'}</p>
+                        <p className="text-xs sm:text-sm font-black text-amber-700 dark:text-amber-300 mt-0.5 flex items-center gap-1">
+                          <Bell className="h-3.5 w-3.5" /> {dueSoonSubs.length} {lang === 'en' ? 'Bills' : 'Tagihan'}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Direct Transaction Trigger Buttons */}
+                    <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
+                      <button
+                        onClick={() => setShowModal({ type: 'transaction', editData: { type: 'income' } as any })}
+                        className="flex items-center gap-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 px-2.5 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/80 transition"
+                        title={lang === 'en' ? 'Record Income' : 'Catat Pemasukan'}
+                      >
+                        <ArrowDownRight className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span>{t('quick_action_income', lang)}</span>
+                      </button>
+                      <button
+                        onClick={() => setShowModal({ type: 'transaction', editData: { type: 'expense' } as any })}
+                        className="flex items-center gap-1 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/80 px-2.5 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/80 transition"
+                        title={lang === 'en' ? 'Record Expense' : 'Catat Pengeluaran'}
+                      >
+                        <ArrowUpRight className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+                        <span>{t('quick_action_expense', lang)}</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1060,11 +1218,20 @@ export default function Dashboard({
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-900 dark:to-slate-950 p-6 text-white shadow-xl shadow-slate-900/10">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-slate-300">{t('total_balance', lang)}</span>
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 backdrop-blur-md">
-                      <WalletCards className="h-4 w-4 text-emerald-400" />
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={toggleHideBalance}
+                        title={hideBalance ? t('show_balance', lang) : t('hide_balance', lang)}
+                        className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition"
+                      >
+                        {hideBalance ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 backdrop-blur-md">
+                        <WalletCards className="h-4 w-4 text-emerald-400" />
+                      </div>
                     </div>
                   </div>
-                  <p className="mt-4 text-2xl font-black tracking-tight">{formatRupiah(totalBalance)}</p>
+                  <p className="mt-4 text-2xl font-black tracking-tight">{maskBalance(totalBalance)}</p>
                   <div className="mt-3 flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-white/10">
                     <span>{calculatedWallets.length} {t('accounts_consolidated', lang)}</span>
                     <span className="text-emerald-400 font-semibold">{t('consolidated', lang)}</span>
@@ -1079,7 +1246,7 @@ export default function Dashboard({
                     </div>
                   </div>
                   <p className="mt-4 text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
-                    {formatRupiah(totalIncome)}
+                    {maskBalance(totalIncome)}
                   </p>
                   <p className="mt-3 text-xs text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
                     {t('accumulated_income', lang)}
@@ -1094,7 +1261,7 @@ export default function Dashboard({
                     </div>
                   </div>
                   <p className="mt-4 text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">
-                    {formatRupiah(totalExpense)}
+                    {maskBalance(totalExpense)}
                   </p>
                   <p className="mt-3 text-xs text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
                     {t('accumulated_expense', lang)}
@@ -1109,7 +1276,7 @@ export default function Dashboard({
                     </div>
                   </div>
                   <p className="mt-4 text-2xl font-black text-teal-700 dark:text-teal-400 tracking-tight">
-                    {formatRupiah(netSavings)}
+                    {maskBalance(netSavings)}
                   </p>
                   <p className="mt-3 text-xs text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
                     {t('savings_rate', lang)}: <span className="font-semibold text-teal-700 dark:text-teal-400">{savingsRate}%</span>
@@ -1117,182 +1284,416 @@ export default function Dashboard({
                 </div>
               </div>
 
-              {/* Tahap 2 Quick Highlights: Goals & Bill Alerts */}
-              <div className="grid gap-6 lg:grid-cols-2">
-                {/* 1. Target Tabungan Mini Card */}
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
-                        <Target className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-slate-900 dark:text-white text-base">{t('goals_tracker', lang)}</h3>
-                          {!isPro && (
-                            <span className="rounded-full bg-amber-100 dark:bg-amber-950/80 px-2 py-0.5 text-[9px] font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
-                              🔒 PRO
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-slate-400">{t('goals_progress', lang)}: {overallGoalPercentage}% / {formatRupiah(totalGoalTarget)}</p>
-                      </div>
+              {/* Quick Wallets & Accounts Strip */}
+              <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                        {t('quick_wallets_title', lang)}
+                      </h3>
+                      <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                        {calculatedWallets.length} {lang === 'en' ? 'Accounts' : 'Akun'}
+                      </span>
                     </div>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {t('quick_wallets_sub', lang)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => {
-                        if (!isPro) {
-                          setShowUpgradeModal({
-                            featureName: 'Target Impian',
-                            description: 'Fitur Target Impian membantu Anda menabung untuk membeli rumah, kendaraan, atau dana darurat dengan indikator visual otomatis di Qwarts Finance PRO.'
-                          })
-                          return
-                        }
-                        setTab('Target Impian')
-                      }}
-                      className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1.5"
+                      onClick={() => setShowModal({ type: 'wallet' })}
+                      className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
                     >
-                      <span>{t('open_goals', lang)}</span>
-                      {!isPro && <span className="rounded bg-amber-500/20 text-amber-700 dark:text-amber-400 text-[10px] px-1.5 py-0.5 font-black">PRO 🔒</span>}
+                      <Plus className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>{t('add_wallet_short', lang)}</span>
+                    </button>
+                    <button
+                      onClick={() => setTab('Dompet')}
+                      className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                    >
+                      <span>{lang === 'en' ? 'Manage All' : 'Kelola Semua'}</span>
                       <ChevronRight className="h-3.5 w-3.5" />
                     </button>
                   </div>
+                </div>
 
-                  {!isPro ? (
-                    <div className="rounded-2xl border border-amber-200/80 dark:border-amber-900/60 bg-gradient-to-br from-amber-50/50 via-white to-amber-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20 p-5 text-center space-y-3 my-auto">
-                      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-                        <Lock className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{t('goals_locked_title', lang)}</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
-                          {t('goals_locked_desc', lang)}
-                        </p>
+                {calculatedWallets.length > 0 ? (
+                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                    {calculatedWallets.map((w) => {
+                      const isBank = w.type?.toLowerCase().includes('bank')
+                      const isCash = w.type?.toLowerCase().includes('cash') || w.type?.toLowerCase().includes('tunai')
+
+                      return (
+                        <div
+                          key={w.id}
+                          onClick={() => setShowModal({ type: 'wallet', editData: w })}
+                          className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-4 transition-all hover:border-emerald-500/40 hover:bg-white dark:hover:bg-slate-800 hover:shadow-md"
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2.5">
+                              <div
+                                className={`flex h-8 w-8 items-center justify-center rounded-xl text-white ${isBank
+                                    ? 'bg-blue-600 shadow-sm shadow-blue-500/20'
+                                    : isCash
+                                      ? 'bg-amber-600 shadow-sm shadow-amber-500/20'
+                                      : 'bg-emerald-600 shadow-sm shadow-emerald-500/20'
+                                  }`}
+                              >
+                                {isBank ? <Building2 className="h-4 w-4" /> : isCash ? <Wallet className="h-4 w-4" /> : <Smartphone className="h-4 w-4" />}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-bold text-xs text-slate-900 dark:text-white truncate">{w.name}</p>
+                                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{w.type}</span>
+                              </div>
+                            </div>
+                            <Edit3 className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600 group-hover:text-emerald-500 transition opacity-0 group-hover:opacity-100" />
+                          </div>
+
+                          <div className="pt-2 border-t border-slate-200/50 dark:border-slate-700/50 flex items-baseline justify-between">
+                            <span className="text-[10px] font-medium text-slate-400">{lang === 'en' ? 'Balance' : 'Saldo'}</span>
+                            <span className="font-black text-xs sm:text-sm text-slate-900 dark:text-white">
+                              {maskBalance(w.currentBalance)}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="py-6 text-center text-xs text-slate-400">
+                    {lang === 'en' ? 'No wallets registered. Click "+ Add Wallet" to create one.' : 'Belum ada dompet tercatat. Klik "+ Tambah Dompet" untuk mulai.'}
+                  </div>
+                )}
+              </div>
+
+              {/* 3-Card Highlights: Goals, Bills, and Monthly Budget Progress */}
+              <div className="grid gap-6 lg:grid-cols-3">
+                {/* 1. Target Tabungan Mini Card */}
+                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+                          <Target className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-slate-900 dark:text-white text-base">{t('goals_tracker', lang)}</h3>
+                            {!isPro && (
+                              <span className="rounded-full bg-amber-100 dark:bg-amber-950/80 px-2 py-0.5 text-[9px] font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                🔒 PRO
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-400">{t('goals_progress', lang)}: {overallGoalPercentage}% / {formatRupiah(totalGoalTarget)}</p>
+                        </div>
                       </div>
                       <button
-                        onClick={() => setShowUpgradeModal({
-                          featureName: 'Target Impian',
-                          description: 'Fitur Target Impian membantu Anda menabung untuk membeli rumah, kendaraan, atau dana darurat dengan indikator visual otomatis di Qwarts Finance PRO.'
-                        })}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-xs font-black text-white shadow hover:from-emerald-700 hover:to-teal-700 transition"
+                        onClick={() => {
+                          if (!isPro) {
+                            setShowUpgradeModal({
+                              featureName: 'Target Impian',
+                              description: 'Fitur Target Impian membantu Anda menabung untuk membeli rumah, kendaraan, atau dana darurat dengan indikator visual otomatis di Qwarts Finance PRO.'
+                            })
+                            return
+                          }
+                          setTab('Target Impian')
+                        }}
+                        className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
                       >
-                        <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-                        <span>{t('open_pro_goals', lang)}</span>
+                        <span>{t('open_goals', lang)}</span>
+                        <ChevronRight className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                  ) : goalsList.length > 0 ? (
-                    <div className="space-y-3">
-                      {goalsList.slice(0, 2).map((g) => {
-                        const pct = g.targetAmount > 0 ? Math.min(100, Math.round((g.currentAmount / g.targetAmount) * 100)) : 0
-                        return (
-                          <div key={g.id} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-3.5">
-                            <div className="flex items-center justify-between text-xs mb-1.5">
-                              <span className="font-bold text-slate-900 dark:text-white">{g.name}</span>
-                              <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{pct}%</span>
+
+                    {!isPro ? (
+                      <div className="rounded-2xl border border-amber-200/80 dark:border-amber-900/60 bg-gradient-to-br from-amber-50/50 via-white to-amber-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20 p-5 text-center space-y-3 my-auto">
+                        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                          <Lock className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{t('goals_locked_title', lang)}</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                            {t('goals_locked_desc', lang)}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setShowUpgradeModal({
+                            featureName: 'Target Impian',
+                            description: 'Fitur Target Impian membantu Anda menabung untuk membeli rumah, kendaraan, atau dana darurat dengan indikator visual otomatis di Qwarts Finance PRO.'
+                          })}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-xs font-black text-white shadow hover:from-emerald-700 hover:to-teal-700 transition"
+                        >
+                          <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+                          <span>{t('open_pro_goals', lang)}</span>
+                        </button>
+                      </div>
+                    ) : goalsList.length > 0 ? (
+                      <div className="space-y-3">
+                        {goalsList.slice(0, 3).map((g) => {
+                          const pct = g.targetAmount > 0 ? Math.min(100, Math.round((g.currentAmount / g.targetAmount) * 100)) : 0
+                          return (
+                            <div key={g.id} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-3.5 space-y-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-bold text-slate-900 dark:text-white truncate">{g.name}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{pct}%</span>
+                                  <button
+                                    onClick={() => setShowModal({ type: 'goalDeposit', goal: g })}
+                                    className="flex items-center gap-1 rounded-lg bg-emerald-600/10 hover:bg-emerald-600 text-emerald-700 hover:text-white dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-600 dark:hover:text-white px-2 py-0.5 text-[10px] font-bold transition"
+                                    title={lang === 'en' ? 'Deposit funds' : 'Tambah tabungan'}
+                                  >
+                                    <Plus className="h-2.5 w-2.5" />
+                                    <span>{t('deposit_to_goal_short', lang)}</span>
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                                <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
+                              </div>
+                              <div className="flex items-center justify-between text-[11px] text-slate-400">
+                                <span>{t('collected', lang)}: {maskBalance(g.currentAmount)}</span>
+                                <span>{t('target', lang)}: {maskBalance(g.targetAmount)}</span>
+                              </div>
                             </div>
-                            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-                              <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
-                            </div>
-                            <div className="flex items-center justify-between text-[11px] text-slate-400 mt-2">
-                              <span>{t('collected', lang)}: {formatRupiah(g.currentAmount)}</span>
-                              <span>{t('target', lang)}: {formatRupiah(g.targetAmount)}</span>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  ) : (
-                    <div className="py-6 text-center text-xs text-slate-400">
-                      {t('no_goals', lang)}
-                    </div>
-                  )}
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <div className="py-6 text-center text-xs text-slate-400">
+                        {t('no_goals', lang)}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* 2. Tagihan Rutin & Pengingat Mini Card */}
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
-                        <CalendarDays className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-slate-900 dark:text-white text-base">{t('bills_tracker', lang)}</h3>
-                          {!isPro && (
-                            <span className="rounded-full bg-amber-100 dark:bg-amber-950/80 px-2 py-0.5 text-[9px] font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
-                              🔒 PRO
-                            </span>
-                          )}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
+                          <CalendarDays className="h-5 w-5" />
                         </div>
-                        <p className="text-[11px] text-slate-400">{t('monthly_est', lang)}: {formatRupiah(totalMonthlyBills)}</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        if (!isPro) {
-                          setShowUpgradeModal({
-                            featureName: 'Tagihan Rutin',
-                            description: 'Fitur Tagihan Rutin memantau pengeluaran berulang bulanan seperti langganan, listrik, WiFi, dan cicilan dengan pengingat jatuh tempo otomatis di Qwarts Finance PRO.'
-                          })
-                          return
-                        }
-                        setTab('Tagihan Rutin')
-                      }}
-                      className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1.5"
-                    >
-                      <span>{t('open_bills', lang)}</span>
-                      {!isPro && <span className="rounded bg-amber-500/20 text-amber-700 dark:text-amber-400 text-[10px] px-1.5 py-0.5 font-black">PRO 🔒</span>}
-                      <ChevronRight className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-
-                  {!isPro ? (
-                    <div className="rounded-2xl border border-amber-200/80 dark:border-amber-900/60 bg-gradient-to-br from-amber-50/50 via-white to-amber-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20 p-5 text-center space-y-3 my-auto">
-                      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-                        <Lock className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{t('bills_locked_title', lang)}</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
-                          {t('bills_locked_desc', lang)}
-                        </p>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-slate-900 dark:text-white text-base">{t('bills_tracker', lang)}</h3>
+                            {!isPro && (
+                              <span className="rounded-full bg-amber-100 dark:bg-amber-950/80 px-2 py-0.5 text-[9px] font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                🔒 PRO
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-400">{t('monthly_est', lang)}: {formatRupiah(totalMonthlyBills)}</p>
+                        </div>
                       </div>
                       <button
-                        onClick={() => setShowUpgradeModal({
-                          featureName: 'Tagihan Rutin',
-                          description: 'Fitur Tagihan Rutin memantau pengeluaran berulang bulanan seperti langganan, listrik, WiFi, dan cicilan dengan pengingat jatuh tempo otomatis di Qwarts Finance PRO.'
-                        })}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-xs font-black text-white shadow hover:from-emerald-700 hover:to-teal-700 transition"
+                        onClick={() => {
+                          if (!isPro) {
+                            setShowUpgradeModal({
+                              featureName: 'Tagihan Rutin',
+                              description: 'Fitur Tagihan Rutin memantau pengeluaran berulang bulanan seperti langganan, listrik, WiFi, dan cicilan dengan pengingat jatuh tempo otomatis di Qwarts Finance PRO.'
+                            })
+                            return
+                          }
+                          setTab('Tagihan Rutin')
+                        }}
+                        className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
                       >
-                        <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-                        <span>{t('open_pro_bills', lang)}</span>
+                        <span>{t('open_bills', lang)}</span>
+                        <ChevronRight className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                  ) : subsList.length > 0 ? (
-                    <div className="space-y-2">
-                      {subsList.slice(0, 3).map((s) => {
-                        const daysLeft = s.dueDate >= todayDate ? s.dueDate - todayDate : 30 - (todayDate - s.dueDate)
-                        const isDueSoon = s.isActive && daysLeft <= (s.reminderDaysBefore || 3)
-                        return (
-                          <div key={s.id} className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-3">
-                            <div className="flex items-center gap-3">
-                              <div className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs font-black ${isDueSoon ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>
-                                {s.dueDate}
+
+                    {!isPro ? (
+                      <div className="rounded-2xl border border-amber-200/80 dark:border-amber-900/60 bg-gradient-to-br from-amber-50/50 via-white to-amber-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20 p-5 text-center space-y-3 my-auto">
+                        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                          <Lock className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{t('bills_locked_title', lang)}</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                            {t('bills_locked_desc', lang)}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setShowUpgradeModal({
+                            featureName: 'Tagihan Rutin',
+                            description: 'Fitur Tagihan Rutin memantau pengeluaran berulang bulanan seperti langganan, listrik, WiFi, dan cicilan dengan pengingat jatuh tempo otomatis di Qwarts Finance PRO.'
+                          })}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-xs font-black text-white shadow hover:from-emerald-700 hover:to-teal-700 transition"
+                        >
+                          <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+                          <span>{t('open_pro_bills', lang)}</span>
+                        </button>
+                      </div>
+                    ) : subsList.length > 0 ? (
+                      <div className="space-y-2.5">
+                        {subsList.slice(0, 3).map((s) => {
+                          const daysLeft = s.dueDate >= todayDate ? s.dueDate - todayDate : 30 - (todayDate - s.dueDate)
+                          const isDueSoon = s.isActive && daysLeft <= (s.reminderDaysBefore || 3)
+                          const isPaid = isSubPaidThisMonth(s)
+                          return (
+                            <div key={s.id} className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-3">
+                              <div className="flex items-center gap-3">
+                                <div className={`flex h-8 w-8 items-center justify-center rounded-xl text-xs font-black ${isPaid ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' : isDueSoon ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>
+                                  {s.dueDate}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-xs text-slate-900 dark:text-white">{s.name}</p>
+                                  <p className="text-[10px] text-slate-400">
+                                    {isPaid ? (
+                                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{t('paid_status', lang)}</span>
+                                    ) : (
+                                      <>{t('due_date_on', lang)} {s.dueDate} ({daysLeft === 0 ? t('today', lang) : `${daysLeft} ${t('days_left', lang)}`})</>
+                                    )}
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="font-bold text-xs text-slate-900 dark:text-white">{s.name}</p>
-                                <p className="text-[10px] text-slate-400">{t('due_date_on', lang)} {s.dueDate} ({daysLeft === 0 ? t('today', lang) : `${daysLeft} ${t('days_left', lang)}`})</p>
+                              <div className="flex items-center gap-2">
+                                <span className="font-black text-xs text-slate-900 dark:text-white">{maskBalance(s.amount)}</span>
+                                {!isPaid && (
+                                  <button
+                                    onClick={() => setShowModal({ type: 'paySubscription', subscription: s })}
+                                    className="flex items-center gap-1 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 px-2 py-1 text-[10px] font-bold shadow-sm transition"
+                                    title={lang === 'en' ? 'Pay Bill' : 'Bayar Tagihan'}
+                                  >
+                                    <Check className="h-3 w-3" />
+                                    <span>{t('pay_bill_short', lang)}</span>
+                                  </button>
+                                )}
                               </div>
                             </div>
-                            <span className="font-black text-xs text-slate-900 dark:text-white">{formatRupiah(s.amount)}</span>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <div className="py-6 text-center text-xs text-slate-400">
+                        {t('no_bills', lang)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 3. Monthly Budget Health Status Mini Card */}
+                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-teal-600 dark:bg-teal-950/60 dark:text-teal-400">
+                          <PiggyBank className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-slate-900 dark:text-white text-base">{t('this_month_budget', lang)}</h3>
+                            {!isPro && (
+                              <span className="rounded-full bg-amber-100 dark:bg-amber-950/80 px-2 py-0.5 text-[9px] font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                🔒 PRO
+                              </span>
+                            )}
                           </div>
-                        )
-                      })}
+                          <p className="text-[11px] text-slate-400">
+                            {totalCurrentBudgetAmount > 0
+                              ? `${overallCurrentBudgetPct}% ${t('budget_used', lang)} / ${formatRupiah(totalCurrentBudgetAmount)}`
+                              : t('no_budgets_overview', lang)}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (!isPro) {
+                            setShowUpgradeModal({
+                              featureName: 'Budget Bulanan',
+                              description: 'Kendalikan pengeluaran dengan batas anggaran bulanan per kategori dan notifikasi over-budget otomatis di Qwarts Finance PRO.'
+                            })
+                            return
+                          }
+                          setTab('Budget')
+                        }}
+                        className="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1"
+                      >
+                        <span>{t('manage_budget_short', lang)}</span>
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
                     </div>
-                  ) : (
-                    <div className="py-6 text-center text-xs text-slate-400">
-                      {t('no_bills', lang)}
-                    </div>
-                  )}
+
+                    {!isPro ? (
+                      <div className="rounded-2xl border border-amber-200/80 dark:border-amber-900/60 bg-gradient-to-br from-amber-50/50 via-white to-amber-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20 p-5 text-center space-y-3 my-auto">
+                        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                          <Lock className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{lang === 'en' ? 'Monthly Budget Locked' : 'Budget Bulanan Terkunci'}</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                            {lang === 'en' ? 'Track category spending caps and prevent overspending automatically.' : 'Pasang batas pengeluaran per kategori agar tidak boros setiap bulannya.'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setShowUpgradeModal({
+                            featureName: 'Budget Bulanan',
+                            description: 'Kendalikan pengeluaran dengan batas anggaran bulanan per kategori dan notifikasi over-budget otomatis di Qwarts Finance PRO.'
+                          })}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 px-4 py-2 text-xs font-black text-white shadow hover:from-teal-700 hover:to-emerald-700 transition"
+                        >
+                          <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+                          <span>{t('upgrade_pro', lang)}</span>
+                        </button>
+                      </div>
+                    ) : currentMonthBudgets.length > 0 ? (
+                      <div className="space-y-3">
+                        {/* Overall Progress Bar */}
+                        <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-3.5 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-slate-900 dark:text-white">
+                              {overallCurrentBudgetPct > 100 ? t('budget_status_over', lang) : overallCurrentBudgetPct >= 80 ? t('budget_status_warning', lang) : t('budget_status_safe', lang)}
+                            </span>
+                            <span className={`font-extrabold ${overallCurrentBudgetPct > 100 ? 'text-rose-600' : overallCurrentBudgetPct >= 80 ? 'text-amber-500' : 'text-teal-600 dark:text-teal-400'}`}>
+                              {overallCurrentBudgetPct}%
+                            </span>
+                          </div>
+                          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                            <div
+                              className={`h-full rounded-full transition-all ${overallCurrentBudgetPct > 100
+                                  ? 'bg-rose-500'
+                                  : overallCurrentBudgetPct >= 80
+                                    ? 'bg-amber-500'
+                                    : 'bg-teal-500'
+                                }`}
+                              style={{ width: `${Math.min(100, overallCurrentBudgetPct)}%` }}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-slate-400">
+                            <span>{t('budget_used', lang)}: {maskBalance(totalCurrentBudgetSpent)}</span>
+                            <span>{t('budget_left', lang)}: {maskBalance(totalCurrentBudgetRemaining)}</span>
+                          </div>
+                        </div>
+
+                        {/* Top 2 Categories */}
+                        <div className="space-y-1.5 pt-1">
+                          {currentMonthBudgets.slice(0, 2).map((b) => (
+                            <div key={b.id} className="flex items-center justify-between text-xs px-1">
+                              <span className="text-slate-600 dark:text-slate-300 truncate max-w-[140px]">{b.categoryName}</span>
+                              <span className={`font-bold ${b.percentage > 100 ? 'text-rose-600' : 'text-slate-900 dark:text-white'}`}>
+                                {maskBalance(b.spent)} / {maskBalance(b.amount)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="py-6 text-center text-xs text-slate-400 space-y-2">
+                        <p>{t('no_budgets_overview', lang)}</p>
+                        <button
+                          onClick={() => setShowModal({ type: 'budget' })}
+                          className="inline-flex items-center gap-1 rounded-xl bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 px-3 py-1.5 text-xs font-bold text-teal-700 dark:text-teal-300 hover:bg-teal-100 transition"
+                        >
+                          <Plus className="h-3 w-3" />
+                          <span>{t('set_monthly_budget_btn', lang)}</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -1425,11 +1826,104 @@ export default function Dashboard({
                           <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c.color }} />
                           <span className="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[120px]">{c.name}</span>
                         </div>
-                        <span className="font-bold text-slate-900 dark:text-white">{formatRupiah(c.value)}</span>
+                        <span className="font-bold text-slate-900 dark:text-white">{maskBalance(c.value)}</span>
                       </div>
                     ))}
                   </div>
                 </div>
+              </div>
+
+              {/* Transaksi Terkini (Recent Transactions Feed Widget) */}
+              <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <h3 className="font-bold text-slate-900 dark:text-white text-lg">
+                      {t('recent_transactions', lang)}
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      {t('recent_transactions_sub', lang)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setShowModal({ type: 'transaction' })}
+                      className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    >
+                      <Plus className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>{t('add_transaction', lang)}</span>
+                    </button>
+                    <button
+                      onClick={() => setTab('Transaksi')}
+                      className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                    >
+                      <span>{t('view_all', lang)}</span>
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {recentTransactions.length > 0 ? (
+                  <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                    {recentTransactions.map((tx) => {
+                      const cat = categoryMap.get(tx.categoryId)
+                      const wal = walletMap.get(tx.walletId)
+                      const isIncome = tx.type === 'income'
+
+                      return (
+                        <div
+                          key={tx.id}
+                          onClick={() => setShowModal({ type: 'transaction', editData: tx })}
+                          className="group flex items-center justify-between py-3.5 px-2 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition cursor-pointer"
+                        >
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <div
+                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-white font-bold text-xs shadow-xs"
+                              style={{ backgroundColor: cat?.color || '#10b981' }}
+                            >
+                              {cat?.name ? cat.name.charAt(0).toUpperCase() : <Tag className="h-4 w-4" />}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate">
+                                  {tx.description || cat?.name || (isIncome ? 'Pemasukan' : 'Pengeluaran')}
+                                </p>
+                                <span className="hidden sm:inline-flex rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+                                  {wal?.name || 'Dompet'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
+                                <span>{formatIndoDate(new Date(tx.date))}</span>
+                                <span>•</span>
+                                <span className="font-medium text-slate-500 dark:text-slate-400">{cat?.name || 'Umum'}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 shrink-0 ml-3">
+                            <span
+                              className={`text-xs sm:text-sm font-extrabold tracking-tight ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                                }`}
+                            >
+                              {isIncome ? '+' : '-'} {maskBalance(tx.amount)}
+                            </span>
+                            <Edit3 className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600 group-hover:text-emerald-500 transition opacity-0 group-hover:opacity-100 hidden sm:block" />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center text-xs text-slate-400 space-y-3">
+                    <p>{t('no_recent_tx', lang)}</p>
+                    <button
+                      onClick={() => setShowModal({ type: 'transaction' })}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>{t('record_first_tx', lang)}</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -2073,36 +2567,34 @@ export default function Dashboard({
                                 <td className="py-4 pl-2 whitespace-nowrap">
                                   <div className="flex items-center gap-2.5">
                                     <div
-                                      className={`flex h-9 w-9 items-center justify-center rounded-xl font-black text-xs ${
-                                        isPaid
+                                      className={`flex h-9 w-9 items-center justify-center rounded-xl font-black text-xs ${isPaid
                                           ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400'
                                           : isOverdue
-                                          ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 ring-2 ring-rose-500/30'
-                                          : isDueSoon
-                                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400 ring-2 ring-amber-500/30'
-                                          : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
-                                      }`}
+                                            ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 ring-2 ring-rose-500/30'
+                                            : isDueSoon
+                                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400 ring-2 ring-amber-500/30'
+                                              : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
+                                        }`}
                                     >
                                       {s.dueDate}
                                     </div>
                                     <div>
                                       <p className="font-bold text-slate-800 dark:text-slate-200">{lang === 'en' ? `${s.dueDate}th each month` : `Tgl ${s.dueDate} tiap bulan`}</p>
-                                      <p className={`text-[10px] ${
-                                        isPaid
+                                      <p className={`text-[10px] ${isPaid
                                           ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
                                           : isOverdue
-                                          ? 'text-rose-500 font-bold'
-                                          : isDueSoon
-                                          ? 'text-amber-600 dark:text-amber-400 font-bold'
-                                          : 'text-slate-400'
-                                      }`}>
+                                            ? 'text-rose-500 font-bold'
+                                            : isDueSoon
+                                              ? 'text-amber-600 dark:text-amber-400 font-bold'
+                                              : 'text-slate-400'
+                                        }`}>
                                         {isPaid
                                           ? (s.lastPaidAt ? `${t('sub_paid_on', lang)} ${new Date(s.lastPaidAt).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short' })}` : t('sub_status_paid', lang))
                                           : daysLeft === 0
-                                          ? t('sub_due_today', lang)
-                                          : isOverdue
-                                          ? (lang === 'en' ? `Overdue by ${todayDate - s.dueDate} days` : `Lewat ${todayDate - s.dueDate} hari`)
-                                          : `${daysLeft} ${t('days_left', lang)}`}
+                                            ? t('sub_due_today', lang)
+                                            : isOverdue
+                                              ? (lang === 'en' ? `Overdue by ${todayDate - s.dueDate} days` : `Lewat ${todayDate - s.dueDate} hari`)
+                                              : `${daysLeft} ${t('days_left', lang)}`}
                                       </p>
                                     </div>
                                   </div>
@@ -3705,11 +4197,10 @@ export default function Dashboard({
                 <button
                   type="button"
                   onClick={() => setSelectedUpgradePlan('monthly')}
-                  className={`rounded-2xl border p-3.5 text-center transition cursor-pointer ${
-                    selectedUpgradePlan === 'monthly'
+                  className={`rounded-2xl border p-3.5 text-center transition cursor-pointer ${selectedUpgradePlan === 'monthly'
                       ? 'border-teal-500 bg-teal-500/10 shadow-md'
                       : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
-                  }`}
+                    }`}
                 >
                   <span className="text-[11px] font-semibold text-slate-400">{t('pkg_monthly', lang)}</span>
                   <p className="mt-1 text-lg font-black text-white">{t('pkg_monthly_price', lang)}</p>
@@ -3719,11 +4210,10 @@ export default function Dashboard({
                 <button
                   type="button"
                   onClick={() => setSelectedUpgradePlan('yearly')}
-                  className={`relative rounded-2xl border p-3.5 text-center transition cursor-pointer ${
-                    selectedUpgradePlan === 'yearly'
+                  className={`relative rounded-2xl border p-3.5 text-center transition cursor-pointer ${selectedUpgradePlan === 'yearly'
                       ? 'border-amber-500 bg-gradient-to-b from-amber-500/20 to-slate-900/90 shadow-lg shadow-amber-500/15'
                       : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
-                  }`}
+                    }`}
                 >
                   <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-black text-slate-950 uppercase tracking-wider">
                     {lang === 'en' ? 'SAVE 35% • BEST VALUE' : 'HEMAT 35% • BEST VALUE'}
@@ -3820,7 +4310,7 @@ function TransactionModal({
   onDataUpdated,
 }: {
   data: Data
-  editData?: Transaction
+  editData?: Transaction | Partial<Transaction>
   lang?: Language
   isPro?: boolean
   onRequirePro?: (featureName: string, description: string) => void
@@ -3835,7 +4325,7 @@ function TransactionModal({
   const [walletId, setWalletId] = useState<number>(editData?.walletId || data.wallets[0]?.id || 0)
   const [categoryId, setCategoryId] = useState<number>(editData?.categoryId || data.categories[0]?.id || 0)
   const [date, setDate] = useState<string>(
-    editData ? new Date(editData.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
+    editData?.date ? new Date(editData.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
   )
   const [submitting, setSubmitting] = useState(false)
   const [walletsList, setWalletsList] = useState(data.wallets)
@@ -4017,7 +4507,7 @@ function TransactionModal({
     }
     setSubmitting(true)
     try {
-      if (editData) {
+      if (editData && typeof editData.id === 'number') {
         const fresh = await updateTransaction({
           id: editData.id,
           walletId: Number(walletId),
@@ -4246,11 +4736,11 @@ function TransactionModal({
             <span>
               {editData
                 ? (amount > 0
-                    ? `${lang === 'en' ? 'Update Transaction' : 'Perbarui Transaksi'} • ${formatRupiah(amount, true)}`
-                    : (lang === 'en' ? 'Update Transaction' : 'Perbarui Transaksi'))
+                  ? `${lang === 'en' ? 'Update Transaction' : 'Perbarui Transaksi'} • ${formatRupiah(amount, true)}`
+                  : (lang === 'en' ? 'Update Transaction' : 'Perbarui Transaksi'))
                 : (amount > 0
-                    ? `${type === 'expense' ? (lang === 'en' ? 'Save Expense' : 'Simpan Pengeluaran') : (lang === 'en' ? 'Save Income' : 'Simpan Pemasukan')} • ${formatRupiah(amount, true)}`
-                    : (lang === 'en' ? 'Save Transaction' : 'Simpan Transaksi'))}
+                  ? `${type === 'expense' ? (lang === 'en' ? 'Save Expense' : 'Simpan Pengeluaran') : (lang === 'en' ? 'Save Income' : 'Simpan Pemasukan')} • ${formatRupiah(amount, true)}`
+                  : (lang === 'en' ? 'Save Transaction' : 'Simpan Transaksi'))}
             </span>
           )}
         </button>
@@ -5230,19 +5720,17 @@ function PaySubscriptionModal({
       />
 
       {/* Modern iOS-Style Toggle Card */}
-      <div className={`rounded-2xl border transition-all duration-200 p-4 ${
-        markAsPaid 
-          ? 'border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20' 
+      <div className={`rounded-2xl border transition-all duration-200 p-4 ${markAsPaid
+          ? 'border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20'
           : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40'
-      }`}>
+        }`}>
         <div className="flex items-center justify-between gap-3">
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <span className={`flex h-6 w-6 items-center justify-center rounded-lg text-xs font-bold transition-colors ${
-                markAsPaid 
-                  ? 'bg-emerald-500 text-white shadow-xs' 
+              <span className={`flex h-6 w-6 items-center justify-center rounded-lg text-xs font-bold transition-colors ${markAsPaid
+                  ? 'bg-emerald-500 text-white shadow-xs'
                   : 'bg-slate-200 dark:bg-slate-800 text-slate-400'
-              }`}>
+                }`}>
                 <CheckCircle2 className="h-3.5 w-3.5" />
               </span>
               <p className="text-xs font-bold text-slate-800 dark:text-slate-100">
@@ -5254,11 +5742,11 @@ function PaySubscriptionModal({
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 pl-8 leading-relaxed">
               {markAsPaid
                 ? (lang === 'en'
-                    ? 'Status in the list will become Paid & due date warnings will be muted.'
-                    : 'Status di list tagihan otomatis menjadi Lunas dan notifikasi tempo dihentikan.')
+                  ? 'Status in the list will become Paid & due date warnings will be muted.'
+                  : 'Status di list tagihan otomatis menjadi Lunas dan notifikasi tempo dihentikan.')
                 : (lang === 'en'
-                    ? 'Only the transaction will be recorded (status remains unpaid).'
-                    : 'Hanya mencatat transaksi pengeluaran (status tagihan tetap belum lunas).')}
+                  ? 'Only the transaction will be recorded (status remains unpaid).'
+                  : 'Hanya mencatat transaksi pengeluaran (status tagihan tetap belum lunas).')}
             </p>
           </div>
 
@@ -5268,14 +5756,12 @@ function PaySubscriptionModal({
             role="switch"
             aria-checked={markAsPaid}
             onClick={() => setMarkAsPaid(!markAsPaid)}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${
-              markAsPaid ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
-            }`}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${markAsPaid ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
+              }`}
           >
             <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                markAsPaid ? 'translate-x-5' : 'translate-x-0'
-              }`}
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${markAsPaid ? 'translate-x-5' : 'translate-x-0'
+                }`}
             />
           </button>
         </div>
@@ -5292,8 +5778,8 @@ function PaySubscriptionModal({
             {submitting
               ? (lang === 'en' ? 'Processing Transaction...' : 'Memproses Transaksi...')
               : markAsPaid
-              ? (lang === 'en' ? 'Confirm & Mark as Paid' : 'Konfirmasi & Tandai Lunas')
-              : (lang === 'en' ? 'Record Expense Only' : 'Catat Pengeluaran Saja')}
+                ? (lang === 'en' ? 'Confirm & Mark as Paid' : 'Konfirmasi & Tandai Lunas')
+                : (lang === 'en' ? 'Record Expense Only' : 'Catat Pengeluaran Saja')}
           </span>
         </button>
       </div>
