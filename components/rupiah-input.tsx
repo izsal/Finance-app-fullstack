@@ -140,13 +140,13 @@ export function RupiahInput({
       )}
 
       {showPresets && !disabled && (
-        <div className="flex flex-wrap gap-1.5 pt-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
           {presets.map((preset) => (
             <button
               key={preset.amount}
               type="button"
               onClick={() => addPreset(preset.amount)}
-              className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-700 active:scale-95 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-700 active:scale-95 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300 dark:hover:bg-slate-800"
             >
               {preset.label}
             </button>
@@ -155,7 +155,7 @@ export function RupiahInput({
             <button
               type="button"
               onClick={clearInput}
-              className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-[11px] font-semibold text-rose-600 transition hover:bg-rose-100 active:scale-95 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-400"
+              className="shrink-0 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-600 transition hover:bg-rose-100 active:scale-95 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-400"
             >
               Reset
             </button>

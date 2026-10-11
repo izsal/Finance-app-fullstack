@@ -138,6 +138,13 @@ const COLOR_PALETTE = [
   '#64748b', // slate
 ]
 
+const truncateText = (text?: string, maxLen = 5) => {
+  if (!text) return ''
+  const trimmed = text.trim()
+  if (trimmed.length <= maxLen) return trimmed
+  return `${trimmed.slice(0, maxLen)}...`
+}
+
 export default function Dashboard({
   user,
   initialData,
@@ -765,7 +772,7 @@ export default function Dashboard({
   ]
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex flex-col antialiased transition-colors duration-200">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex flex-col antialiased transition-colors duration-200 w-full max-w-full overflow-x-hidden">
       {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl bg-slate-900 dark:bg-emerald-950 border border-slate-700 dark:border-emerald-800 px-5 py-3.5 text-white shadow-2xl transition-all animate-bounce">
@@ -915,15 +922,15 @@ export default function Dashboard({
 
       {/* Main Content Layout */}
       <div
-        className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+        className={`flex-1 flex flex-col min-w-0 w-full max-w-full overflow-x-hidden transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
           }`}
       >
         {/* Top Header Navbar */}
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-6 py-4 lg:px-10">
-          <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-3 py-2 sm:px-6 sm:py-4 lg:px-10 w-full max-w-full min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 mr-2">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="rounded-xl border border-slate-200 dark:border-slate-800 p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden"
+              className="shrink-0 rounded-xl border border-slate-200 dark:border-slate-800 p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden cursor-pointer"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -931,71 +938,72 @@ export default function Dashboard({
             <button
               onClick={toggleSidebar}
               title={sidebarCollapsed ? t('sidebar_show', lang) : t('sidebar_hide', lang)}
-              className="hidden lg:flex rounded-xl border border-slate-200 dark:border-slate-800 p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              className="hidden lg:flex shrink-0 rounded-xl border border-slate-200 dark:border-slate-800 p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
             >
               {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
             </button>
 
-            <div>
-              <p className="text-xs font-medium text-slate-400">{t('welcome_back', lang)}</p>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold text-slate-900 dark:text-white lg:text-xl">{currentUser.name}</h1>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] sm:text-xs font-medium text-slate-400 leading-tight truncate">{t('welcome_back', lang)}</p>
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <h1
+                  className="text-xs xs:text-sm sm:text-lg lg:text-xl font-bold text-slate-900 dark:text-white truncate max-w-[85px] xs:max-w-[125px] sm:max-w-[220px] lg:max-w-none whitespace-nowrap"
+                  title={currentUser.name}
+                >
+                  <span className="sm:hidden">
+                    {truncateText(currentUser.name, 5)}
+                  </span>
+                  <span className="hidden sm:inline">
+                    {currentUser.name}
+                  </span>
+                </h1>
                 {isPro ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500/20 to-emerald-500/20 border border-amber-500/40 px-2.5 py-0.5 text-[10px] font-black text-amber-600 dark:text-amber-400">
-                    <Sparkles className="h-3 w-3 text-amber-500 fill-amber-500" />
+                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500/20 to-emerald-500/20 border border-amber-500/40 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-black text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                    <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-amber-500 fill-amber-500" />
                     PRO
                   </span>
                 ) : (
                   <button
                     onClick={() => setShowUpgradeModal({ featureName: 'Qwarts Finance PRO', description: 'Buka semua fitur canggih tanpa batasan.' })}
-                    className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-2.5 py-0.5 text-[10px] font-black text-white hover:brightness-110 shadow-sm shadow-amber-500/30 transition cursor-pointer"
+                    className="shrink-0 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-1.5 sm:px-2.5 py-0.5 text-[9px] sm:text-[10px] font-black text-white hover:brightness-110 shadow-sm shadow-amber-500/30 transition cursor-pointer whitespace-nowrap"
                   >
-                    <Sparkles className="h-2.5 w-2.5 fill-white" />
-                    Upgrade PRO
+                    <Sparkles className="h-2 w-2 sm:h-2.5 sm:w-2.5 fill-white" />
+                    <span className="hidden xs:inline">Upgrade </span>PRO
                   </button>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* Quick Language Switcher in Header */}
             <button
               onClick={() => handleLanguageChange(lang === 'en' ? 'id' : 'en')}
               title={lang === 'en' ? 'Beralih ke Bahasa Indonesia' : 'Switch to English'}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-sm"
+              className="flex items-center gap-1 sm:gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-sm cursor-pointer"
             >
-              <Languages className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              <span>{lang === 'en' ? '🇺🇸 EN' : '🇮🇩 ID'}</span>
+              <Languages className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-[11px] sm:text-xs">{lang === 'en' ? 'EN' : 'ID'}</span>
             </button>
 
             {/* Quick Dark Mode Switcher in Header */}
             <button
               onClick={() => handleThemeChange(theme === 'dark' ? 'light' : 'dark')}
               title={theme === 'dark' ? t('switch_theme_light', lang) : t('switch_theme_dark', lang)}
-              className="flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-sm"
+              className="flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 sm:p-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-sm cursor-pointer"
             >
-              {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-600" />}
+              {theme === 'dark' ? <Sun className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-400" /> : <Moon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-600" />}
             </button>
 
-            {/* Quick Export Button */}
+            {/* Quick Export Button (Hidden on mobile to keep header clean and un-cramped) */}
             <button
               onClick={handleExportExcel}
-              className="flex items-center gap-2 rounded-xl border border-emerald-600/30 bg-emerald-50/70 dark:bg-emerald-950/40 px-3.5 py-2.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-950 transition shadow-sm"
+              className="hidden sm:flex items-center gap-2 rounded-xl border border-emerald-600/30 bg-emerald-50/70 dark:bg-emerald-950/40 px-3.5 py-2.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-950 transition shadow-sm"
             >
               <FileSpreadsheet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              <span className="hidden sm:inline">{t('export_excel', lang)}</span>
+              <span>{t('export_excel', lang)}</span>
               {!isPro && <span className="rounded bg-amber-500/20 text-amber-700 dark:text-amber-400 text-[10px] px-1.5 py-0.5 font-black">PRO 🔒</span>}
             </button>
-
-            {/* Quick Add Transaction Button */}
-            {/* <button
-              onClick={() => setShowModal({ type: 'transaction' })}
-              className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition active:scale-95"
-            >
-              <Plus className="h-4 w-4" />
-              <span>{t('add_transaction', lang)}</span>
-            </button> */}
           </div>
         </header>
 
@@ -1090,14 +1098,14 @@ export default function Dashboard({
         )}
 
         {/* Content Body */}
-        <main className="p-5 sm:p-8 lg:p-10 flex-1 max-w-7xl w-full mx-auto space-y-8">
+        <main className="px-3.5 py-4 sm:p-8 lg:p-10 flex-1 max-w-7xl w-full mx-auto space-y-5 sm:space-y-8 pb-24 sm:pb-8 lg:pb-10 min-w-0 overflow-x-hidden">
           {/* TAB 1: OVERVIEW */}
           {tab === 'Overview' && (
-            <div className="space-y-8">
+            <div className="space-y-5 sm:space-y-8">
               {/* Header Title & Quick Actions */}
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                  <h2 className="text-xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
                     {t('overview_title', lang)}
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1137,7 +1145,7 @@ export default function Dashboard({
               </div>
 
               {/* Personalized Greeting & Daily Pulse Banner */}
-              <div className="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-white/50 dark:to-slate-900/50 p-5 sm:p-6 backdrop-blur-sm shadow-sm">
+              <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-white/50 dark:to-slate-900/50 p-4 sm:p-6 backdrop-blur-sm shadow-sm">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   <div className="flex items-center gap-3.5">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-black text-lg shadow-md shadow-emerald-500/25">
@@ -1146,7 +1154,9 @@ export default function Dashboard({
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg">
-                          {greetingText}, {currentUser.name || 'Pengguna'} 👋
+                          {greetingText},{' '}
+                          <span className="sm:hidden">{truncateText(currentUser.name, 6) || 'Pengguna'}</span>
+                          <span className="hidden sm:inline">{currentUser.name || 'Pengguna'}</span> 👋
                         </h3>
                         {isPro ? (
                           <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] font-black text-amber-600 dark:text-amber-400">
@@ -1166,23 +1176,25 @@ export default function Dashboard({
                   </div>
 
                   {/* Fast Glance Pulse Badges & Inline Shortcut Buttons */}
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                    <div className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 px-3.5 py-2 shadow-xs">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('today_spending', lang)}</p>
-                      <p className="text-xs sm:text-sm font-black text-rose-600 dark:text-rose-400 mt-0.5">
-                        {maskBalance(todayExpense)}
-                      </p>
-                    </div>
-                    {totalCurrentBudgetAmount > 0 && (
-                      <div className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 px-3.5 py-2 shadow-xs">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('budget_remaining_label', lang)}</p>
-                        <p className={`text-xs sm:text-sm font-black mt-0.5 ${totalCurrentBudgetRemaining < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                          {maskBalance(totalCurrentBudgetRemaining)}
+                  <div className="w-full lg:w-auto flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3">
+                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+                      <div className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 px-3 py-2 shadow-xs min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">{t('today_spending', lang)}</p>
+                        <p className="text-xs sm:text-sm font-black text-rose-600 dark:text-rose-400 mt-0.5 truncate">
+                          {maskBalance(todayExpense)}
                         </p>
                       </div>
-                    )}
+                      {totalCurrentBudgetAmount > 0 && (
+                        <div className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 px-3 py-2 shadow-xs min-w-0">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">{t('budget_remaining_label', lang)}</p>
+                          <p className={`text-xs sm:text-sm font-black mt-0.5 truncate ${totalCurrentBudgetRemaining < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                            {maskBalance(totalCurrentBudgetRemaining)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                     {dueSoonSubs.length > 0 && (
-                      <div className="rounded-2xl border border-amber-200/70 dark:border-amber-900/40 bg-amber-50/90 dark:bg-amber-950/40 px-3.5 py-2 shadow-xs">
+                      <div className="rounded-2xl border border-amber-200/70 dark:border-amber-900/40 bg-amber-50/90 dark:bg-amber-950/40 px-3 py-2 shadow-xs">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">{lang === 'en' ? 'Due Bills' : 'Tagihan Jatuh Tempo'}</p>
                         <p className="text-xs sm:text-sm font-black text-amber-700 dark:text-amber-300 mt-0.5 flex items-center gap-1">
                           <Bell className="h-3.5 w-3.5" /> {dueSoonSubs.length} {lang === 'en' ? 'Bills' : 'Tagihan'}
@@ -1191,10 +1203,10 @@ export default function Dashboard({
                     )}
 
                     {/* Direct Transaction Trigger Buttons */}
-                    <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
+                    <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
                       <button
                         onClick={() => setShowModal({ type: 'transaction', editData: { type: 'income' } as any })}
-                        className="flex items-center gap-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 px-2.5 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/80 transition"
+                        className="flex items-center justify-center gap-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 px-2.5 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/80 transition cursor-pointer"
                         title={lang === 'en' ? 'Record Income' : 'Catat Pemasukan'}
                       >
                         <ArrowDownRight className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -1202,7 +1214,7 @@ export default function Dashboard({
                       </button>
                       <button
                         onClick={() => setShowModal({ type: 'transaction', editData: { type: 'expense' } as any })}
-                        className="flex items-center gap-1 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/80 px-2.5 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/80 transition"
+                        className="flex items-center justify-center gap-1 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/80 px-2.5 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/80 transition cursor-pointer"
                         title={lang === 'en' ? 'Record Expense' : 'Catat Pengeluaran'}
                       >
                         <ArrowUpRight className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
@@ -1214,71 +1226,71 @@ export default function Dashboard({
               </div>
 
               {/* Financial Metric Cards */}
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-900 dark:to-slate-950 p-6 text-white shadow-xl shadow-slate-900/10">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className="col-span-2 sm:col-span-1 lg:col-span-1 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-900 dark:to-slate-950 p-4 sm:p-6 text-white shadow-xl shadow-slate-900/10">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-slate-300">{t('total_balance', lang)}</span>
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={toggleHideBalance}
                         title={hideBalance ? t('show_balance', lang) : t('hide_balance', lang)}
-                        className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition"
+                        className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition cursor-pointer"
                       >
-                        {hideBalance ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {hideBalance ? <EyeOff className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
                       </button>
-                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 backdrop-blur-md">
-                        <WalletCards className="h-4 w-4 text-emerald-400" />
+                      <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-white/10 backdrop-blur-md">
+                        <WalletCards className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-400" />
                       </div>
                     </div>
                   </div>
-                  <p className="mt-4 text-2xl font-black tracking-tight">{maskBalance(totalBalance)}</p>
-                  <div className="mt-3 flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-white/10">
+                  <p className="mt-3 sm:mt-4 text-xl sm:text-2xl font-black tracking-tight">{maskBalance(totalBalance)}</p>
+                  <div className="mt-2.5 sm:mt-3 flex items-center justify-between text-[11px] sm:text-xs text-slate-400 pt-2.5 sm:pt-3 border-t border-white/10">
                     <span>{calculatedWallets.length} {t('accounts_consolidated', lang)}</span>
                     <span className="text-emerald-400 font-semibold">{t('consolidated', lang)}</span>
                   </div>
                 </div>
 
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
+                <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('total_income', lang)}</span>
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
-                      <ArrowDownRight className="h-4 w-4" />
+                    <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+                      <ArrowDownRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </div>
                   </div>
-                  <p className="mt-4 text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+                  <p className="mt-3 sm:mt-4 text-lg sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight truncate">
                     {maskBalance(totalIncome)}
                   </p>
-                  <p className="mt-3 text-xs text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <p className="mt-2.5 sm:mt-3 text-[11px] sm:text-xs text-slate-400 pt-2.5 sm:pt-3 border-t border-slate-100 dark:border-slate-800 truncate">
                     {t('accumulated_income', lang)}
                   </p>
                 </div>
 
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
+                <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('total_expense', lang)}</span>
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
-                      <ArrowUpRight className="h-4 w-4" />
+                    <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
+                      <ArrowUpRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </div>
                   </div>
-                  <p className="mt-4 text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">
+                  <p className="mt-3 sm:mt-4 text-lg sm:text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight truncate">
                     {maskBalance(totalExpense)}
                   </p>
-                  <p className="mt-3 text-xs text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <p className="mt-2.5 sm:mt-3 text-[11px] sm:text-xs text-slate-400 pt-2.5 sm:pt-3 border-t border-slate-100 dark:border-slate-800 truncate">
                     {t('accumulated_expense', lang)}
                   </p>
                 </div>
 
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
+                <div className="col-span-2 sm:col-span-1 lg:col-span-1 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('net_savings', lang)}</span>
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400 font-bold text-xs">
+                    <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400 font-bold text-xs">
                       {savingsRate}%
                     </div>
                   </div>
-                  <p className="mt-4 text-2xl font-black text-teal-700 dark:text-teal-400 tracking-tight">
+                  <p className="mt-3 sm:mt-4 text-lg sm:text-2xl font-black text-teal-700 dark:text-teal-400 tracking-tight">
                     {maskBalance(netSavings)}
                   </p>
-                  <p className="mt-3 text-xs text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <p className="mt-2.5 sm:mt-3 text-[11px] sm:text-xs text-slate-400 pt-2.5 sm:pt-3 border-t border-slate-100 dark:border-slate-800">
                     {t('savings_rate', lang)}: <span className="font-semibold text-teal-700 dark:text-teal-400">{savingsRate}%</span>
                   </p>
                 </div>
@@ -1699,7 +1711,7 @@ export default function Dashboard({
 
               {/* Charts Section */}
               <div className="grid gap-6 lg:grid-cols-3">
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm lg:col-span-2">
+                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm lg:col-span-2 min-w-0 overflow-hidden">
                   <div className="flex items-center justify-between mb-6">
                     <div>
                       <h3 className="font-bold text-slate-900 dark:text-white text-lg">{t('cashflow_chart', lang)}</h3>
@@ -1776,7 +1788,7 @@ export default function Dashboard({
                   </div>
                 </div>
 
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between">
+                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between min-w-0 overflow-hidden">
                   <div>
                     <h3 className="font-bold text-slate-900 dark:text-white text-lg">{t('expense_category_chart', lang)}</h3>
                     <p className="text-xs text-slate-400">{t('expense_category_sub', lang)}</p>
@@ -2041,11 +2053,70 @@ export default function Dashboard({
                 </div>
               </div>
 
-              {/* Transactions Table */}
-              <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm overflow-hidden">
+              {/* Transactions Table / Mobile Card List */}
+              <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-sm overflow-hidden">
                 {filteredTransactions.length > 0 ? (
                   <>
-                    <div className="overflow-x-auto">
+                    {/* Mobile Card List View (sm:hidden) */}
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800/60 sm:hidden">
+                      {paginatedTransactions.map((tRow) => {
+                        const cat = categoryMap.get(tRow.categoryId)
+                        const wal = walletMap.get(tRow.walletId)
+                        const isInc = tRow.type === 'income'
+                        return (
+                          <div key={tRow.id} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div
+                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white font-bold text-xs shadow-xs"
+                                style={{ backgroundColor: cat?.color || (isInc ? '#10b981' : '#f43f5e') }}
+                              >
+                                {cat?.name ? cat.name.charAt(0).toUpperCase() : <Tag className="h-4 w-4" />}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-bold text-xs text-slate-900 dark:text-white truncate">
+                                  {tRow.description || cat?.name || (isInc ? 'Pemasukan' : 'Pengeluaran')}
+                                </p>
+                                <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-0.5">
+                                  <span>{formatIndoDate(tRow.date, false, lang)}</span>
+                                  <span>•</span>
+                                  <span className="font-medium text-slate-500 dark:text-slate-400 truncate max-w-[85px]">{wal?.name || 'Dompet'}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col items-end shrink-0 gap-1">
+                              <span className={`font-black text-xs tracking-tight ${isInc ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                {isInc ? '+' : '-'} {formatRupiah(tRow.amount)}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => setShowModal({ type: 'transaction', editData: tRow })}
+                                  className="rounded-lg p-1 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
+                                  title={t('edit', lang)}
+                                >
+                                  <Edit3 className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    if (confirm(t('confirm_delete_tx', lang))) {
+                                      const fresh = await deleteTransaction(tRow.id)
+                                      handleSuccess(lang === 'en' ? 'Transaction deleted' : 'Transaksi dihapus', fresh)
+                                    }
+                                  }}
+                                  className="rounded-lg p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer"
+                                  title={t('delete', lang)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {/* Desktop / Tablet Table View (hidden sm:block) */}
+                    <div className="hidden sm:block overflow-x-auto">
                       <table className="w-full text-left text-xs">
                         <thead>
                           <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
@@ -2542,168 +2613,300 @@ export default function Dashboard({
 
                 {/* Subscriptions List */}
                 {subsList.length > 0 ? (
-                  <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs">
-                        <thead>
-                          <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
-                            <th className="pb-3 pl-2">{t('sub_col_date', lang)}</th>
-                            <th className="pb-3">{t('sub_col_name', lang)}</th>
-                            <th className="pb-3">{t('sub_col_cycle', lang)}</th>
-                            <th className="pb-3">{t('sub_col_payment_status', lang)}</th>
-                            <th className="pb-3 text-right">{t('sub_col_cost', lang)}</th>
-                            <th className="pb-3 pr-2 text-right">{t('sub_col_action', lang)}</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                          {subsList.map((s) => {
-                            const isPaid = isSubPaidThisMonth(s)
-                            const daysLeft = s.dueDate >= todayDate ? s.dueDate - todayDate : 30 - (todayDate - s.dueDate)
-                            const isDueSoon = s.isActive && !isPaid && daysLeft <= (s.reminderDaysBefore || 3)
-                            const isOverdue = s.isActive && !isPaid && todayDate > s.dueDate
+                  <div>
+                    {/* Mobile Card List (sm:hidden) */}
+                    <div className="space-y-3 sm:hidden">
+                      {subsList.map((s) => {
+                        const isPaid = isSubPaidThisMonth(s)
+                        const daysLeft = s.dueDate >= todayDate ? s.dueDate - todayDate : 30 - (todayDate - s.dueDate)
+                        const isDueSoon = s.isActive && !isPaid && daysLeft <= (s.reminderDaysBefore || 3)
+                        const isOverdue = s.isActive && !isPaid && todayDate > s.dueDate
 
-                            return (
-                              <tr key={s.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
-                                <td className="py-4 pl-2 whitespace-nowrap">
-                                  <div className="flex items-center gap-2.5">
-                                    <div
-                                      className={`flex h-9 w-9 items-center justify-center rounded-xl font-black text-xs ${isPaid
-                                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400'
-                                          : isOverdue
-                                            ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 ring-2 ring-rose-500/30'
-                                            : isDueSoon
-                                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400 ring-2 ring-amber-500/30'
-                                              : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
-                                        }`}
-                                    >
-                                      {s.dueDate}
-                                    </div>
-                                    <div>
-                                      <p className="font-bold text-slate-800 dark:text-slate-200">{lang === 'en' ? `${s.dueDate}th each month` : `Tgl ${s.dueDate} tiap bulan`}</p>
-                                      <p className={`text-[10px] ${isPaid
-                                          ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
-                                          : isOverdue
-                                            ? 'text-rose-500 font-bold'
-                                            : isDueSoon
-                                              ? 'text-amber-600 dark:text-amber-400 font-bold'
-                                              : 'text-slate-400'
-                                        }`}>
-                                        {isPaid
-                                          ? (s.lastPaidAt ? `${t('sub_paid_on', lang)} ${new Date(s.lastPaidAt).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short' })}` : t('sub_status_paid', lang))
-                                          : daysLeft === 0
-                                            ? t('sub_due_today', lang)
-                                            : isOverdue
-                                              ? (lang === 'en' ? `Overdue by ${todayDate - s.dueDate} days` : `Lewat ${todayDate - s.dueDate} hari`)
-                                              : `${daysLeft} ${t('days_left', lang)}`}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="py-4">
-                                  <p className="font-bold text-slate-900 dark:text-white text-sm">{s.name}</p>
+                        return (
+                          <div
+                            key={s.id}
+                            className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-2.5">
+                                <div
+                                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-black text-xs ${isPaid
+                                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400'
+                                      : isOverdue
+                                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 ring-2 ring-rose-500/30'
+                                        : isDueSoon
+                                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400 ring-2 ring-amber-500/30'
+                                          : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
+                                    }`}
+                                >
+                                  {s.dueDate}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-slate-900 dark:text-white text-sm leading-tight">{s.name}</p>
                                   <div className="flex items-center gap-1.5 mt-0.5">
-                                    <span className={`h-1.5 w-1.5 rounded-full ${s.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-                                    <span className="text-[11px] font-medium text-slate-400">
-                                      {s.isActive ? t('sub_status_active', lang) : t('sub_status_inactive', lang)}
+                                    <span className="text-[10px] text-slate-400">
+                                      {lang === 'en' ? `${s.dueDate}th each month` : `Tgl ${s.dueDate} tiap bulan`}
+                                    </span>
+                                    <span className="text-slate-300 dark:text-slate-700">•</span>
+                                    <span className="text-[10px] text-slate-400">
+                                      {s.billingCycle === 'monthly' ? t('sub_cycle_monthly', lang) : s.billingCycle === 'yearly' ? t('sub_cycle_yearly', lang) : t('sub_cycle_weekly', lang)}
                                     </span>
                                   </div>
-                                </td>
-                                <td className="py-4 whitespace-nowrap">
-                                  <span className="inline-block rounded-lg bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                                    {s.billingCycle === 'monthly' ? t('sub_cycle_monthly', lang) : s.billingCycle === 'yearly' ? t('sub_cycle_yearly', lang) : t('sub_cycle_weekly', lang)}
-                                  </span>
-                                </td>
-                                <td className="py-4 whitespace-nowrap">
-                                  {isPaid ? (
-                                    <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
-                                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                                      <span>{t('sub_status_paid', lang)}</span>
-                                    </span>
-                                  ) : isOverdue ? (
-                                    <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60">
-                                      <AlertCircle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
-                                      <span>{t('sub_status_overdue', lang)}</span>
-                                    </span>
-                                  ) : isDueSoon ? (
-                                    <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400 border border-amber-200 dark:border-amber-900/60">
-                                      <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                                      <span>{t('sub_status_due_soon', lang)}</span>
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                                      <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
-                                      <span>{t('sub_status_unpaid', lang)}</span>
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="py-4 text-right font-black text-slate-900 dark:text-white text-sm whitespace-nowrap">
-                                  {formatRupiah(s.amount)}
-                                </td>
-                                <td className="py-4 pr-2 text-right whitespace-nowrap">
-                                  <div className="flex items-center justify-end gap-1.5">
-                                    {isPaid ? (
-                                      <div className="flex items-center gap-1">
-                                        <span className="inline-flex items-center gap-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                                          <Check className="h-3.5 w-3.5" />
-                                          <span>{t('sub_paid_badge', lang)}</span>
-                                        </span>
-                                        <button
-                                          onClick={() => setShowModal({ type: 'paySubscription', subscription: s })}
-                                          className="rounded-lg p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition"
-                                          title={lang === 'en' ? 'Record another payment' : 'Catat pembayaran lagi'}
-                                        >
-                                          <Zap className="h-3.5 w-3.5" />
-                                        </button>
-                                        <button
-                                          onClick={async () => {
-                                            if (confirm(t('sub_mark_unpaid_confirm', lang))) {
-                                              const fresh = await resetSubscriptionPayment(s.id)
-                                              handleSuccess(lang === 'en' ? 'Payment status reset' : 'Status pembayaran direset', fresh)
-                                            }
-                                          }}
-                                          className="rounded-lg p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition"
-                                          title={t('sub_mark_unpaid', lang)}
-                                        >
-                                          <RotateCcw className="h-3.5 w-3.5" />
-                                        </button>
-                                      </div>
-                                    ) : (
-                                      <button
-                                        onClick={() => setShowModal({ type: 'paySubscription', subscription: s })}
-                                        className="flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow px-3 py-1.5 text-xs font-bold transition"
-                                        title={lang === 'en' ? 'Record Payment' : 'Catat Pembayaran Tagihan Ini'}
-                                      >
-                                        <Zap className="h-3.5 w-3.5 text-white" />
-                                        <span>{t('pay_bill', lang)}</span>
-                                      </button>
-                                    )}
+                                </div>
+                              </div>
+                              <p className="font-black text-slate-900 dark:text-white text-sm shrink-0">
+                                {formatRupiah(s.amount)}
+                              </p>
+                            </div>
 
+                            {/* Status badge & action buttons row */}
+                            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
+                              <div>
+                                {isPaid ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
+                                    <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                                    <span>{t('sub_status_paid', lang)}</span>
+                                  </span>
+                                ) : isOverdue ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60">
+                                    <AlertCircle className="h-3 w-3 text-rose-600 dark:text-rose-400" />
+                                    <span>{lang === 'en' ? `Overdue ${todayDate - s.dueDate}d` : `Lewat ${todayDate - s.dueDate}hr`}</span>
+                                  </span>
+                                ) : isDueSoon ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400 border border-amber-200 dark:border-amber-900/60">
+                                    <Clock className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                                    <span>{daysLeft === 0 ? t('sub_due_today', lang) : `${daysLeft} ${t('days_left', lang)}`}</span>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                                    <span>{daysLeft} {t('days_left', lang)}</span>
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-1.5">
+                                {isPaid ? (
+                                  <div className="flex items-center gap-1">
                                     <button
-                                      onClick={() => setShowModal({ type: 'subscription', editData: s })}
-                                      className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200"
-                                      title={t('edit', lang)}
+                                      onClick={() => setShowModal({ type: 'paySubscription', subscription: s })}
+                                      className="rounded-lg p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition"
+                                      title={lang === 'en' ? 'Record another payment' : 'Catat pembayaran lagi'}
                                     >
-                                      <Edit3 className="h-3.5 w-3.5" />
+                                      <Zap className="h-3.5 w-3.5" />
                                     </button>
                                     <button
                                       onClick={async () => {
-                                        if (confirm(t('confirm_delete_sub', lang))) {
-                                          const fresh = await deleteSubscription(s.id)
-                                          handleSuccess(lang === 'en' ? 'Recurring bill deleted' : 'Tagihan dihapus', fresh)
+                                        if (confirm(t('sub_mark_unpaid_confirm', lang))) {
+                                          const fresh = await resetSubscriptionPayment(s.id)
+                                          handleSuccess(lang === 'en' ? 'Payment status reset' : 'Status pembayaran direset', fresh)
                                         }
                                       }}
-                                      className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400"
-                                      title={t('delete', lang)}
+                                      className="rounded-lg p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition"
+                                      title={t('sub_mark_unpaid', lang)}
                                     >
-                                      <Trash2 className="h-3.5 w-3.5" />
+                                      <RotateCcw className="h-3.5 w-3.5" />
                                     </button>
                                   </div>
-                                </td>
-                              </tr>
-                            )
-                          })}
-                        </tbody>
-                      </table>
+                                ) : (
+                                  <button
+                                    onClick={() => setShowModal({ type: 'paySubscription', subscription: s })}
+                                    className="flex items-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs px-2.5 py-1 text-[11px] font-bold transition cursor-pointer"
+                                  >
+                                    <Zap className="h-3 w-3 text-white" />
+                                    <span>{t('pay_bill', lang)}</span>
+                                  </button>
+                                )}
+
+                                <button
+                                  onClick={() => setShowModal({ type: 'subscription', editData: s })}
+                                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
+                                  title={t('edit', lang)}
+                                >
+                                  <Edit3 className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    if (confirm(t('confirm_delete_sub', lang))) {
+                                      const fresh = await deleteSubscription(s.id)
+                                      handleSuccess(lang === 'en' ? 'Recurring bill deleted' : 'Tagihan dihapus', fresh)
+                                    }
+                                  }}
+                                  className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer"
+                                  title={t('delete', lang)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {/* Desktop Table View (hidden sm:block) */}
+                    <div className="hidden sm:block rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
+                              <th className="pb-3 pl-2">{t('sub_col_date', lang)}</th>
+                              <th className="pb-3">{t('sub_col_name', lang)}</th>
+                              <th className="pb-3">{t('sub_col_cycle', lang)}</th>
+                              <th className="pb-3">{t('sub_col_payment_status', lang)}</th>
+                              <th className="pb-3 text-right">{t('sub_col_cost', lang)}</th>
+                              <th className="pb-3 pr-2 text-right">{t('sub_col_action', lang)}</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                            {subsList.map((s) => {
+                              const isPaid = isSubPaidThisMonth(s)
+                              const daysLeft = s.dueDate >= todayDate ? s.dueDate - todayDate : 30 - (todayDate - s.dueDate)
+                              const isDueSoon = s.isActive && !isPaid && daysLeft <= (s.reminderDaysBefore || 3)
+                              const isOverdue = s.isActive && !isPaid && todayDate > s.dueDate
+
+                              return (
+                                <tr key={s.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                                  <td className="py-4 pl-2 whitespace-nowrap">
+                                    <div className="flex items-center gap-2.5">
+                                      <div
+                                        className={`flex h-9 w-9 items-center justify-center rounded-xl font-black text-xs ${isPaid
+                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400'
+                                            : isOverdue
+                                              ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 ring-2 ring-rose-500/30'
+                                              : isDueSoon
+                                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400 ring-2 ring-amber-500/30'
+                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
+                                          }`}
+                                      >
+                                        {s.dueDate}
+                                      </div>
+                                      <div>
+                                        <p className="font-bold text-slate-800 dark:text-slate-200">{lang === 'en' ? `${s.dueDate}th each month` : `Tgl ${s.dueDate} tiap bulan`}</p>
+                                        <p className={`text-[10px] ${isPaid
+                                            ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                                            : isOverdue
+                                              ? 'text-rose-500 font-bold'
+                                              : isDueSoon
+                                                ? 'text-amber-600 dark:text-amber-400 font-bold'
+                                                : 'text-slate-400'
+                                          }`}>
+                                          {isPaid
+                                            ? (s.lastPaidAt ? `${t('sub_paid_on', lang)} ${new Date(s.lastPaidAt).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short' })}` : t('sub_status_paid', lang))
+                                            : daysLeft === 0
+                                              ? t('sub_due_today', lang)
+                                              : isOverdue
+                                                ? (lang === 'en' ? `Overdue by ${todayDate - s.dueDate} days` : `Lewat ${todayDate - s.dueDate} hari`)
+                                                : `${daysLeft} ${t('days_left', lang)}`}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-4">
+                                    <p className="font-bold text-slate-900 dark:text-white text-sm">{s.name}</p>
+                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                      <span className={`h-1.5 w-1.5 rounded-full ${s.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                                      <span className="text-[11px] font-medium text-slate-400">
+                                        {s.isActive ? t('sub_status_active', lang) : t('sub_status_inactive', lang)}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="py-4 whitespace-nowrap">
+                                    <span className="inline-block rounded-lg bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                                      {s.billingCycle === 'monthly' ? t('sub_cycle_monthly', lang) : s.billingCycle === 'yearly' ? t('sub_cycle_yearly', lang) : t('sub_cycle_weekly', lang)}
+                                    </span>
+                                  </td>
+                                  <td className="py-4 whitespace-nowrap">
+                                    {isPaid ? (
+                                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
+                                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                                        <span>{t('sub_status_paid', lang)}</span>
+                                      </span>
+                                    ) : isOverdue ? (
+                                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60">
+                                        <AlertCircle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+                                        <span>{t('sub_status_overdue', lang)}</span>
+                                      </span>
+                                    ) : isDueSoon ? (
+                                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400 border border-amber-200 dark:border-amber-900/60">
+                                        <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                                        <span>{t('sub_status_due_soon', lang)}</span>
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                                        <span>{t('sub_status_unpaid', lang)}</span>
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="py-4 text-right font-black text-slate-900 dark:text-white text-sm whitespace-nowrap">
+                                    {formatRupiah(s.amount)}
+                                  </td>
+                                  <td className="py-4 pr-2 text-right whitespace-nowrap">
+                                    <div className="flex items-center justify-end gap-1.5">
+                                      {isPaid ? (
+                                        <div className="flex items-center gap-1">
+                                          <span className="inline-flex items-center gap-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                                            <Check className="h-3.5 w-3.5" />
+                                            <span>{t('sub_paid_badge', lang)}</span>
+                                          </span>
+                                          <button
+                                            onClick={() => setShowModal({ type: 'paySubscription', subscription: s })}
+                                            className="rounded-lg p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition"
+                                            title={lang === 'en' ? 'Record another payment' : 'Catat pembayaran lagi'}
+                                          >
+                                            <Zap className="h-3.5 w-3.5" />
+                                          </button>
+                                          <button
+                                            onClick={async () => {
+                                              if (confirm(t('sub_mark_unpaid_confirm', lang))) {
+                                                const fresh = await resetSubscriptionPayment(s.id)
+                                                handleSuccess(lang === 'en' ? 'Payment status reset' : 'Status pembayaran direset', fresh)
+                                              }
+                                            }}
+                                            className="rounded-lg p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition"
+                                            title={t('sub_mark_unpaid', lang)}
+                                          >
+                                            <RotateCcw className="h-3.5 w-3.5" />
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <button
+                                          onClick={() => setShowModal({ type: 'paySubscription', subscription: s })}
+                                          className="flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow px-3 py-1.5 text-xs font-bold transition"
+                                          title={lang === 'en' ? 'Record Payment' : 'Catat Pembayaran Tagihan Ini'}
+                                        >
+                                          <Zap className="h-3.5 w-3.5 text-white" />
+                                          <span>{t('pay_bill', lang)}</span>
+                                        </button>
+                                      )}
+
+                                      <button
+                                        onClick={() => setShowModal({ type: 'subscription', editData: s })}
+                                        className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200"
+                                        title={t('edit', lang)}
+                                      >
+                                        <Edit3 className="h-3.5 w-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={async () => {
+                                          if (confirm(t('confirm_delete_sub', lang))) {
+                                            const fresh = await deleteSubscription(s.id)
+                                            handleSuccess(lang === 'en' ? 'Recurring bill deleted' : 'Tagihan dihapus', fresh)
+                                          }
+                                        }}
+                                        className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400"
+                                        title={t('delete', lang)}
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -4283,15 +4486,78 @@ export default function Dashboard({
           </div>
         </ModalContainer>
       )}
+
+      {/* Mobile Bottom Navigation Bar (Fixed at bottom on mobile) */}
+      <nav className="fixed bottom-0 left-0 right-0 z-30 lg:hidden border-t border-slate-200/80 bg-white/95 dark:bg-slate-900/95 dark:border-slate-800 backdrop-blur-lg px-2 py-1.5 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+        <div className="grid grid-cols-5 items-center">
+          <button
+            onClick={() => setTab('Overview')}
+            className={`flex flex-col items-center justify-center py-1 transition cursor-pointer ${
+              tab === 'Overview' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+            }`}
+          >
+            <LayoutDashboard className="h-5 w-5" />
+            <span className="text-[10px] mt-0.5">Overview</span>
+          </button>
+
+          <button
+            onClick={() => setTab('Transaksi')}
+            className={`flex flex-col items-center justify-center py-1 transition cursor-pointer ${
+              tab === 'Transaksi' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+            }`}
+          >
+            <Receipt className="h-5 w-5" />
+            <span className="text-[10px] mt-0.5">{lang === 'en' ? 'Tx' : 'Transaksi'}</span>
+          </button>
+
+          {/* Quick Floating Action Button (Center +) */}
+          <div className="flex items-center justify-center">
+            <button
+              onClick={() => setShowModal({ type: 'transaction' })}
+              className="flex h-11 w-11 -mt-4 items-center justify-center rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-500/35 hover:scale-105 active:scale-95 transition cursor-pointer"
+              title={t('add_transaction', lang)}
+            >
+              <Plus className="h-6 w-6" />
+            </button>
+          </div>
+
+          <button
+            onClick={() => setTab('Dompet')}
+            className={`flex flex-col items-center justify-center py-1 transition cursor-pointer ${
+              tab === 'Dompet' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+            }`}
+          >
+            <WalletCards className="h-5 w-5" />
+            <span className="text-[10px] mt-0.5">{lang === 'en' ? 'Wallets' : 'Dompet'}</span>
+          </button>
+
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="flex flex-col items-center justify-center py-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition cursor-pointer"
+          >
+            <Menu className="h-5 w-5" />
+            <span className="text-[10px] mt-0.5">Menu</span>
+          </button>
+        </div>
+      </nav>
     </div>
   )
 }
 
 function ModalContainer({ children, close }: { children: React.ReactNode; close: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
-      <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-2xl border border-slate-100 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
-        {children}
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 p-0 sm:p-4 backdrop-blur-xs animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) close()
+      }}
+    >
+      <div className="relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-100 dark:border-slate-800 max-h-[90dvh] sm:max-h-[90vh] flex flex-col overflow-hidden">
+        {/* Mobile top pull bar / drag indicator */}
+        <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto my-2.5 sm:hidden shrink-0" />
+        <div className="p-4 sm:p-7 overflow-y-auto flex-1">
+          {children}
+        </div>
       </div>
     </div>
   )
@@ -4538,35 +4804,45 @@ function TransactionModal({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-          {editData ? (lang === 'en' ? 'Edit Transaction' : 'Edit Transaksi') : (lang === 'en' ? 'Record New Transaction' : 'Catat Transaksi Baru')}
-        </h3>
-        <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+    <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
+      {/* Sticky Header inside modal */}
+      <div className="sticky -top-4 sm:-top-7 -mt-4 sm:-mt-7 bg-white dark:bg-slate-900 z-10 flex items-center justify-between pb-3 pt-4 sm:pt-7 border-b border-slate-100 dark:border-slate-800">
+        <div>
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+            {editData ? (lang === 'en' ? 'Edit Transaction' : 'Edit Transaksi') : (lang === 'en' ? 'Record New Transaction' : 'Catat Transaksi Baru')}
+          </h3>
+          <p className="text-[10px] sm:text-xs text-slate-400">
+            {lang === 'en' ? 'Fill details to keep balance accurate' : 'Lengkapi data untuk pencatatan akurat'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={close}
+          className="rounded-xl p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
 
       {/* Smart Receipt Scanner Card */}
-      <div className="rounded-2xl border border-teal-500/30 bg-teal-500/10 dark:bg-teal-950/30 p-3.5 text-xs">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
+      <div className="rounded-2xl border border-teal-500/30 bg-teal-500/10 dark:bg-teal-950/30 p-2.5 sm:p-3 text-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-teal-500/20 text-teal-600 dark:text-teal-400">
               <Camera className="h-4 w-4" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-100">
-                <span>{lang === 'en' ? 'Smart Receipt Scanner' : 'Pindai Struk / Bukti AI'}</span>
-                <span className="rounded-full bg-teal-500 px-1.5 py-0.2 text-[9px] font-black text-white">AI ✨</span>
+                <span className="truncate">{lang === 'en' ? 'Smart Receipt Scanner' : 'Pindai Struk / Bukti AI'}</span>
+                <span className="shrink-0 rounded-full bg-teal-500 px-1.5 py-0.2 text-[9px] font-black text-white">AI ✨</span>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                {lang === 'en' ? 'Upload receipt / bank transfer screenshot for auto-fill' : 'Upload foto struk belanja / mutasi untuk isi nominal otomatis'}
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 sm:line-clamp-none">
+                {lang === 'en' ? 'Upload receipt / screenshot for auto-fill' : 'Upload foto struk belanja / mutasi untuk isi otomatis'}
               </p>
             </div>
           </div>
 
-          <div>
+          <div className="self-end sm:self-auto shrink-0">
             <input
               type="file"
               ref={fileInputRef}
@@ -4604,23 +4880,25 @@ function TransactionModal({
       </div>
 
       {/* Type Switcher */}
-      <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 dark:bg-slate-800 p-1.5 text-xs font-bold">
+      <div className="grid grid-cols-2 gap-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 p-1 text-xs font-bold">
         <button
           type="button"
           onClick={() => handleTypeChange('expense')}
-          className={`flex items-center justify-center gap-2 rounded-xl py-2.5 transition ${type === 'expense' ? 'bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
+          className={`flex items-center justify-center gap-1.5 rounded-xl py-2 sm:py-2.5 transition cursor-pointer ${
+            type === 'expense' ? 'bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
         >
-          <ArrowUpRight className="h-4 w-4" />
+          <ArrowUpRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           <span>{lang === 'en' ? 'Expense' : 'Pengeluaran'}</span>
         </button>
         <button
           type="button"
           onClick={() => handleTypeChange('income')}
-          className={`flex items-center justify-center gap-2 rounded-xl py-2.5 transition ${type === 'income' ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
+          className={`flex items-center justify-center gap-1.5 rounded-xl py-2 sm:py-2.5 transition cursor-pointer ${
+            type === 'income' ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
         >
-          <ArrowDownRight className="h-4 w-4" />
+          <ArrowDownRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           <span>{lang === 'en' ? 'Income' : 'Pemasukan'}</span>
         </button>
       </div>
@@ -4721,11 +4999,12 @@ function TransactionModal({
         lang={lang}
       />
 
-      <div className="pt-2">
+      {/* Sticky Bottom Actions */}
+      <div className="sticky -bottom-4 sm:-bottom-7 -mb-4 sm:-mb-7 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md pt-3 pb-4 sm:pb-7 border-t border-slate-100 dark:border-slate-800 mt-2 z-10">
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
         >
           {submitting ? (
             <>
@@ -4744,7 +5023,7 @@ function TransactionModal({
             </span>
           )}
         </button>
-        <p className="mt-2 text-center text-[11px] text-slate-500 dark:text-slate-400">
+        <p className="mt-1.5 text-center text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400">
           {lang === 'en' ? 'Instant recording • Wallet balance updates in real-time' : 'Pencatatan instan • Saldo dompet langsung ter-update'}
         </p>
       </div>
@@ -4805,12 +5084,22 @@ function TransferModal({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-          {lang === 'en' ? 'Transfer Between Wallets' : 'Transfer Antar Dompet'}
-        </h3>
-        <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+    <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
+      {/* Sticky Header inside modal */}
+      <div className="sticky -top-4 sm:-top-7 -mt-4 sm:-mt-7 bg-white dark:bg-slate-900 z-10 flex items-center justify-between pb-3 pt-4 sm:pt-7 border-b border-slate-100 dark:border-slate-800">
+        <div>
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+            {lang === 'en' ? 'Transfer Between Wallets' : 'Transfer Antar Dompet'}
+          </h3>
+          <p className="text-[10px] sm:text-xs text-slate-400">
+            {lang === 'en' ? 'Move funds instantly between accounts' : 'Pindahkan saldo seketika antar rekening'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={close}
+          className="rounded-xl p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -4865,11 +5154,12 @@ function TransferModal({
         lang={lang}
       />
 
-      <div className="pt-2">
+      {/* Sticky Bottom Actions */}
+      <div className="sticky -bottom-4 sm:-bottom-7 -mb-4 sm:-mb-7 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md pt-3 pb-4 sm:pb-7 border-t border-slate-100 dark:border-slate-800 mt-2 z-10">
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
         >
           {submitting ? (
             <>
@@ -4884,7 +5174,7 @@ function TransferModal({
             </span>
           )}
         </button>
-        <p className="mt-2 text-center text-[11px] text-slate-500 dark:text-slate-400">
+        <p className="mt-1.5 text-center text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400">
           {lang === 'en' ? 'Zero admin fee • Automated mutation recorded in both wallets' : 'Tanpa biaya admin • Mutasi otomatis tercatat di kedua dompet'}
         </p>
       </div>
@@ -4946,12 +5236,22 @@ function WalletModal({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-          {editData ? (lang === 'en' ? 'Edit Wallet' : 'Edit Dompet') : (lang === 'en' ? 'Add Wallet / Account' : 'Tambah Dompet / Rekening')}
-        </h3>
-        <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+    <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
+      {/* Sticky Header inside modal */}
+      <div className="sticky -top-4 sm:-top-7 -mt-4 sm:-mt-7 bg-white dark:bg-slate-900 z-10 flex items-center justify-between pb-3 pt-4 sm:pt-7 border-b border-slate-100 dark:border-slate-800">
+        <div>
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+            {editData ? (lang === 'en' ? 'Edit Wallet' : 'Edit Dompet') : (lang === 'en' ? 'Add Wallet / Account' : 'Tambah Dompet / Rekening')}
+          </h3>
+          <p className="text-[10px] sm:text-xs text-slate-400">
+            {lang === 'en' ? 'Bank, e-wallet, or cash register' : 'Rekening bank, e-wallet, atau kas tunai'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={close}
+          className="rounded-xl p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -4990,11 +5290,12 @@ function WalletModal({
         />
       )}
 
-      <div className="pt-2">
+      {/* Sticky Bottom Actions */}
+      <div className="sticky -bottom-4 sm:-bottom-7 -mb-4 sm:-mb-7 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md pt-3 pb-4 sm:pb-7 border-t border-slate-100 dark:border-slate-800 mt-2 z-10">
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
+          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50 cursor-pointer active:scale-[0.99]"
         >
           {submitting
             ? (lang === 'en' ? 'Saving...' : 'Menyimpan...')
@@ -5055,12 +5356,22 @@ function CategoryModal({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-          {editData ? (lang === 'en' ? 'Edit Category' : 'Edit Kategori') : (lang === 'en' ? 'Add New Category' : 'Tambah Kategori Baru')}
-        </h3>
-        <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+    <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
+      {/* Sticky Header inside modal */}
+      <div className="sticky -top-4 sm:-top-7 -mt-4 sm:-mt-7 bg-white dark:bg-slate-900 z-10 flex items-center justify-between pb-3 pt-4 sm:pt-7 border-b border-slate-100 dark:border-slate-800">
+        <div>
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+            {editData ? (lang === 'en' ? 'Edit Category' : 'Edit Kategori') : (lang === 'en' ? 'Add New Category' : 'Tambah Kategori Baru')}
+          </h3>
+          <p className="text-[10px] sm:text-xs text-slate-400">
+            {lang === 'en' ? 'Group your expenses and incomes' : 'Kelompokkan pos pengeluaran & pemasukan'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={close}
+          className="rounded-xl p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -5088,11 +5399,12 @@ function CategoryModal({
         isSearchable={false}
       />
 
-      <div className="pt-2">
+      {/* Sticky Bottom Actions */}
+      <div className="sticky -bottom-4 sm:-bottom-7 -mb-4 sm:-mb-7 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md pt-3 pb-4 sm:pb-7 border-t border-slate-100 dark:border-slate-800 mt-2 z-10">
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
+          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50 cursor-pointer active:scale-[0.99]"
         >
           {submitting
             ? (lang === 'en' ? 'Saving...' : 'Menyimpan...')
@@ -5158,12 +5470,22 @@ function BudgetModal({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-          {editData ? (lang === 'en' ? 'Edit Category Budget' : 'Edit Budget Kategori') : (lang === 'en' ? 'Set Monthly Budget' : 'Atur Budget Bulanan')}
-        </h3>
-        <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+    <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
+      {/* Sticky Header inside modal */}
+      <div className="sticky -top-4 sm:-top-7 -mt-4 sm:-mt-7 bg-white dark:bg-slate-900 z-10 flex items-center justify-between pb-3 pt-4 sm:pt-7 border-b border-slate-100 dark:border-slate-800">
+        <div>
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+            {editData ? (lang === 'en' ? 'Edit Category Budget' : 'Edit Budget Kategori') : (lang === 'en' ? 'Set Monthly Budget' : 'Atur Budget Bulanan')}
+          </h3>
+          <p className="text-[10px] sm:text-xs text-slate-400">
+            {lang === 'en' ? 'Control monthly spending limits' : 'Kontrol batas belanja agar tidak boros'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={close}
+          className="rounded-xl p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -5197,11 +5519,12 @@ function BudgetModal({
         showTerbilang
       />
 
-      <div className="pt-2">
+      {/* Sticky Bottom Actions */}
+      <div className="sticky -bottom-4 sm:-bottom-7 -mb-4 sm:-mb-7 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md pt-3 pb-4 sm:pb-7 border-t border-slate-100 dark:border-slate-800 mt-2 z-10">
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
+          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50 cursor-pointer active:scale-[0.99]"
         >
           {submitting ? (lang === 'en' ? 'Saving...' : 'Menyimpan...') : (lang === 'en' ? 'Save Budget' : 'Simpan Budget')}
         </button>
@@ -5269,15 +5592,20 @@ function GoalModal({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-2">
-          <Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+    <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
+      {/* Sticky Header inside modal */}
+      <div className="sticky -top-4 sm:-top-7 -mt-4 sm:-mt-7 bg-white dark:bg-slate-900 z-10 flex items-center justify-between pb-3 pt-4 sm:pt-7 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-2 min-w-0">
+          <Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate">
             {editData ? (lang === 'en' ? 'Edit Financial Goal' : 'Edit Target Tabungan') : (lang === 'en' ? 'Create New Financial Goal' : 'Buat Target Impian Baru')}
           </h3>
         </div>
-        <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+        <button
+          type="button"
+          onClick={close}
+          className="rounded-xl p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer shrink-0"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -5323,11 +5651,12 @@ function GoalModal({
         lang={lang}
       />
 
-      <div className="pt-2">
+      {/* Sticky Bottom Actions */}
+      <div className="sticky -bottom-4 sm:-bottom-7 -mb-4 sm:-mb-7 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md pt-3 pb-4 sm:pb-7 border-t border-slate-100 dark:border-slate-800 mt-2 z-10">
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
+          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50 cursor-pointer active:scale-[0.99]"
         >
           {submitting ? (lang === 'en' ? 'Saving...' : 'Menyimpan...') : editData ? (lang === 'en' ? 'Update Goal' : 'Perbarui Target') : (lang === 'en' ? 'Save Goal' : 'Simpan Target Impian')}
         </button>
@@ -5387,18 +5716,23 @@ function GoalDepositModal({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-2">
-          <PiggyBank className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-          <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+    <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
+      {/* Sticky Header inside modal */}
+      <div className="sticky -top-4 sm:-top-7 -mt-4 sm:-mt-7 bg-white dark:bg-slate-900 z-10 flex items-center justify-between pb-3 pt-4 sm:pt-7 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-2 min-w-0">
+          <PiggyBank className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <div className="min-w-0">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate">
               {lang === 'en' ? 'Deposit Savings' : 'Setor Saldo Tabungan'}
             </h3>
-            <p className="text-xs text-slate-400">{goal.name}</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 truncate">{goal.name}</p>
           </div>
         </div>
-        <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+        <button
+          type="button"
+          onClick={close}
+          className="rounded-xl p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer shrink-0"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -5421,11 +5755,12 @@ function GoalDepositModal({
         options={walletOptions}
       />
 
-      <div className="pt-2">
+      {/* Sticky Bottom Actions */}
+      <div className="sticky -bottom-4 sm:-bottom-7 -mb-4 sm:-mb-7 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md pt-3 pb-4 sm:pb-7 border-t border-slate-100 dark:border-slate-800 mt-2 z-10">
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
+          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50 cursor-pointer active:scale-[0.99]"
         >
           {submitting ? (lang === 'en' ? 'Processing...' : 'Memproses...') : (lang === 'en' ? 'Deposit Now' : 'Setor Sekarang')}
         </button>
@@ -5519,15 +5854,20 @@ function SubscriptionModal({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-            {editData ? (lang === 'en' ? 'Edit Recurring Bill' : 'Edit Tagihan Rutin') : (lang === 'en' ? 'Record Recurring Bill & Subscription' : 'Catat Tagihan & Langganan Rutin')}
+    <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
+      {/* Sticky Header inside modal */}
+      <div className="sticky -top-4 sm:-top-7 -mt-4 sm:-mt-7 bg-white dark:bg-slate-900 z-10 flex items-center justify-between pb-3 pt-4 sm:pt-7 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-2 min-w-0">
+          <CalendarDays className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate">
+            {editData ? (lang === 'en' ? 'Edit Recurring Bill' : 'Edit Tagihan Rutin') : (lang === 'en' ? 'Record Recurring Bill' : 'Catat Tagihan & Langganan')}
           </h3>
         </div>
-        <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+        <button
+          type="button"
+          onClick={close}
+          className="rounded-xl p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer shrink-0"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -5600,11 +5940,12 @@ function SubscriptionModal({
         />
       </div>
 
-      <div className="pt-2">
+      {/* Sticky Bottom Actions */}
+      <div className="sticky -bottom-4 sm:-bottom-7 -mb-4 sm:-mb-7 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md pt-3 pb-4 sm:pb-7 border-t border-slate-100 dark:border-slate-800 mt-2 z-10">
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
+          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50 cursor-pointer active:scale-[0.99]"
         >
           {submitting
             ? (lang === 'en' ? 'Saving...' : 'Menyimpan...')
@@ -5680,27 +6021,32 @@ function PaySubscriptionModal({
   }
 
   return (
-    <form onSubmit={handlePay} className="space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-2">
-          <Zap className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-          <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+    <form onSubmit={handlePay} className="space-y-3.5 sm:space-y-4">
+      {/* Sticky Header inside modal */}
+      <div className="sticky -top-4 sm:-top-7 -mt-4 sm:-mt-7 bg-white dark:bg-slate-900 z-10 flex items-center justify-between pb-3 pt-4 sm:pt-7 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-2 min-w-0">
+          <Zap className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <div className="min-w-0">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate">
               {lang === 'en' ? 'Pay Bill' : 'Bayar Tagihan'}
             </h3>
-            <p className="text-xs text-slate-400">{subscription.name}</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 truncate">{subscription.name}</p>
           </div>
         </div>
-        <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+        <button
+          type="button"
+          onClick={close}
+          className="rounded-xl p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer shrink-0"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
 
-      <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-4 text-center">
+      <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-3 sm:p-4 text-center">
         <p className="text-xs text-slate-400">
           {lang === 'en' ? 'Total to be recorded as expense:' : 'Total yang akan dicatat sebagai pengeluaran:'}
         </p>
-        <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{formatRupiah(subscription.amount)}</p>
+        <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">{formatRupiah(subscription.amount)}</p>
       </div>
 
       <CustomSelect
@@ -5720,7 +6066,7 @@ function PaySubscriptionModal({
       />
 
       {/* Modern iOS-Style Toggle Card */}
-      <div className={`rounded-2xl border transition-all duration-200 p-4 ${markAsPaid
+      <div className={`rounded-2xl border transition-all duration-200 p-3 sm:p-4 ${markAsPaid
           ? 'border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20'
           : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40'
         }`}>
@@ -5767,11 +6113,12 @@ function PaySubscriptionModal({
         </div>
       </div>
 
-      <div className="pt-2">
+      {/* Sticky Bottom Actions */}
+      <div className="sticky -bottom-4 sm:-bottom-7 -mb-4 sm:-mb-7 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md pt-3 pb-4 sm:pb-7 border-t border-slate-100 dark:border-slate-800 mt-2 z-10">
         <button
           type="submit"
           disabled={submitting}
-          className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50 cursor-pointer active:scale-[0.99]"
         >
           <Zap className="h-4 w-4 text-white" />
           <span>
