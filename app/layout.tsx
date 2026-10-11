@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import type { Metadata, Viewport } from 'next'
+import { PwaRegister } from '@/components/pwa-register'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -79,6 +80,14 @@ export const metadata: Metadata = {
     apple: '/apple-icon.png',
     shortcut: '/favicon.ico',
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Qwarts Finance',
+  },
+  formatDetection: {
+    telephone: false,
+  },
 }
 
 export const viewport: Viewport = {
@@ -87,8 +96,8 @@ export const viewport: Viewport = {
   maximumScale: 5,
   colorScheme: 'light dark',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' },
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#090d16' },
   ],
 }
 
@@ -100,6 +109,7 @@ export default function RootLayout({
   return (
     <html lang="id" className="bg-[#f7f9fb]">
       <body className="antialiased">
+        <PwaRegister />
         {children}
         {process.env.NODE_ENV === 'production' &&
           <>

@@ -99,6 +99,7 @@ import { formatIndoDate, formatRupiah } from '@/lib/utils'
 import { RupiahInput } from '@/components/rupiah-input'
 import { CustomSelect, CustomCreatableSelect, type OptionType } from '@/components/custom-select'
 import { DatePickerInput } from '@/components/date-picker-input'
+import { PwaInstallPrompt } from '@/components/pwa-install-prompt'
 import { exportFinanceToExcel } from '@/lib/excel-export'
 import { t, type Language } from '@/lib/i18n'
 import {
@@ -772,7 +773,7 @@ export default function Dashboard({
   ]
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex flex-col antialiased transition-colors duration-200 w-full max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex flex-col antialiased transition-colors duration-200">
       {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl bg-slate-900 dark:bg-emerald-950 border border-slate-700 dark:border-emerald-800 px-5 py-3.5 text-white shadow-2xl transition-all animate-bounce">
@@ -922,11 +923,11 @@ export default function Dashboard({
 
       {/* Main Content Layout */}
       <div
-        className={`flex-1 flex flex-col min-w-0 w-full max-w-full overflow-x-hidden transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
           }`}
       >
         {/* Top Header Navbar */}
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-3 py-2 sm:px-6 sm:py-4 lg:px-10 w-full max-w-full min-w-0">
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-3.5 py-2.5 sm:px-6 sm:py-4 lg:px-8">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 mr-2">
             <button
               onClick={() => setMobileMenuOpen(true)}
@@ -1083,6 +1084,21 @@ export default function Dashboard({
                   <span className="text-[10px] text-slate-400">{lang === 'en' ? 'Change' : 'Ubah'}</span>
                 </button>
                 <button
+                  onClick={() => {
+                    localStorage.removeItem('qwarts_pwa_dismissed')
+                    setMobileMenuOpen(false)
+                    window.dispatchEvent(new CustomEvent('qwarts-trigger-pwa-install'))
+                  }}
+                  className="flex w-full items-center justify-between rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-800 dark:text-emerald-300 cursor-pointer"
+                >
+                  <span className="flex items-center gap-2">
+                    <Download className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    <span>{lang === 'en' ? 'Install App (PWA)' : 'Pasang Aplikasi (PWA)'}</span>
+                  </span>
+                  <span className="text-[10px] bg-emerald-600 text-white rounded-md px-1.5 py-0.5 font-bold">App</span>
+                </button>
+
+                <button
                   onClick={async () => {
                     await signOut()
                     router.push('/sign-in')
@@ -1098,7 +1114,7 @@ export default function Dashboard({
         )}
 
         {/* Content Body */}
-        <main className="px-3.5 py-4 sm:p-8 lg:p-10 flex-1 max-w-7xl w-full mx-auto space-y-5 sm:space-y-8 pb-24 sm:pb-8 lg:pb-10 min-w-0 overflow-x-hidden">
+        <main className="px-3.5 py-4 sm:p-8 lg:p-10 flex-1 max-w-7xl w-full mx-auto space-y-5 sm:space-y-8 pb-24 sm:pb-8 lg:pb-10 min-w-0">
           {/* TAB 1: OVERVIEW */}
           {tab === 'Overview' && (
             <div className="space-y-5 sm:space-y-8">
@@ -4124,6 +4140,42 @@ export default function Dashboard({
                   </button>
                 </div>
               </div>
+
+              {/* 6. Progressive Web App (PWA) Card */}
+              <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Download className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                      <span>{lang === 'en' ? 'Install Progressive Web App (PWA)' : 'Pasang Aplikasi di HP (PWA)'}</span>
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {lang === 'en'
+                        ? 'Install Qwarts Finance to your phone home screen for offline access, full-screen standalone experience, and instant 1-tap launching without browser address bar.'
+                        : 'Pasang Qwarts Finance ke layar utama HP Anda untuk akses instan satu ketukan, layar penuh tanpa bar browser, dan hemat kuota.'}
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-emerald-100 dark:bg-emerald-950 px-2.5 py-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
+                    PWA Ready
+                  </span>
+                </div>
+
+                <div className="pt-2 flex flex-col sm:flex-row sm:items-center gap-3">
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem('qwarts_pwa_dismissed')
+                      window.dispatchEvent(new CustomEvent('qwarts-trigger-pwa-install'))
+                    }}
+                    className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 text-xs font-bold transition shadow-sm cursor-pointer"
+                  >
+                    <Download className="h-4 w-4" />
+                    <span>{lang === 'en' ? 'Install to Home Screen' : 'Pasang Aplikasi Sekarang'}</span>
+                  </button>
+                  <p className="text-[11px] text-slate-400">
+                    {lang === 'en' ? 'Supported on Android (Chrome/Edge) & iOS (Safari)' : 'Didukung di Android (Chrome/Edge) & iPhone/iPad (Safari)'}
+                  </p>
+                </div>
+              </div>
             </div>
           )}
         </main>
@@ -4540,6 +4592,9 @@ export default function Dashboard({
           </button>
         </div>
       </nav>
+
+      {/* PWA Floating Install Prompt & iOS Guide */}
+      <PwaInstallPrompt lang={lang} />
     </div>
   )
 }
