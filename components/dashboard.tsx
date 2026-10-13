@@ -4993,8 +4993,8 @@ function TransactionModal({
             <p className="font-bold">{lang === 'en' ? 'No Wallets Available' : 'Dompet Belum Tersedia'}</p>
             <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
               {lang === 'en'
-                ? 'Type a wallet name in the selector below (e.g. "BCA" or "Cash") and press Enter to create it immediately.'
-                : 'Ketik nama dompet pada kolom di bawah (misal: "BCA" atau "Kas Tunai") lalu tekan Enter untuk langsung membuatnya.'}
+                ? 'Select or tap "+ Create New Wallet" in the selector below (e.g. "BCA" or "Cash") to create it immediately.'
+                : 'Pilih atau klik "+ Tambah Dompet Baru" pada kolom di bawah (misal: "BCA" atau "Kas Tunai") untuk langsung membuatnya.'}
             </p>
           </div>
         </div>
@@ -5007,8 +5007,8 @@ function TransactionModal({
             <p className="font-bold">{lang === 'en' ? 'No Category Available' : 'Kategori Belum Tersedia'}</p>
             <p className="text-[11px] text-teal-700 dark:text-teal-400 mt-0.5">
               {lang === 'en'
-                ? 'Type a category name in the selector below (e.g. "Food" or "Salary") and press Enter to create it immediately.'
-                : 'Ketik nama kategori pada kolom di bawah (misal: "Makanan" atau "Gaji") lalu tekan Enter untuk langsung membuatnya.'}
+                ? 'Select or tap "+ Create New Category" in the selector below (e.g. "Food" or "Salary") to create it immediately.'
+                : 'Pilih atau klik "+ Tambah Kategori Baru" pada kolom di bawah (misal: "Makanan" atau "Gaji") untuk langsung membuatnya.'}
             </p>
           </div>
         </div>
