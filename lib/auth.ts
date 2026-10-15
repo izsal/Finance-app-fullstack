@@ -97,7 +97,9 @@ export const auth = betterAuth({
         }
       } else {
         console.warn('[Resend Warning]: RESEND_API_KEY tidak ditemukan di environment variables!')
-        console.log(`\n========================================\n[QWARTS FINANCE PASSWORD RESET]\nTo: ${user.email}\nReset URL: ${resetUrl}\nToken: ${token}\n========================================\n`)
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`\n========================================\n[QWARTS FINANCE PASSWORD RESET]\nTo: ${user.email}\nReset URL: ${resetUrl}\nToken: ${token}\n========================================\n`)
+        }
       }
     },
   },
@@ -178,7 +180,9 @@ export const auth = betterAuth({
         }
       } else {
         console.warn('[Resend Warning]: RESEND_API_KEY tidak ditemukan di environment variables!')
-        console.log(`\n========================================\n[QWARTS FINANCE EMAIL VERIFICATION]\nTo: ${user.email}\nVerify URL: ${url}\n========================================\n`)
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`\n========================================\n[QWARTS FINANCE EMAIL VERIFICATION]\nTo: ${user.email}\nVerify URL: ${url}\n========================================\n`)
+        }
       }
     },
   },

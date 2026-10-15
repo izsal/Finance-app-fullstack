@@ -79,43 +79,8 @@ export async function POST(req: NextRequest) {
         return apiError(errorData.message || 'Email atau password salah', 401)
       }
     } catch (authErr: any) {
-      // Fallback: Jika better-auth signInEmail throws karena verifikasi email atau lainnya
-      console.warn('[Mobile Login] Better-auth fallback check:', authErr?.message)
-      const foundUsers = await db
-        .select()
-        .from(userTable)
-        .where(eq(userTable.email, email.trim().toLowerCase()))
-        .limit(1)
-
-      if (foundUsers.length > 0) {
-        const user = foundUsers[0]
-        const newToken = randomUUID().replace(/-/g, '')
-        const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-        await db.insert(sessionTable).values({
-          id: randomUUID(),
-          token: newToken,
-          userId: user.id,
-          expiresAt: expires,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-
-        return apiSuccess(
-          {
-            token: newToken,
-            user: {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              plan: user.plan,
-              image: user.image,
-            },
-          },
-          'Login berhasil'
-        )
-      }
-
-      return apiError(authErr?.message || 'Gagal melakukan login', 401)
+      console.warn('[Mobile Login] Better-auth sign in failed:', authErr?.message)
+      return apiError(authErr?.message || 'Email atau password salah', 401)
     }
   } catch (err: any) {
     return apiError(err?.message || 'Terjadi kesalahan pada server', 500)

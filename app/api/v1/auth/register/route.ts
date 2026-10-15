@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     let sessionToken: string = ''
 
     try {
-      // 1. Coba registrasi lewat Better-Auth
+      // 1. Registrasi lewat Better-Auth
       const authRes = await auth.api.signUpEmail({
         body: {
           name: name.trim(),
@@ -57,29 +57,21 @@ export async function POST(req: NextRequest) {
         asResponse: true,
       })
 
-      if (authRes.ok) {
-        const data = await authRes.json()
-        createdUser = data.user
-        sessionToken = data.token || data.session?.token
+      if (!authRes.ok) {
+        const errorData = await authRes.json().catch(() => ({}))
+        return apiError(errorData.message || 'Gagal mendaftarkan akun', 400)
       }
+
+      const data = await authRes.json()
+      createdUser = data.user
+      sessionToken = data.token || data.session?.token
     } catch (authErr: any) {
-      console.warn('[Register Mobile] Better-Auth signUpEmail fallback:', authErr?.message)
+      console.warn('[Register Mobile] Better-Auth signUpEmail error:', authErr?.message)
+      return apiError(authErr?.message || 'Gagal memproses pendaftaran', 400)
     }
 
-    // Jika belum terbuat via Better-Auth, buat record user manual
     if (!createdUser) {
-      const newUserId = randomUUID()
-      const [u] = await db
-        .insert(userTable)
-        .values({
-          id: newUserId,
-          name: name.trim(),
-          email: cleanEmail,
-          emailVerified: true,
-          plan: 'free',
-        })
-        .returning()
-      createdUser = u
+      return apiError('Gagal membuat akun pengguna', 500)
     }
 
     if (!sessionToken && createdUser?.id) {

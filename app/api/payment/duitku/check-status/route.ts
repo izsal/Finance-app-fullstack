@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { apiError, apiSuccess, getAuthUser } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { payments as paymentsTable } from '@/lib/schema'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 export async function GET(req: NextRequest) {
   try {
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     const found = await db
       .select()
       .from(paymentsTable)
-      .where(eq(paymentsTable.orderId, orderId))
+      .where(and(eq(paymentsTable.orderId, orderId), eq(paymentsTable.userId, authUser.id)))
       .limit(1)
 
     if (found.length === 0) {

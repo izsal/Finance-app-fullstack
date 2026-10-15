@@ -38,11 +38,20 @@ export async function POST(req: NextRequest) {
 
     const contentType = req.headers.get('content-type') || ''
 
+    const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'image/heic']
+    const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB limit
+
     if (contentType.includes('multipart/form-data')) {
       const formData = await req.formData()
       const file = (formData as any).get('file') as File | null
       if (!file) {
         return apiError('File foto struk wajib diunggah', 422)
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        return apiError('Ukuran file foto struk tidak boleh melebihi 5MB', 413)
+      }
+      if (file.type && !ALLOWED_MIME_TYPES.includes(file.type.toLowerCase())) {
+        return apiError('Format file tidak didukung. Harap unggah gambar JPG, PNG, atau WebP.', 415)
       }
       const buffer = await file.arrayBuffer()
       base64Data = Buffer.from(buffer).toString('base64')
@@ -59,6 +68,10 @@ export async function POST(req: NextRequest) {
 
     if (!base64Data) {
       return apiError('Data gambar struk (base64) tidak ditemukan', 422)
+    }
+
+    if (base64Data.length > 7 * 1024 * 1024) {
+      return apiError('Ukuran data gambar base64 melebihi batas 5MB', 413)
     }
 
     // Bersihkan prefix data URI jika ada (misal: data:image/png;base64,...)
@@ -211,26 +224,4 @@ Kembalikan HANYA format JSON valid tanpa markdown fence atau teks penjelasan lai
   }
 
   throw new Error(`Semua model Gemini gagal merespon. Detail error: ${lastError}`)
-}
-
-/**
- * Heuristic/Mock parser cerdas ketika GEMINI_API_KEY belum dikonfigurasi
- */
-function fallbackHeuristicParser(
-  base64: string,
-  userCats: any[]
-): ScanReceiptResult {
-  const expenseCat = userCats.find((c) => c.type === 'expense')?.name || 'Belanja'
-  const today = new Date().toISOString().slice(0, 10)
-
-  // Contoh hasil deteksi struk realistis
-  return {
-    type: 'expense',
-    amount: 78500,
-    description: 'Belanja Harian (Scan Struk AI)',
-    categoryName: expenseCat,
-    date: today,
-    rawSummary: 'Dipindai dengan Smart Receipt Scanner (Simulasi AI). Tambahkan GEMINI_API_KEY di .env untuk analisis langsung dengan Google Gemini.',
-    confidence: 0.85,
-  }
 }

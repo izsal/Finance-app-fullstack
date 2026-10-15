@@ -46,7 +46,7 @@ export interface DuitkuCallbackData {
 export class DuitkuService {
   private static getConfig(): DuitkuConfig {
     return {
-      apiKey: process.env.DUITKU_API_KEY || '4b84b483634ac5100f39bc8bb5d96c14',
+      apiKey: process.env.DUITKU_API_KEY || '',
       merchantCode: process.env.DUITKU_MERCHANT_CODE || '',
       env: (process.env.DUITKU_ENV as 'sandbox' | 'production') || 'sandbox',
       callbackUrl: process.env.DUITKU_CALLBACK_URL,
@@ -193,7 +193,9 @@ export class DuitkuService {
    */
   public static verifyCallback(data: DuitkuCallbackData): boolean {
     const config = this.getConfig()
-    if (!config.apiKey) return false
+    if (!config.apiKey || !config.merchantCode) return false
+    if (!data.merchantCode || String(data.merchantCode) !== config.merchantCode) return false
+    if (!data.signature) return false
 
     const expectedSignature = this.generateCallbackSignature(
       data.merchantCode,
@@ -202,7 +204,14 @@ export class DuitkuService {
       config.apiKey
     )
 
-    return expectedSignature.toLowerCase() === (data.signature || '').toLowerCase()
+    try {
+      const sigA = Buffer.from(String(data.signature).toLowerCase(), 'utf-8')
+      const sigB = Buffer.from(expectedSignature.toLowerCase(), 'utf-8')
+      if (sigA.length !== sigB.length || sigA.length === 0) return false
+      return crypto.timingSafeEqual(sigA, sigB)
+    } catch {
+      return false
+    }
   }
 
   /**

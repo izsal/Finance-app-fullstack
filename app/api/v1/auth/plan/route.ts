@@ -34,6 +34,15 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const authUser = await getAuthUser(req)
+
+    // In production, users cannot self-assign the PRO plan arbitrarily. Upgrades must go through verified payment gateway.
+    if (process.env.NODE_ENV === 'production') {
+      return apiError(
+        'Perubahan paket manual dinonaktifkan di server produksi. Silakan lakukan pembayaran resmi untuk upgrade ke PRO.',
+        403
+      )
+    }
+
     const body = await req.json().catch(() => ({}))
     const targetPlan = body.plan === 'pro' ? 'pro' : 'free'
 

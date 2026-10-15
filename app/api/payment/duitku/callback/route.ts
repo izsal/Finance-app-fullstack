@@ -61,6 +61,22 @@ export async function POST(req: NextRequest) {
 
     const paymentRecord = existingPayments[0]
 
+    if (!paymentRecord) {
+      console.error('Duitku callback order not found:', merchantOrderId)
+      return new NextResponse('Order Not Found', { status: 404 })
+    }
+
+    // Verify amount matches expected order amount
+    if (Math.round(Number(amount)) !== Math.round(Number(paymentRecord.amount))) {
+      console.error(`Amount mismatch for order ${merchantOrderId}: expected ${paymentRecord.amount}, received ${amount}`)
+      return new NextResponse('Amount Mismatch', { status: 400 })
+    }
+
+    // Idempotency: If already marked SUCCESS, acknowledge immediately
+    if (paymentRecord.status === 'SUCCESS') {
+      return new NextResponse('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } })
+    }
+
     // 3. Process Payment Status
     if (resultCode === '00') {
       // SUCCESSFUL PAYMENT!
