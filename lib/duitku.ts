@@ -186,16 +186,35 @@ export class DuitkuService {
       .update(stringToSign)
       .digest('hex')
 
+    const fullName = (params.customerName || 'Pengguna Qwarts').trim()
+    const nameParts = fullName.split(/\s+/)
+    const firstName = nameParts[0] || 'Pengguna'
+    const lastName = nameParts.slice(1).join(' ') || firstName
+    const phoneNumber = params.phoneNumber || '08123456789'
+
     const payload: any = {
       paymentAmount: params.amount,
       merchantOrderId: params.merchantOrderId,
       productDetails: params.productDetails,
       email: params.email,
-      customerVaName: params.customerName || 'Customer',
-      phoneNumber: params.phoneNumber || '',
+      phoneNumber,
+      customerVaName: fullName.slice(0, 20),
       callbackUrl,
       returnUrl,
       expiryPeriod: params.expiryMinutes || 1440, // 24 hours default
+      customerDetail: {
+        firstName,
+        lastName,
+        email: params.email,
+        phoneNumber,
+      },
+      itemDetails: [
+        {
+          name: params.productDetails,
+          price: params.amount,
+          quantity: 1,
+        },
+      ],
     }
 
     // Optional: if a specific payment method is explicitly requested

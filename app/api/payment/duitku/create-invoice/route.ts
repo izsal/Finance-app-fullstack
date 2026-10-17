@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
       productDetails,
       email: authUser.email,
       customerName: authUser.name || 'Pengguna Qwarts Finance',
+      phoneNumber: body.phoneNumber || '',
       paymentMethod: body.paymentMethod || '', // blank opens all channels in Duitku
     })
 
