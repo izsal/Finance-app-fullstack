@@ -317,7 +317,9 @@ export default function Dashboard({
       const res = await fetch('/api/payment/duitku/create-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ billingCycle: selectedUpgradePlan }),
+        body: JSON.stringify({
+          billingCycle: selectedUpgradePlan,
+        }),
       })
       const result = await res.json()
       if (result.success && result.data?.paymentUrl) {
@@ -4326,210 +4328,199 @@ export default function Dashboard({
         </ModalContainer>
       )}
 
-      {/* 10. Upgrade to PRO Paywall Modal (Screen B Psychology & Zero Clutter) */}
+      {/* 10. Upgrade to PRO Paywall Modal (Elevated Modern Design & Instant Duitku Checkout) */}
       {showUpgradeModal && (
         <ModalContainer close={() => setShowUpgradeModal(null)}>
-          <div className="relative overflow-hidden rounded-3xl border border-amber-500/40 bg-slate-950 p-6 sm:p-8 text-white shadow-2xl max-w-2xl w-full">
-            {/* Background ambient glow */}
-            <div className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full bg-amber-500/15 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-emerald-500/15 blur-3xl" />
+          <div className="relative overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-5 sm:p-7 text-white shadow-2xl max-w-xl w-full max-h-[92vh] overflow-y-auto">
+            {/* Background ambient lighting */}
+            <div className="pointer-events-none absolute -top-24 -right-24 h-60 w-60 rounded-full bg-amber-500/15 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-24 h-60 w-60 rounded-full bg-emerald-500/15 blur-3xl" />
 
             <div className="relative z-10">
+              {/* Header Badge & Close Button */}
               <div className="flex items-center justify-between">
-                <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/15 px-3 py-1 text-xs font-black text-amber-300">
-                  <Sparkles className="h-3.5 w-3.5 fill-amber-300" />
-                  <span>QWARTS FINANCE PRO</span>
+                <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-gradient-to-r from-amber-500/15 to-amber-600/5 px-3 py-1 text-xs font-black text-amber-300 shadow-sm">
+                  <Crown className="h-3.5 w-3.5 text-amber-400 fill-amber-400/20" />
+                  <span>QWARTS PRO UNLIMITED</span>
                 </div>
                 <button
                   onClick={() => setShowUpgradeModal(null)}
                   className="rounded-full p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition cursor-pointer"
+                  aria-label="Close"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              {/* 1. Reframe Heading (Solusi Layar B) */}
-              <h2 className="mt-4 text-2xl sm:text-3xl font-black text-white tracking-tight">
-                {lang === 'en' ? 'How Your Free Trial Works ✨' : 'Cara Uji Coba Gratis Bekerja ✨'}
-              </h2>
-              <p className="mt-1.5 text-xs sm:text-sm text-slate-300 leading-relaxed">
-                {showUpgradeModal.description
-                  ? `${showUpgradeModal.description} ${lang === 'en' ? 'Experience all PRO features without risk before deciding.' : 'Coba seluruh fitur unggulan PRO tanpa risiko sebelum memutuskan.'}`
-                  : (lang === 'en' ? 'Experience all Qwarts Finance PRO features without risk before deciding.' : 'Coba seluruh fitur unggulan Qwarts Finance PRO secara gratis tanpa risiko sebelum memutuskan.')}
-              </p>
-
-              {/* 2. Transparent Timeline (Transparency Bias: Day 1, 5, 7) */}
-              <div className="mt-5 rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
-                <p className="text-xs font-bold text-slate-200 mb-3 flex items-center gap-1.5">
-                  <Calendar className="h-4 w-4 text-amber-400" />
-                  <span>{lang === 'en' ? 'Transparent Trial Timeline' : 'Lini Masa Uji Coba Transparan'}</span>
+              {/* Title & Subtitle */}
+              <div className="mt-3.5">
+                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  {lang === 'en' ? 'Upgrade to Qwarts Finance PRO 👑' : 'Tingkatkan Finansial ke Level PRO 👑'}
+                </h2>
+                <p className="mt-1 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  {showUpgradeModal.description
+                    ? showUpgradeModal.description
+                    : (lang === 'en'
+                        ? 'Unlock all powerful PRO features without limits. Instant activation upon checkout.'
+                        : 'Buka seluruh fitur unggulan tanpa batas. Pembayaran otomatis dan aktif detik ini juga.')}
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="flex sm:flex-col items-start gap-2.5 sm:gap-1.5 rounded-xl bg-slate-950/60 p-3 border border-slate-800/80">
-                    <span className="inline-flex items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400 px-2 py-0.5 text-[11px] font-black">
-                      {lang === 'en' ? 'Day 1' : 'Hari 1'}
-                    </span>
-                    <div>
-                      <p className="text-xs font-bold text-white">{lang === 'en' ? 'Full Access Unlocked' : 'Akses Penuh Terbuka'}</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
-                        {lang === 'en' ? 'Instant access to AI Scanner, Goals & Unlimited Wallets.' : 'Akses instan Target Impian, AI Struk & Unlimited Dompet.'}
-                      </p>
-                    </div>
-                  </div>
+              </div>
 
-                  <div className="flex sm:flex-col items-start gap-2.5 sm:gap-1.5 rounded-xl bg-slate-950/60 p-3 border border-slate-800/80">
-                    <span className="inline-flex items-center justify-center rounded-lg bg-amber-500/20 text-amber-400 px-2 py-0.5 text-[11px] font-black">
-                      {lang === 'en' ? 'Day 5' : 'Hari 5'}
-                    </span>
-                    <div>
-                      <p className="text-xs font-bold text-white">{lang === 'en' ? 'Friendly Reminder' : 'Pengingat Ramah'}</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
-                        {lang === 'en' ? 'We notify you 2 days before the trial period concludes.' : 'Notifikasi otomatis 2 hari sebelum masa trial berakhir.'}
-                      </p>
+              {/* Feature Highlights Grid */}
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-2.5">
+                <div className="rounded-2xl border border-slate-800/80 bg-slate-950/60 p-2.5 sm:p-3 hover:border-teal-500/30 transition">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-500/15 text-teal-400">
+                      <Target className="h-3.5 w-3.5" />
                     </div>
+                    <span className="text-[9px] font-bold text-teal-300 bg-teal-500/10 px-1.5 py-0.5 rounded-full">UNLIMITED</span>
                   </div>
+                  <p className="text-xs font-bold text-white leading-tight">{lang === 'en' ? 'Dream Goals' : 'Target Impian'}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">{lang === 'en' ? 'Auto accumulation & tracker' : 'Tabungan & dana darurat otomatis'}</p>
+                </div>
 
-                  <div className="flex sm:flex-col items-start gap-2.5 sm:gap-1.5 rounded-xl bg-slate-950/60 p-3 border border-slate-800/80">
-                    <span className="inline-flex items-center justify-center rounded-lg bg-sky-500/20 text-sky-400 px-2 py-0.5 text-[11px] font-black">
-                      {lang === 'en' ? 'Day 7' : 'Hari 7'}
-                    </span>
-                    <div>
-                      <p className="text-xs font-bold text-white">{lang === 'en' ? 'Continue / Cancel' : 'Lanjut / Batal Bebas'}</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
-                        {lang === 'en' ? 'Start your chosen plan or cancel freely anytime.' : 'Mulai paket pilihan atau batalkan bebas tanpa biaya.'}
-                      </p>
+                <div className="rounded-2xl border border-slate-800/80 bg-slate-950/60 p-2.5 sm:p-3 hover:border-sky-500/30 transition">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-500/15 text-sky-400">
+                      <Camera className="h-3.5 w-3.5" />
                     </div>
+                    <span className="text-[9px] font-bold text-sky-300 bg-sky-500/10 px-1.5 py-0.5 rounded-full">AI SCAN</span>
                   </div>
+                  <p className="text-xs font-bold text-white leading-tight">{lang === 'en' ? 'AI Receipt Scanner' : 'AI Struk Pintar'}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">{lang === 'en' ? 'Foto nota & auto catat kas' : 'Foto nota belanja terisi instan'}</p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-800/80 bg-slate-950/60 p-2.5 sm:p-3 hover:border-purple-500/30 transition">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-500/15 text-purple-400">
+                      <FileSpreadsheet className="h-3.5 w-3.5" />
+                    </div>
+                    <span className="text-[9px] font-bold text-purple-300 bg-purple-500/10 px-1.5 py-0.5 rounded-full">EXCEL / CSV</span>
+                  </div>
+                  <p className="text-xs font-bold text-white leading-tight">{lang === 'en' ? 'Export Reports' : 'Ekspor Laporan'}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">{lang === 'en' ? '1-Click download bookkeeping' : '1-Klik unduh buku kas lengkap'}</p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-800/80 bg-slate-950/60 p-2.5 sm:p-3 hover:border-amber-500/30 transition">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/15 text-amber-400">
+                      <Wallet className="h-3.5 w-3.5" />
+                    </div>
+                    <span className="text-[9px] font-bold text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded-full">MULTI WALLET</span>
+                  </div>
+                  <p className="text-xs font-bold text-white leading-tight">{lang === 'en' ? 'Unlimited Wallets' : 'Multi Rekening'}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">{lang === 'en' ? 'Manage all bank & e-wallets' : 'Semua bank & e-wallet bebas batas'}</p>
                 </div>
               </div>
 
-              {/* 3. Real Product Visual Previews (Bukan Ikon Abstrak) */}
-              <div className="mt-4">
-                <p className="text-xs font-bold text-slate-300 mb-2.5">
-                  {lang === 'en' ? 'Real Features You Will Receive' : 'Aset & Fitur Nyata Yang Anda Dapatkan'}
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-2.5">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <Target className="h-4 w-4 text-teal-400" />
-                      <span className="text-[9px] font-bold text-teal-400 bg-teal-500/15 px-1.5 py-0.5 rounded">78%</span>
-                    </div>
-                    <p className="text-[11px] font-bold text-white leading-snug">{lang === 'en' ? 'Dream Goals' : 'Target Impian'}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{lang === 'en' ? 'Auto accumulation' : 'Akumulasi tabungan'}</p>
-                  </div>
-
-                  <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-2.5">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <Camera className="h-4 w-4 text-sky-400" />
-                      <span className="text-[9px] font-bold text-sky-400 bg-sky-500/15 px-1.5 py-0.5 rounded">99%</span>
-                    </div>
-                    <p className="text-[11px] font-bold text-white leading-snug">{lang === 'en' ? 'AI Scanner' : 'AI Struk'}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{lang === 'en' ? 'Instant auto-fill' : 'Scan nota belanja'}</p>
-                  </div>
-
-                  <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-2.5">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <FileSpreadsheet className="h-4 w-4 text-purple-400" />
-                      <span className="text-[9px] font-bold text-purple-400 bg-purple-500/15 px-1.5 py-0.5 rounded">XLSX</span>
-                    </div>
-                    <p className="text-[11px] font-bold text-white leading-snug">{lang === 'en' ? 'Excel Export' : 'Ekspor Laporan'}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{lang === 'en' ? '1-Click download' : '1-Klik unduh kas'}</p>
-                  </div>
-
-                  <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-2.5">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <Wallet className="h-4 w-4 text-amber-400" />
-                      <span className="text-[9px] font-bold text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded">UNLIMITED</span>
-                    </div>
-                    <p className="text-[11px] font-bold text-white leading-snug">{lang === 'en' ? 'Multi Wallets' : 'Multi Rekening'}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{lang === 'en' ? 'Bank & e-wallets' : 'Semua bank & e-wallet'}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* 4. Single Clear Pricing & Smart Badge */}
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setSelectedUpgradePlan('monthly')}
-                  className={`rounded-2xl border p-3.5 text-center transition cursor-pointer ${selectedUpgradePlan === 'monthly'
-                      ? 'border-teal-500 bg-teal-500/10 shadow-md'
-                      : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
-                    }`}
-                >
-                  <span className="text-[11px] font-semibold text-slate-400">{t('pkg_monthly', lang)}</span>
-                  <p className="mt-1 text-lg font-black text-white">{t('pkg_monthly_price', lang)}</p>
-                  <span className="text-[10px] text-slate-400">{t('pkg_per_month', lang)}</span>
-                </button>
-
+              {/* Plan Selection Cards */}
+              <div className="mt-4 grid grid-cols-2 gap-2.5 sm:gap-3">
+                {/* Yearly Plan (Best Value) */}
                 <button
                   type="button"
                   onClick={() => setSelectedUpgradePlan('yearly')}
-                  className={`relative rounded-2xl border p-3.5 text-center transition cursor-pointer ${selectedUpgradePlan === 'yearly'
-                      ? 'border-amber-500 bg-gradient-to-b from-amber-500/20 to-slate-900/90 shadow-lg shadow-amber-500/15'
+                  className={`relative rounded-2xl p-3 sm:p-3.5 text-left transition cursor-pointer border ${
+                    selectedUpgradePlan === 'yearly'
+                      ? 'border-amber-400/80 bg-gradient-to-b from-amber-500/15 via-slate-900/90 to-slate-950 shadow-lg shadow-amber-500/15 ring-1 ring-amber-400/50'
                       : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
-                    }`}
+                  }`}
                 >
-                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-black text-slate-950 uppercase tracking-wider">
-                    {lang === 'en' ? 'SAVE 35% • BEST VALUE' : 'HEMAT 35% • BEST VALUE'}
+                  <span className="absolute -top-2.5 right-3 rounded-full bg-gradient-to-r from-amber-500 to-amber-400 px-2 py-0.5 text-[9px] font-black text-slate-950 uppercase tracking-wider shadow-sm">
+                    {lang === 'en' ? 'SAVE 35%' : 'HEMAT 35%'}
                   </span>
-                  <span className="text-[11px] font-bold text-amber-300">{t('pkg_yearly', lang)}</span>
-                  <p className="mt-1 text-lg font-black text-white">{t('pkg_yearly_price', lang)}</p>
-                  <span className="text-[10px] text-emerald-400 font-semibold">{t('pkg_yearly_monthly_rate', lang)}</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-amber-300">
+                      {lang === 'en' ? 'Yearly Plan' : 'Paket Tahunan'}
+                    </span>
+                    <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${
+                      selectedUpgradePlan === 'yearly'
+                        ? 'border-amber-400 bg-amber-400 text-slate-950'
+                        : 'border-slate-600 bg-transparent'
+                    }`}>
+                      {selectedUpgradePlan === 'yearly' && <Check className="h-3 w-3 stroke-[3]" />}
+                    </div>
+                  </div>
+                  <p className="mt-1 text-lg sm:text-xl font-black text-white">Rp 149.000</p>
+                  <p className="text-[10px] text-emerald-400 font-semibold mt-0.5">
+                    {lang === 'en' ? 'Only Rp 12,416 / mo' : 'Hanya Rp 12.416 / bln'}
+                  </p>
+                </button>
+
+                {/* Monthly Plan */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedUpgradePlan('monthly')}
+                  className={`relative rounded-2xl p-3 sm:p-3.5 text-left transition cursor-pointer border ${
+                    selectedUpgradePlan === 'monthly'
+                      ? 'border-teal-400/80 bg-gradient-to-b from-teal-500/15 via-slate-900/90 to-slate-950 shadow-lg shadow-teal-500/15 ring-1 ring-teal-400/50'
+                      : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-300">
+                      {lang === 'en' ? 'Monthly Plan' : 'Paket Bulanan'}
+                    </span>
+                    <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${
+                      selectedUpgradePlan === 'monthly'
+                        ? 'border-teal-400 bg-teal-400 text-slate-950'
+                        : 'border-slate-600 bg-transparent'
+                    }`}>
+                      {selectedUpgradePlan === 'monthly' && <Check className="h-3 w-3 stroke-[3]" />}
+                    </div>
+                  </div>
+                  <p className="mt-1 text-lg sm:text-xl font-black text-white">Rp 19.000</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    {lang === 'en' ? 'Flexible monthly billing' : 'Fleksibel bayar per bulan'}
+                  </p>
                 </button>
               </div>
 
-              {/* 5. Ownership Micro-copy CTA Button with Duitku Gateway & Uncertainty Reducer */}
-              <div className="mt-5 flex flex-col gap-2.5">
+              {/* Action Button & Payment Channels */}
+              <div className="mt-5 flex flex-col gap-3">
                 <button
                   type="button"
                   disabled={isPayingDuitku}
                   onClick={handlePayWithDuitku}
-                  className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-400 py-3.5 text-sm font-black text-slate-950 shadow-lg shadow-teal-500/30 transition hover:brightness-110 active:scale-98 cursor-pointer disabled:opacity-60"
+                  className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-400 py-3.5 text-sm font-black text-slate-950 shadow-xl shadow-teal-500/25 transition hover:brightness-110 active:scale-[0.99] cursor-pointer disabled:opacity-60"
                 >
                   {isPayingDuitku ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin text-slate-950" />
-                      <span>{lang === 'en' ? 'Connecting to Duitku...' : 'Menghubungkan ke Duitku...'}</span>
+                      <span>{lang === 'en' ? 'Connecting to Duitku...' : 'Menghubungkan ke Duitku Gateway...'}</span>
                     </>
                   ) : (
                     <>
                       <CreditCard className="h-4 w-4 text-slate-950" />
                       <span>
                         {lang === 'en'
-                          ? `Pay via Duitku (QRIS / VA / E-Wallet) • ${selectedUpgradePlan === 'yearly' ? 'Rp 149.000' : 'Rp 19.000'}`
-                          : `Bayar via Duitku (QRIS / VA / E-Wallet) • ${selectedUpgradePlan === 'yearly' ? 'Rp 149.000' : 'Rp 19.000'}`}
+                          ? `Continue to Payment • ${selectedUpgradePlan === 'yearly' ? 'Rp 149.000' : 'Rp 19.000'}`
+                          : `Lanjut ke Pembayaran • ${selectedUpgradePlan === 'yearly' ? 'Rp 149.000' : 'Rp 19.000'}`}
                       </span>
                     </>
                   )}
                 </button>
 
-                <div className="flex items-center justify-between px-1">
-                  <p className="text-[11px] text-slate-400">
+                {/* Security and Trust Badges */}
+                <div className="rounded-xl bg-slate-950/70 border border-slate-800/80 p-3 text-center space-y-1.5">
+                  <div className="flex items-center justify-center gap-1.5 text-[11px] font-semibold text-emerald-400">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    <span>
+                      {lang === 'en'
+                        ? 'Official Duitku Checkout • Auto-Verification'
+                        : 'Halaman Checkout Resmi Duitku • Verifikasi Otomatis'}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
                     {lang === 'en'
-                      ? 'Instant auto-activation • Secure Duitku checkout'
-                      : 'Aktivasi instan otomatis • Transaksi aman via Duitku'}
+                      ? 'Choose freely on Duitku: QRIS (All Banks & E-Wallets), Virtual Accounts (BCA, Mandiri, BRI, BNI, BSI), ShopeePay & Retail.'
+                      : 'Pilih bebas di halaman Duitku: QRIS (Semua Bank & E-Wallet), Virtual Account (BCA, Mandiri, BRI, BNI, BSI), ShopeePay & Retail.'}
                   </p>
-
-                  <a
-                    href={`https://wa.me/6281776370728?text=${encodeURIComponent(
-                      lang === 'en'
-                        ? `Hello Admin Qwarts Finance, I would like to pay for Qwarts Finance PRO via manual transfer / WhatsApp!\n\nName: ${currentUser.name}\nEmail: ${currentUser.email}\nPlan: ${selectedUpgradePlan === 'yearly' ? 'Yearly (Rp 149.000 / Save 35%)' : 'Monthly (Rp 19.000)'}`
-                        : `Halo Admin Qwarts Finance, saya ingin konfirmasi pembayaran Qwarts Finance PRO via WhatsApp!\n\nNama: ${currentUser.name}\nEmail: ${currentUser.email}\nPaket: ${selectedUpgradePlan === 'yearly' ? 'Tahunan (Rp 149.000 / Hemat 35%)' : 'Bulanan (Rp 19.000)'}`
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[11px] font-semibold text-teal-400 hover:underline inline-flex items-center gap-1"
-                  >
-                    <span>{lang === 'en' ? 'Or pay via WhatsApp' : 'Atau bayar via WhatsApp'}</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setShowUpgradeModal(null)}
-                  className="w-full py-1 text-xs font-semibold text-slate-500 hover:text-slate-300 transition cursor-pointer mt-0.5"
+                  className="w-full py-1 text-xs font-semibold text-slate-500 hover:text-slate-300 transition cursor-pointer"
                 >
                   {lang === 'en' ? 'Maybe Later' : 'Nanti Saja'}
                 </button>

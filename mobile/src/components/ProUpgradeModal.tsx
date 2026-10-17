@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   StyleSheet,
   Text,
@@ -9,6 +9,7 @@ import {
   Linking,
   Alert,
   Platform,
+  ActivityIndicator,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -32,7 +33,6 @@ export const ProUpgradeModal: React.FC<Props> = ({
 }) => {
   const { theme, isDark } = useAppTheme()
   const [selectedPlan, setSelectedPlan] = useState<'yearly' | 'monthly'>('yearly')
-
   const [loadingPayment, setLoadingPayment] = useState(false)
   const currentUser = ApiService.getCurrentUser()
 
@@ -45,36 +45,19 @@ export const ProUpgradeModal: React.FC<Props> = ({
         await Linking.openURL(duitkuRes.paymentUrl)
         return
       }
-    } catch {
-      // Fallback smoothly to WhatsApp
-    } finally {
-      setLoadingPayment(false)
-    }
-
-    const planText =
-      selectedPlan === 'yearly'
-        ? 'Paket Tahunan (Rp 149.000/thn • Hemat 35%)'
-        : 'Paket Bulanan (Rp 19.000/bln)'
-
-    const name = currentUser?.name || 'Pengguna Qwarts Finance'
-    const email = currentUser?.email || 'email@example.com'
-
-    const message = `Halo Admin Qwarts Finance, saya ingin mengaktifkan Masa Uji Coba Gratis & Akses PRO saya!\n\nNama: ${name}\nEmail: ${email}\nPaket Pilihan: ${planText}\n\nMohon bantu aktivasi akun PRO saya. Terima kasih!`
-    const url = `https://wa.me/6281776370728?text=${encodeURIComponent(message)}`
-
-    try {
-      const supported = await Linking.canOpenURL(url)
-      if (supported || Platform.OS === 'web') {
-        await Linking.openURL(url)
-      } else {
-        await Linking.openURL(`https://api.whatsapp.com/send?phone=6281776370728&text=${encodeURIComponent(message)}`)
-      }
-    } catch (err) {
       Alert.alert(
-        'Mulai Uji Coba PRO',
-        'Hubungi WhatsApp Official Qwarts Finance di +62 817-7637-0728 untuk mengaktifkan akses Anda sekarang.',
+        'Gagal Membuka Tagihan',
+        duitkuRes.message || 'Gagal membuat invoice Duitku. Silakan periksa koneksi internet Anda dan coba lagi.',
         [{ text: 'Tutup' }]
       )
+    } catch (err: any) {
+      Alert.alert(
+        'Koneksi Gagal',
+        err?.message || 'Gagal menghubungi server pembayaran Duitku. Silakan coba sesaat lagi.',
+        [{ text: 'Tutup' }]
+      )
+    } finally {
+      setLoadingPayment(false)
     }
   }
 
@@ -370,9 +353,9 @@ export const ProUpgradeModal: React.FC<Props> = ({
               },
             ]}
           >
-            {/* Micro-copy Kepemilikan: "Mulai Uji Coba Gratis Saya" */}
             <TouchableOpacity
               activeOpacity={0.88}
+              disabled={loadingPayment}
               onPress={handleStartTrial}
               style={styles.ctaButtonWrapper}
             >
@@ -382,17 +365,28 @@ export const ProUpgradeModal: React.FC<Props> = ({
                 end={{ x: 1, y: 0 }}
                 style={styles.ctaGradient}
               >
-                <Ionicons name="sparkles" size={17} color="#ffffff" />
-                <Text style={styles.ctaButtonText}>Mulai Uji Coba Gratis Saya</Text>
-                <View style={styles.ctaPricePill}>
-                  <Text style={styles.ctaPricePillText}>Rp 0 Hari Ini</Text>
-                </View>
+                {loadingPayment ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <ActivityIndicator size="small" color="#ffffff" />
+                    <Text style={styles.ctaButtonText}>Menghubungkan ke Duitku...</Text>
+                  </View>
+                ) : (
+                  <>
+                    <Ionicons name="card-outline" size={17} color="#ffffff" />
+                    <Text style={styles.ctaButtonText}>Lanjut Bayar via Duitku</Text>
+                    <View style={styles.ctaPricePill}>
+                      <Text style={styles.ctaPricePillText}>
+                        {selectedPlan === 'yearly' ? 'Rp 149.000' : 'Rp 19.000'}
+                      </Text>
+                    </View>
+                  </>
+                )}
               </LinearGradient>
             </TouchableOpacity>
 
-            {/* Kurangi Ketidakpastian: "Start in 2 taps" */}
+            {/* Trust and Payment Security */}
             <Text style={[styles.uncertaintyReducerText, { color: theme.colors.textMuted }]}>
-              Mulai dalam 2 ketukan • Tanpa kartu kredit • Batalkan kapan saja
+              🔒 100% Aman via Duitku Gateway • QRIS & Virtual Account • Aktivasi Otomatis
             </Text>
           </View>
         </View>
@@ -653,6 +647,23 @@ const styles = StyleSheet.create({
   planBilledNote: {
     fontSize: 9.5,
     marginTop: 2,
+  },
+  paymentMethodList: {
+    gap: 7,
+    marginBottom: SPACING.md,
+  },
+  paymentMethodItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: RADII.md,
+    borderWidth: 1,
+  },
+  paymentMethodText: {
+    fontSize: 12,
+    flex: 1,
   },
   stickyFooter: {
     paddingHorizontal: SPACING.md,

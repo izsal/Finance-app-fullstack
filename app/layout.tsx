@@ -107,7 +107,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="id" className="bg-[#f7f9fb]">
+    <html lang="id" className="bg-[#f7f9fb]" suppressHydrationWarning>
       <body className="antialiased">
         <PwaRegister />
         {children}

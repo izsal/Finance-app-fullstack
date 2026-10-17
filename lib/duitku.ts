@@ -102,7 +102,59 @@ export class DuitkuService {
   }
 
   /**
-   * Create an invoice through Duitku v2 Inquiry API
+   * Get active payment methods available for the merchant
+   */
+  public static async getPaymentMethods(amount: number = 10000): Promise<Array<{
+    paymentMethod: string
+    paymentName: string
+    paymentImage: string
+    totalFee: string
+  }>> {
+    const config = this.getConfig()
+    if (!config.merchantCode || !config.apiKey) return []
+
+    const datetime = new Date().toISOString().slice(0, 19).replace('T', ' ')
+    const signature = crypto
+      .createHash('sha256')
+      .update(`${config.merchantCode}${amount}${datetime}${config.apiKey}`)
+      .digest('hex')
+
+    const endpoint = `${this.getBaseUrl(config.env)}/paymentmethod/getpaymentmethod`
+
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          merchantcode: config.merchantCode,
+          amount,
+          datetime,
+          signature,
+        }),
+      })
+      const data = await res.json().catch(() => null)
+      if (data?.responseCode === '00' && Array.isArray(data?.paymentFee)) {
+        return data.paymentFee
+      }
+      return []
+    } catch {
+      return []
+    }
+  }
+
+  private static getPopBaseUrl(env: 'sandbox' | 'production'): string {
+    return env === 'production'
+      ? 'https://api-prod.duitku.com/api/merchant'
+      : 'https://api-sandbox.duitku.com/api/merchant'
+  }
+
+  /**
+   * Create an invoice through Duitku Hosted Checkout (POP API).
+   * Generates a checkout URL where customers can choose ANY payment method
+   * (QRIS, VA BCA, Mandiri, BRI, BNI, Permata, ShopeePay, etc.) directly on Duitku's official page.
    */
   public static async createInvoice(params: CreateInvoiceParams): Promise<DuitkuInvoiceResponse> {
     const config = this.getConfig()
@@ -125,17 +177,17 @@ export class DuitkuService {
     const callbackUrl = params.callbackUrl || config.callbackUrl || `${host}/api/payment/duitku/callback`
     const returnUrl = params.returnUrl || config.returnUrl || `${host}?payment=finish&orderId=${encodeURIComponent(params.merchantOrderId)}`
 
-    const signature = this.generateInquirySignature(
-      config.merchantCode,
-      params.merchantOrderId,
-      params.amount,
-      config.apiKey
-    )
+    // Timestamp in milliseconds
+    const timestamp = Date.now().toString()
+    // Formula: HMAC_SHA256(merchantCode + timestamp, apiKey)
+    const stringToSign = `${config.merchantCode}${timestamp}`
+    const signature = crypto
+      .createHmac('sha256', config.apiKey)
+      .update(stringToSign)
+      .digest('hex')
 
-    const payload = {
-      merchantCode: config.merchantCode,
+    const payload: any = {
       paymentAmount: params.amount,
-      paymentMethod: params.paymentMethod || 'SP', // Default to QRIS (All E-Wallets & Mobile Banking)
       merchantOrderId: params.merchantOrderId,
       productDetails: params.productDetails,
       email: params.email,
@@ -143,18 +195,24 @@ export class DuitkuService {
       phoneNumber: params.phoneNumber || '',
       callbackUrl,
       returnUrl,
-      signature,
       expiryPeriod: params.expiryMinutes || 1440, // 24 hours default
     }
 
-    const endpoint = `${this.getBaseUrl(config.env)}/v2/inquiry`
+    // Optional: if a specific payment method is explicitly requested
+    if (params.paymentMethod) {
+      payload.paymentMethod = params.paymentMethod
+    }
+
+    const endpoint = `${this.getPopBaseUrl(config.env)}/createInvoice`
 
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Accept: 'application/json',
+          'x-duitku-merchantcode': config.merchantCode,
+          'x-duitku-timestamp': timestamp,
+          'x-duitku-signature': signature,
         },
         body: JSON.stringify(payload),
       })
@@ -164,7 +222,7 @@ export class DuitkuService {
       if (data.statusCode === '00' && data.paymentUrl) {
         return {
           success: true,
-          merchantCode: data.merchantCode,
+          merchantCode: data.merchantCode || config.merchantCode,
           reference: data.reference,
           paymentUrl: data.paymentUrl,
           vaNumber: data.vaNumber,
@@ -178,7 +236,7 @@ export class DuitkuService {
         success: false,
         statusCode: data.statusCode,
         statusMessage: data.statusMessage,
-        error: data.statusMessage || `Duitku inquiry failed with status ${data.statusCode || res.status}`,
+        error: data.statusMessage || `Duitku createInvoice failed with status ${data.statusCode || res.status}`,
       }
     } catch (err: any) {
       return {

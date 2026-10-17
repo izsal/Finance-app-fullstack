@@ -737,7 +737,7 @@ export class ApiService {
     }
   }
 
-  static async createDuitkuInvoice(billingCycle: 'yearly' | 'monthly'): Promise<{
+  static async createDuitkuInvoice(billingCycle: 'yearly' | 'monthly', paymentMethod?: string): Promise<{
     success: boolean
     paymentUrl?: string
     orderId?: string
@@ -747,7 +747,7 @@ export class ApiService {
       const res = await fetch(`${this.baseUrl}/api/payment/duitku/create-invoice`, {
         method: 'POST',
         headers: this.getHeaders(),
-        body: JSON.stringify({ billingCycle }),
+        body: JSON.stringify({ billingCycle, paymentMethod }),
       })
       const json = await res.json()
       if (res.ok && json.success) {
@@ -761,6 +761,21 @@ export class ApiService {
       return { success: false, message: json.message || 'Gagal membuat tagihan Duitku' }
     } catch (e: any) {
       return { success: false, message: e?.message || 'Gagal menghubungi server pembayaran' }
+    }
+  }
+
+  static async getDuitkuPaymentMethods(amount: number = 19000): Promise<any[]> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/payment/duitku/payment-methods?amount=${amount}`, {
+        headers: this.getHeaders(),
+      })
+      const json = await res.json()
+      if (res.ok && json.success && Array.isArray(json.data)) {
+        return json.data
+      }
+      return []
+    } catch {
+      return []
     }
   }
 
