@@ -5,6 +5,13 @@ import { db } from '@/lib/db'
 import { session as sessionTable, user as userTable } from '@/lib/schema'
 import { eq } from 'drizzle-orm'
 import { randomUUID } from 'crypto'
+import {
+  checkRateLimit,
+  getClientIp,
+  RATE_LIMITS,
+  rateLimitResponse,
+  applyRateLimitHeaders,
+} from '@/lib/rate-limiter'
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -19,6 +26,17 @@ export async function OPTIONS() {
 
 export async function POST(req: NextRequest) {
   try {
+    const clientIp = getClientIp(req)
+    const rateLimitKey = `auth-login:${clientIp}`
+    const rateLimitResult = checkRateLimit(rateLimitKey, RATE_LIMITS.AUTH)
+
+    if (!rateLimitResult.allowed) {
+      return rateLimitResponse(
+        rateLimitResult,
+        `Terlalu banyak percobaan login. Harap tunggu ${rateLimitResult.resetInSeconds} detik sebelum mencoba lagi.`
+      )
+    }
+
     const body = await req.json()
     const { email, password } = body
 

@@ -3,6 +3,13 @@ import { apiError, apiSuccess, getAuthUser } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { categories } from '@/lib/schema'
 import { eq } from 'drizzle-orm'
+import {
+  checkRateLimit,
+  getClientIp,
+  RATE_LIMITS,
+  rateLimitResponse,
+  applyRateLimitHeaders,
+} from '@/lib/rate-limiter'
 
 interface ScanReceiptResult {
   type: 'expense' | 'income'
@@ -18,6 +25,18 @@ interface ScanReceiptResult {
 export async function POST(req: NextRequest) {
   try {
     const user = await getAuthUser(req)
+
+    // Rate Limit: batasi pemindaian struk (5 request per menit per user / IP)
+    const clientIp = getClientIp(req)
+    const rateLimitKey = `scan-receipt:${user.id || clientIp}`
+    const rateLimitResult = checkRateLimit(rateLimitKey, RATE_LIMITS.SCAN_RECEIPT)
+
+    if (!rateLimitResult.allowed) {
+      return rateLimitResponse(
+        rateLimitResult,
+        `Batas pemindaian struk tercapai (maksimal ${RATE_LIMITS.SCAN_RECEIPT.limit} kali per menit). Harap tunggu ${rateLimitResult.resetInSeconds} detik sebelum mencoba lagi.`
+      )
+    }
 
     // Ambil daftar kategori pengguna saat ini agar AI bisa mencocokkan ke kategori yang sudah ada
     const userCats = await db
@@ -113,7 +132,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return apiSuccess(parsedResult, 'Foto struk berhasil dianalisis dengan AI')
+    const successResponse = apiSuccess(parsedResult, 'Foto struk berhasil dianalisis dengan AI')
+    return applyRateLimitHeaders(successResponse, rateLimitResult)
   } catch (err: any) {
     if (err?.message === 'UNAUTHORIZED') return apiError('Unauthorized', 401)
     console.error('Scan receipt error:', err)

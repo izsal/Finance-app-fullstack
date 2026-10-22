@@ -4652,6 +4652,17 @@ function TransactionModal({
     const file = e.target.files?.[0]
     if (!file) return
 
+    const MAX_FILE_SIZE = 5 * 1024 * 1024
+    if (file.size > MAX_FILE_SIZE) {
+      setScanMessage(
+        lang === 'en'
+          ? 'File size exceeds limit (max 5MB). Please select a smaller photo.'
+          : 'Ukuran file foto melebihi batas 5MB. Harap pilih foto yang lebih kecil.'
+      )
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
     setScanningReceipt(true)
     setScanMessage(lang === 'en' ? 'AI is scanning receipt & reading amounts...' : 'AI sedang memindai struk & membaca nominal...')
 
@@ -4690,18 +4701,29 @@ function TransactionModal({
                 : `✨ Struk terdeteksi: ${d.type === 'expense' ? 'Pengeluaran' : 'Pemasukan'} • ${d.categoryName} (${d.description})`
             )
           } else {
-            setScanMessage(json.message || (lang === 'en' ? 'Failed to read receipt' : 'Gagal membaca struk belanja'))
+            setScanMessage(
+              json.message ||
+                (res.status === 429
+                  ? lang === 'en'
+                    ? 'Too many scan requests. Please wait a moment.'
+                    : 'Terlalu banyak permintaan scan. Harap tunggu sebentar.'
+                  : lang === 'en'
+                  ? 'Failed to read receipt'
+                  : 'Gagal membaca struk belanja')
+            )
           }
         } catch (apiErr: any) {
           setScanMessage(apiErr?.message || (lang === 'en' ? 'Failed to connect to AI scanner' : 'Gagal terhubung ke scanner AI'))
         } finally {
           setScanningReceipt(false)
+          if (fileInputRef.current) fileInputRef.current.value = ''
         }
       }
       reader.readAsDataURL(file)
     } catch (err: any) {
       setScanMessage(lang === 'en' ? 'Error reading image file' : 'Gagal memproses file foto')
       setScanningReceipt(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
