@@ -16,6 +16,7 @@ import {
   Lock,
   Mail,
   MapPin,
+  Menu,
   Phone,
   PieChart,
   Quote,
@@ -29,8 +30,21 @@ import {
   Wallet,
   X,
   Zap,
-} from 'lucide-react'
+} from '@/components/animated-icons'
 import { landingTranslations, type LandingLanguage } from '@/lib/landing-translations'
+import { TextAnimation } from '@/components/motion/text-animation'
+import { NumberTicker } from '@/components/motion/number-ticker'
+import { Tabs, TabsList, TabsTrigger } from '@/components/motion/tabs'
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/motion/accordion'
+import { Progress } from '@/components/motion/progress'
+import { Badge } from '@/components/motion/badge'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/motion/dropdown-menu'
 
 function GoogleIcon({ className = 'h-5 w-5' }: { className?: string }) {
   return (
@@ -56,7 +70,6 @@ function GoogleIcon({ className = 'h-5 w-5' }: { className?: string }) {
 }
 
 export default function LandingPage() {
-  const [openFaq, setOpenFaq] = useState<number | null>(0)
   const [lang, setLang] = useState<LandingLanguage>('id')
   const [previewTab, setPreviewTab] = useState<'interactive' | 'overview' | 'budget' | 'goals' | 'mobile'>('interactive')
 
@@ -156,43 +169,62 @@ export default function LandingPage() {
 
       {/* Navigation */}
       <header className="sticky top-0 z-50 border-b border-slate-800/80 bg-slate-950/75 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-emerald-600 text-white shadow-lg shadow-teal-500/25">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+          {/* Brand Logo */}
+          <Link href="/" className="group flex items-center gap-2.5">
+            <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-emerald-600 text-white shadow-lg shadow-teal-500/25 transition group-hover:scale-105">
               <Wallet className="h-5 w-5" />
             </div>
-            <span className="text-xl font-black tracking-tight text-white">
+            <span className="text-lg sm:text-xl font-black tracking-tight text-white">
               Qwarts <span className="text-teal-400">Finance</span>
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
+          {/* Minimalist Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-sm font-medium text-slate-300">
             <a href="#fitur" className="transition hover:text-white">
               {t.nav.features}
-            </a>
-            <a href="#panduan" className="transition hover:text-white">
-              {lang === 'id' ? 'Panduan' : 'Guide'}
             </a>
             <a href="#preview" className="transition hover:text-white">
               {t.nav.dashboard}
             </a>
-            <a href="#cara-kerja" className="transition hover:text-white">
-              {t.nav.howItWorks}
-            </a>
             <a href="#harga" className="transition hover:text-white">
               {t.nav.pricing}
             </a>
-            <a href="#privasi" className="transition hover:text-white">
-              {t.nav.privacy}
-            </a>
-            <a href="#faq" className="transition hover:text-white">
-              {t.nav.faq}
-            </a>
-            <a href="#kontak" className="transition hover:text-white">
-              {t.nav.contact}
-            </a>
+
+            {/* EaseUI Dropdown Menu for secondary links */}
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-slate-900 border border-transparent hover:border-slate-800 text-slate-300 hover:text-white">
+                <span>{lang === 'id' ? 'Lainnya' : 'More'}</span>
+                <ChevronDown className="h-4 w-4 opacity-70" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 p-1.5">
+                <DropdownMenuItem href="#cara-kerja">
+                  <Zap className="h-4 w-4 text-cyan-400" />
+                  <span>{t.nav.howItWorks}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem href="#panduan">
+                  <Sparkles className="h-4 w-4 text-amber-400" />
+                  <span>{lang === 'id' ? 'Panduan Penggunaan' : 'User Guide'}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem href="#privasi">
+                  <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                  <span>{t.nav.privacy}</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem href="#faq">
+                  <Quote className="h-4 w-4 text-teal-400" />
+                  <span>{t.nav.faq}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem href="#kontak">
+                  <Mail className="h-4 w-4 text-indigo-400" />
+                  <span>{t.nav.contact}</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </nav>
 
+          {/* Right Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Language Switcher */}
             <button
@@ -202,23 +234,72 @@ export default function LandingPage() {
               className="flex items-center gap-1.5 rounded-xl border border-slate-700/80 bg-slate-900/80 px-2.5 py-1.5 text-xs font-semibold text-slate-200 shadow-sm backdrop-blur-md transition hover:border-teal-500/50 hover:bg-slate-800 hover:text-white cursor-pointer"
               aria-label={lang === 'id' ? 'Switch to English' : 'Beralih ke Bahasa Indonesia'}
             >
-              <Languages className="h-4 w-4 text-teal-400" />
-              <span>{lang === 'id' ? '🇮🇩 ID' : '🇺🇸 EN'}</span>
+              <Languages className="h-3.5 w-3.5 text-teal-400" />
+              <span>{lang === 'id' ? 'ID' : 'EN'}</span>
             </button>
 
             <Link
               href="/sign-in"
-              className="rounded-xl px-3 py-2 sm:px-4 sm:py-2 text-sm font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white"
+              className="hidden sm:inline-flex rounded-xl px-3.5 py-2 text-sm font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white"
             >
               {t.nav.signIn}
             </Link>
             <Link
               href="/sign-in"
-              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 px-3.5 py-2 sm:px-4 sm:py-2 text-sm font-bold text-white shadow-lg shadow-teal-500/20 transition hover:from-teal-400 hover:to-emerald-500 active:scale-95"
+              className="flex items-center gap-1.5 sm:gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white shadow-lg shadow-teal-500/20 transition hover:from-teal-400 hover:to-emerald-500 active:scale-95"
             >
               <span>{t.nav.getStarted}</span>
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Link>
+
+            {/* Mobile Navigation Dropdown Menu (EaseUI) */}
+            <div className="md:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 hover:text-white">
+                  <Menu className="h-5 w-5" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-60 p-2">
+                  <DropdownMenuItem href="#fitur">
+                    <Sparkles className="h-4 w-4 text-teal-400" />
+                    <span>{t.nav.features}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem href="#preview">
+                    <BarChart3 className="h-4 w-4 text-cyan-400" />
+                    <span>{t.nav.dashboard}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem href="#harga">
+                    <CreditCard className="h-4 w-4 text-emerald-400" />
+                    <span>{t.nav.pricing}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem href="#cara-kerja">
+                    <Zap className="h-4 w-4 text-amber-400" />
+                    <span>{t.nav.howItWorks}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem href="#panduan">
+                    <Sparkles className="h-4 w-4 text-teal-400" />
+                    <span>{lang === 'id' ? 'Panduan' : 'Guide'}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem href="#faq">
+                    <Quote className="h-4 w-4 text-slate-400" />
+                    <span>{t.nav.faq}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem href="#privasi">
+                    <ShieldCheck className="h-4 w-4 text-slate-400" />
+                    <span>{t.nav.privacy}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem href="#kontak">
+                    <Mail className="h-4 w-4 text-slate-400" />
+                    <span>{t.nav.contact}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem href="/sign-in" className="text-teal-400 font-bold">
+                    <Wallet className="h-4 w-4 text-teal-400" />
+                    <span>{t.nav.signIn}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
       </header>
@@ -255,9 +336,13 @@ export default function LandingPage() {
           {/* Heading Manfaat (Target Search Keywords: cara mencatat pengeluaran harian, aplikasi budgeting bulanan) */}
           <h1 className="mt-6 text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl text-white">
             {t.hero.headlinePrefix}
-            <span className="bg-gradient-to-r from-teal-300 via-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-              {t.hero.headlineGradient}
-            </span>
+            <TextAnimation
+              key={t.hero.headlineGradient}
+              variant="shimmer"
+              text={t.hero.headlineGradient}
+              duration={10}
+              loop
+            />
           </h1>
 
           {/* Subtitle Solution & Value Proposition */}
@@ -303,70 +388,39 @@ export default function LandingPage() {
 
         {/* Dashboard Preview Mockup Showcase with Product Hunt Gallery Tabs */}
         <div id="preview" className="mt-16 sm:mt-20">
-          {/* Gallery Switcher Tabs */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
-            <button
-              type="button"
-              onClick={() => setPreviewTab('interactive')}
-              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
-                previewTab === 'interactive'
-                  ? 'bg-teal-500 text-slate-950 shadow-md shadow-teal-500/25'
-                  : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
-              }`}
+          {/* Gallery Switcher Tabs (EaseUI Tabs with Animated Sliding Indicator) */}
+          <div className="flex justify-center mb-6">
+            <Tabs
+              value={previewTab}
+              onValueChange={(val) => setPreviewTab(val as any)}
+              variant="pill"
             >
-              {lang === 'id' ? '⚡ Simulasi Interaktif' : '⚡ Interactive Demo'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setPreviewTab('overview')}
-              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
-                previewTab === 'overview'
-                  ? 'bg-teal-500 text-slate-950 shadow-md shadow-teal-500/25'
-                  : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
-              }`}
-            >
-              {lang === 'id' ? '📊 Dashboard Utama' : '📊 Dashboard Overview'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setPreviewTab('budget')}
-              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
-                previewTab === 'budget'
-                  ? 'bg-teal-500 text-slate-950 shadow-md shadow-teal-500/25'
-                  : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
-              }`}
-            >
-              {lang === 'id' ? '🎯 Budget Planner' : '🎯 Budget Planner'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setPreviewTab('goals')}
-              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
-                previewTab === 'goals'
-                  ? 'bg-teal-500 text-slate-950 shadow-md shadow-teal-500/25'
-                  : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
-              }`}
-            >
-              {lang === 'id' ? '🏆 Target Impian' : '🏆 Savings Goals'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setPreviewTab('mobile')}
-              className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
-                previewTab === 'mobile'
-                  ? 'bg-teal-500 text-slate-950 shadow-md shadow-teal-500/25'
-                  : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
-              }`}
-            >
-              <span>{lang === 'id' ? '📱 Mobile App' : '📱 Mobile App'}</span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider ${
-                previewTab === 'mobile'
-                  ? 'bg-slate-950/20 text-slate-950'
-                  : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-              }`}>
-                {lang === 'id' ? 'Segera Hadir' : 'Coming Soon'}
-              </span>
-            </button>
+              <TabsList className="flex-wrap justify-center gap-1 sm:gap-1.5 p-1.5">
+                <TabsTrigger value="interactive">
+                  <span>⚡</span>
+                  <span>{lang === 'id' ? 'Simulasi Interaktif' : 'Interactive Demo'}</span>
+                </TabsTrigger>
+                <TabsTrigger value="overview">
+                  <span>📊</span>
+                  <span>{lang === 'id' ? 'Dashboard Utama' : 'Dashboard Overview'}</span>
+                </TabsTrigger>
+                <TabsTrigger value="budget">
+                  <span>🎯</span>
+                  <span>{lang === 'id' ? 'Budget Planner' : 'Budget Planner'}</span>
+                </TabsTrigger>
+                <TabsTrigger value="goals">
+                  <span>🏆</span>
+                  <span>{lang === 'id' ? 'Target Impian' : 'Savings Goals'}</span>
+                </TabsTrigger>
+                <TabsTrigger value="mobile">
+                  <span>📱</span>
+                  <span>{lang === 'id' ? 'Mobile App' : 'Mobile App'}</span>
+                  <Badge variant="warning" className="text-[10px] py-0 px-1.5 ml-1">
+                    {lang === 'id' ? 'Segera Hadir' : 'Coming Soon'}
+                  </Badge>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
 
           <div className="relative mx-auto max-w-5xl rounded-3xl border border-slate-800/80 bg-slate-900/60 p-3 sm:p-5 shadow-2xl shadow-teal-950/60 backdrop-blur-2xl">
@@ -386,12 +440,12 @@ export default function LandingPage() {
                   {previewTab === 'interactive'
                     ? t.hero.mockupBadge
                     : previewTab === 'overview'
-                    ? 'Preview: Dashboard Overview'
-                    : previewTab === 'budget'
-                    ? 'Preview: Budget Planner'
-                    : previewTab === 'goals'
-                    ? 'Preview: Target Impian (Savings Goals)'
-                    : 'Preview: Mobile App Showcase'}
+                      ? 'Preview: Dashboard Overview'
+                      : previewTab === 'budget'
+                        ? 'Preview: Budget Planner'
+                        : previewTab === 'goals'
+                          ? 'Preview: Target Impian (Savings Goals)'
+                          : 'Preview: Mobile App Showcase'}
                 </span>
               </div>
             </div>
@@ -405,7 +459,10 @@ export default function LandingPage() {
                     <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                       {t.hero.mockupNetWorthTitle}
                     </p>
-                    <p className="mt-2 text-3xl font-black text-white">Rp 28.750.000</p>
+                    <p className="mt-2 text-3xl font-black text-white flex items-baseline gap-1">
+                      <span>Rp</span>
+                      <NumberTicker value={28750000} format={(v) => new Intl.NumberFormat('id-ID').format(v)} />
+                    </p>
                     <div className="mt-3 flex items-center gap-2 text-xs text-emerald-400 font-semibold">
                       <TrendingUp className="h-3.5 w-3.5" />
                       <span>{t.hero.mockupNetWorthGrowth}</span>
@@ -420,20 +477,24 @@ export default function LandingPage() {
                   <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shadow-lg">
                     <div className="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
                       <span>{t.hero.mockupCashFlowTitle}</span>
-                      <span className="rounded bg-teal-500/10 px-2 py-0.5 text-teal-400">{t.hero.mockupCashFlowMonth}</span>
+                      <Badge variant="accent" className="font-normal">{t.hero.mockupCashFlowMonth}</Badge>
                     </div>
-                    <div className="mt-3 space-y-2">
+                    <div className="mt-3 space-y-2.5">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-slate-300">{t.hero.mockupIncome}</span>
-                        <span className="font-bold text-emerald-400">+Rp 12.500.000</span>
+                        <span className="font-bold text-emerald-400 flex items-baseline gap-0.5">
+                          <span>+Rp</span>
+                          <NumberTicker value={12500000} format={(v) => new Intl.NumberFormat('id-ID').format(v)} />
+                        </span>
                       </div>
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-slate-300">{t.hero.mockupExpense}</span>
-                        <span className="font-bold text-rose-400">-Rp 4.050.000</span>
+                        <span className="font-bold text-rose-400 flex items-baseline gap-0.5">
+                          <span>-Rp</span>
+                          <NumberTicker value={4050000} format={(v) => new Intl.NumberFormat('id-ID').format(v)} />
+                        </span>
                       </div>
-                      <div className="w-full bg-slate-800 rounded-full h-2 mt-2">
-                        <div className="bg-teal-400 h-2 rounded-full w-[32%]" />
-                      </div>
+                      <Progress value={32} barClassName="bg-teal-400" className="pt-1" />
                     </div>
                     <p className="mt-3 text-[11px] text-slate-400">{t.hero.mockupChartNote}</p>
                   </div>
@@ -448,12 +509,13 @@ export default function LandingPage() {
                     </div>
                     <p className="mt-2 text-lg font-bold text-white">{t.hero.mockupGoalsName}</p>
                     <div className="mt-2 flex items-center justify-between text-xs font-semibold">
-                      <span className="text-teal-300">Rp 17.000.000</span>
+                      <span className="text-teal-300 flex items-baseline gap-0.5">
+                        <span>Rp</span>
+                        <NumberTicker value={17000000} format={(v) => new Intl.NumberFormat('id-ID').format(v)} />
+                      </span>
                       <span className="text-slate-400">{t.hero.mockupGoalsTarget}</span>
                     </div>
-                    <div className="w-full bg-slate-800 rounded-full h-2 mt-2">
-                      <div className="bg-gradient-to-r from-teal-400 to-emerald-400 h-2 rounded-full w-[85%]" />
-                    </div>
+                    <Progress value={85} barClassName="bg-gradient-to-r from-teal-400 to-emerald-400" className="pt-2" />
                     <p className="mt-2 text-[11px] text-emerald-400 font-medium">
                       {t.hero.mockupGoalsAchieved}
                     </p>
@@ -604,8 +666,8 @@ export default function LandingPage() {
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-2 text-xs text-slate-400">
                   <span>
-                    {lang === 'id' 
-                      ? '📱 Pratinjau Tampilan Mobile Native (iOS & Android) — Akan dirilis segera setelah tahap beta selesai.' 
+                    {lang === 'id'
+                      ? '📱 Pratinjau Tampilan Mobile Native (iOS & Android) — Akan dirilis segera setelah tahap beta selesai.'
                       : '📱 Native Mobile App Preview (iOS & Android) — Releasing soon after beta optimization.'}
                   </span>
                   <a
@@ -1211,34 +1273,23 @@ export default function LandingPage() {
             </h2>
           </div>
 
-          <div className="mt-12 space-y-4">
-            {t.faq.items.map((faq, idx) => {
-              const isOpen = openFaq === idx
-              return (
-                <div
+          <div className="mt-12">
+            <Accordion defaultValue={["faq-0"]} multiple className="space-y-3">
+              {t.faq.items.map((faq, idx) => (
+                <AccordionItem
                   key={idx}
-                  className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/70 transition"
+                  value={`faq-${idx}`}
+                  className="rounded-2xl border border-slate-800 bg-slate-950/70 px-5 shadow-sm transition hover:border-slate-700/80"
                 >
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaq(isOpen ? null : idx)}
-                    className="flex w-full items-center justify-between p-5 text-left text-base font-semibold text-white transition hover:text-teal-300 cursor-pointer"
-                  >
-                    <span>{faq.q}</span>
-                    <ChevronDown
-                      className={`h-5 w-5 shrink-0 text-slate-400 transition-transform duration-200 ${
-                        isOpen ? 'rotate-180 text-teal-400' : ''
-                      }`}
-                    />
-                  </button>
-                  {isOpen && (
-                    <div className="border-t border-slate-800/70 px-5 pb-5 pt-3 text-sm text-slate-300 leading-relaxed">
-                      {faq.a}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+                  <AccordionTrigger className="text-base font-semibold text-white">
+                    {faq.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-sm text-slate-300 leading-relaxed">
+                    {faq.a}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           </div>
         </div>
       </section>
@@ -1437,10 +1488,10 @@ export default function LandingPage() {
                 {t.footer.colAddressTitle}
               </h4>
               <div className="space-y-2.5 text-xs text-slate-400 leading-relaxed">
-                <p className="flex items-start gap-2">
+                <div className="flex items-start gap-2">
                   <MapPin className="h-4 w-4 text-cyan-400 shrink-0 mt-0.5" />
                   <span>{t.contact.addressDesc}</span>
-                </p>
+                </div>
                 <div className="pt-2">
                   <Link href="/privacy" className="font-medium text-teal-400 hover:text-teal-300 underline">
                     {t.footer.privacyPolicy}

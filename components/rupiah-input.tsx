@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { formatRupiah, parseRupiahToNumber, terbilangRupiah } from '@/lib/utils'
-import { Coins, Sparkles, X } from 'lucide-react'
+import { Coins, Sparkles, X } from '@/components/animated-icons'
 
 interface RupiahInputProps {
   value: number | string

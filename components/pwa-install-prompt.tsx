@@ -194,9 +194,9 @@ export function PwaInstallPrompt({ lang = 'id' }: { lang?: 'id' | 'en' }) {
                   <p className="font-semibold text-slate-800 dark:text-slate-200">
                     {lang === 'en' ? 'Tap the Share Button' : 'Tekan Tombol Bagikan (Share)'}
                   </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+                  <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
                     {lang === 'en' ? 'Tap the' : 'Klik ikon'} <Share className="h-3.5 w-3.5 text-blue-500 inline" /> {lang === 'en' ? 'icon at the bottom of Safari' : 'di bilah navigasi bawah Safari.'}
-                  </p>
+                  </div>
                 </div>
               </div>
 
@@ -208,9 +208,9 @@ export function PwaInstallPrompt({ lang = 'id' }: { lang?: 'id' | 'en' }) {
                   <p className="font-semibold text-slate-800 dark:text-slate-200">
                     {lang === 'en' ? 'Choose "Add to Home Screen"' : 'Pilih "Tambah ke Layar Utama"'}
                   </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+                  <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
                     {lang === 'en' ? 'Scroll down and tap' : 'Gulir ke bawah dan klik'} <PlusSquare className="h-3.5 w-3.5 text-emerald-500 inline" /> {lang === 'en' ? '"Add to Home Screen"' : '"Add to Home Screen".'}
-                  </p>
+                  </div>
                 </div>
               </div>
 

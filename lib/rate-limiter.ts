@@ -20,7 +20,7 @@ if (typeof globalThis !== 'undefined') {
   const CLEANUP_INTERVAL = 5 * 60 * 1000
   if (!(globalThis as any).__rateLimitCleanerStarted) {
     ;(globalThis as any).__rateLimitCleanerStarted = true
-    setInterval(() => {
+    const timer = setInterval(() => {
       const now = Date.now()
       for (const [key, timestamps] of rateLimitStore.entries()) {
         const filtered = timestamps.filter((t) => now - t < 10 * 60 * 1000)
@@ -30,7 +30,8 @@ if (typeof globalThis !== 'undefined') {
           rateLimitStore.set(key, filtered)
         }
       }
-    }, CLEANUP_INTERVAL).unref?.()
+    }, CLEANUP_INTERVAL) as any
+    timer?.unref?.()
   }
 }
 

@@ -93,7 +93,7 @@ import {
   WalletCards,
   X,
   Zap,
-} from 'lucide-react'
+} from '@/components/animated-icons'
 import type { Budget, Category, Goal, Subscription, Transaction, Wallet as WalletType } from '@/lib/schema'
 import { formatIndoDate, formatRupiah } from '@/lib/utils'
 import { RupiahInput } from '@/components/rupiah-input'
@@ -1186,10 +1186,10 @@ export default function Dashboard({
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5">
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5">
                         <Calendar className="h-3.5 w-3.5 text-slate-400" />
                         <span>{formatIndoDate(new Date())}</span>
-                      </p>
+                      </div>
                     </div>
                   </div>
 
@@ -1214,9 +1214,9 @@ export default function Dashboard({
                     {dueSoonSubs.length > 0 && (
                       <div className="rounded-2xl border border-amber-200/70 dark:border-amber-900/40 bg-amber-50/90 dark:bg-amber-950/40 px-3 py-2 shadow-xs">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">{lang === 'en' ? 'Due Bills' : 'Tagihan Jatuh Tempo'}</p>
-                        <p className="text-xs sm:text-sm font-black text-amber-700 dark:text-amber-300 mt-0.5 flex items-center gap-1">
+                        <div className="text-xs sm:text-sm font-black text-amber-700 dark:text-amber-300 mt-0.5 flex items-center gap-1">
                           <Bell className="h-3.5 w-3.5" /> {dueSoonSubs.length} {lang === 'en' ? 'Bills' : 'Tagihan'}
-                        </p>
+                        </div>
                       </div>
                     )}
 
@@ -2399,10 +2399,10 @@ export default function Dashboard({
                                 <div>
                                   <h3 className="font-bold text-base text-slate-900 dark:text-white">{g.name}</h3>
                                   {g.targetDate && (
-                                    <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                                    <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
                                       <Clock className="h-3 w-3" />
                                       <span>Target: {new Date(g.targetDate).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { month: 'short', year: 'numeric' })}</span>
-                                    </p>
+                                    </div>
                                   )}
                                 </div>
                               </div>
@@ -2594,9 +2594,9 @@ export default function Dashboard({
                     <p className="text-xs text-slate-400 font-semibold">{t('due_soon_alert', lang)}</p>
                     {overdueSubs.length > 0 ? (
                       <>
-                        <p className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1 flex items-center gap-1.5">
+                        <div className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1 flex items-center gap-1.5">
                           <AlertCircle className="h-5 w-5" /> {overdueSubs.length} {lang === 'en' ? 'Overdue' : 'Lewat Tempo'}
-                        </p>
+                        </div>
                         <p className="text-[11px] text-rose-500 dark:text-rose-400 font-medium mt-2">
                           {lang === 'en' ? 'Immediate payment required' : 'Perlu segera dilunasi'}
                         </p>
@@ -2610,9 +2610,9 @@ export default function Dashboard({
                       </>
                     ) : (
                       <>
-                        <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
+                        <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
                           <CheckCircle2 className="h-5 w-5" /> {lang === 'en' ? 'All Clear' : 'Semua Aman'}
-                        </p>
+                        </div>
                         <p className="text-[11px] text-slate-400 mt-2">
                           {lang === 'en' ? 'No urgent bills pending' : 'Tidak ada tagihan mendesak'}
                         </p>
@@ -2622,9 +2622,9 @@ export default function Dashboard({
 
                   <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
                     <p className="text-xs text-slate-400 font-semibold">{t('api_sync_title', lang)}</p>
-                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
+                    <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
                       <Zap className="h-4 w-4" /> {t('api_sync_desc', lang)}
-                    </p>
+                    </div>
                     <p className="text-[11px] text-slate-400 mt-2">Endpoint: /api/v1/subscriptions</p>
                   </div>
                 </div>

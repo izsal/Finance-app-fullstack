@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useRef } from 'react'
-import { Calendar, ChevronDown } from 'lucide-react'
+import { Calendar, ChevronDown } from '@/components/animated-icons'
 import { formatIndoDate } from '@/lib/utils'
 
 interface DatePickerInputProps {

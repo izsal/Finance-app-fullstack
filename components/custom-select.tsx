@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import Select, { type Props as SelectProps, type GroupBase, type StylesConfig } from 'react-select'
 import CreatableSelect, { type CreatableProps } from 'react-select/creatable'
-import { Search, X, Plus, Check, ChevronDown, Loader2 } from 'lucide-react'
+import { Search, X, Plus, Check, ChevronDown, Loader2 } from '@/components/animated-icons'
 
 export interface OptionType<T = any> {
   value: T
