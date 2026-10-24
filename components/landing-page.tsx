@@ -351,22 +351,29 @@ export default function LandingPage() {
           </p>
 
           {/* CTAs */}
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/sign-in"
-              className="flex w-full sm:w-auto items-center justify-center gap-2.5 rounded-2xl bg-white px-7 py-3.5 text-sm font-bold text-slate-950 shadow-xl shadow-white/10 transition hover:bg-slate-100 active:scale-95"
-            >
-              <GoogleIcon className="h-5 w-5" />
-              <span>{t.hero.ctaGoogle}</span>
-            </Link>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
+              <Link
+                href="/sign-in"
+                className="flex w-full sm:w-auto items-center justify-center gap-2.5 rounded-2xl bg-white px-7 py-3.5 text-sm font-bold text-slate-950 shadow-xl shadow-white/10 transition hover:bg-slate-100 active:scale-95"
+              >
+                <GoogleIcon className="h-5 w-5" />
+                <span>{t.hero.ctaGoogle}</span>
+              </Link>
 
-            <a
-              href="#preview"
-              className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/80 px-6 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 hover:border-slate-600 active:scale-95"
-            >
-              <span>{t.hero.ctaPreview}</span>
-              <ChevronDown className="h-4 w-4 text-slate-400" />
-            </a>
+              <a
+                href="#preview"
+                className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/80 px-6 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 hover:border-slate-600 active:scale-95"
+              >
+                <span>{t.hero.ctaPreview}</span>
+                <ChevronDown className="h-4 w-4 text-slate-400" />
+              </a>
+            </div>
+            {t.hero.ctaSubtext && (
+              <p className="text-xs text-slate-400/90 font-medium text-center">
+                {t.hero.ctaSubtext}
+              </p>
+            )}
           </div>
 
           {/* Trust badges */}
