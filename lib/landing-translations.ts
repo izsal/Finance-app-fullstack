@@ -5,157 +5,85 @@ export const landingTranslations = {
     nav: {
       features: 'Fitur',
       dashboard: 'Dashboard',
-      howItWorks: 'Cara Kerja',
       pricing: 'Harga',
-      privacy: 'Privasi',
       faq: 'FAQ',
-      contact: 'Kontak',
       signIn: 'Masuk',
       getStarted: 'Mulai gratis',
     },
     hero: {
-      badge1: 'Aplikasi Budgeting Gratis',
-      badge2: 'Catat Pengeluaran Harian',
-      badge3: 'Aplikasi Mobile (Segera Hadir)',
+      eyebrow: 'Kelola Keuangan Pribadi Tanpa Ribet',
       headlinePrefix: 'Stop bingung gaji habis ke mana. ',
       headlineGradient: 'Kendalikan arus kasmu.',
       subtitle:
-        'Catat pengeluaran harian, tetapkan batas anggaran per kategori, dan pantau tabungan impian secara otomatis. Gratis selamanya, tanpa kartu kredit.',
+        'Catat pengeluaran harian dalam hitungan detik, pantau batas anggaran per kategori, dan capai target tabungan impian secara otomatis. Gratis selamanya, tanpa kartu kredit.',
       ctaGoogle: 'Mulai Catat Gratis',
       ctaSubtext: 'Setup 1 klik via Google • Tanpa kartu kredit',
-      ctaPreview: 'Lihat contoh dashboard',
-      trust1: 'Gratis pencatatan pengeluaran harian',
+      ctaPreview: 'Lihat simulasi dashboard',
+      trust1: 'Pencatatan harian tanpa batas',
       trust2: 'Data per akun privat & aman',
-      trust3: 'Web responsif (Aplikasi Mobile Segera Hadir)',
+      trust3: 'Akses cepat di browser HP',
       mockupWindow: 'finance.qwarts.my.id/dashboard',
-      mockupBadge: 'Ilustrasi Dashboard Budgeting',
+      mockupBadge: 'Simulasi Dashboard',
       mockupNetWorthTitle: 'Total Kekayaan Bersih',
       mockupNetWorthGrowth: '+18.4% bulan ini',
       mockupActiveWallets: 'Dompet Aktif',
       mockupActiveWalletsValue: 'BCA, Mandiri, Cash',
-      mockupCashFlowTitle: 'Arus Kas Pengeluaran & Pemasukan',
+      mockupCashFlowTitle: 'Arus Kas Bulanan',
       mockupCashFlowMonth: 'Maret 2026',
       mockupIncome: 'Pemasukan',
       mockupExpense: 'Pengeluaran',
       mockupChartNote: 'Tercatat rapi di grafik bulanan',
-      mockupGoalsTitle: 'Target Impian (Fitur PRO)',
+      mockupGoalsTitle: 'Target Impian',
       mockupGoalsName: 'Dana Darurat 6 Bulan',
       mockupGoalsTarget: 'Target Rp 20.000.000',
       mockupGoalsAchieved: '85% Tercapai • Sisa Rp 3.000.000 lagi',
-      mockupTxTitle: 'Catatan Pengeluaran & Pemasukan Harian',
-      mockupTxSub: 'Contoh simulasi catatan transaksi',
+      mockupTxTitle: 'Transaksi Terakhir',
+      mockupTxSub: 'Simulasi catatan harian',
       mockupTx1Title: 'Gaji Bulanan',
       mockupTx1Cat: 'BCA • Pemasukan',
       mockupTx2Title: 'Belanja Bulanan',
       mockupTx2Cat: 'Mandiri • Makanan',
       mockupTx3Title: 'Internet & WiFi',
       mockupTx3Cat: 'Tagihan Rutin',
-      mockupDisclaimer: '*Contoh data — bukan saldo akunmu',
+      mockupDisclaimer: '*Contoh data simulasi — bukan saldo akunmu',
     },
-    seoSection: {
-      tag: 'Panduan Finansial Cerdas',
-      title: 'Kenapa Butuh Cara Mencatat Pengeluaran Harian & Budgeting Bulanan?',
+    advantages: {
+      tag: 'Keunggulan Utama',
+      title: 'Semua yang Kamu Butuhkan, Tanpa Ribet',
       subtitle:
-        'Seringkali kita merasa penghasilan cukup, namun di akhir bulan bingung uang habis ke mana. Pengeluaran kecil harian (latte factor) yang tidak tercatat adalah penyebab utama kebocoran finansial.',
-      card1Title: 'Stop Kebocoran Finansial Harian',
+        'Tiga fitur esensial yang dirancang agar kamu konsisten mencatat dan memegang kendali penuh atas finansialmu.',
+      card1Badge: 'Bebas Ribet',
+      card1Title: 'Catat Pengeluaran dalam Hitungan Detik',
       card1Desc:
-        'Dengan mencatat pengeluaran harian seketika saat bertransaksi, Anda tahu persis ke mana setiap rupiah mengalir dan bisa memangkas pengeluaran impulsif.',
-      card2Title: 'Disiplin dengan Pos Budget Bulanan',
+        'Langsung masukkan transaksi pengeluaran dan pemasukan seketika saat bertransaksi tanpa form berbelit. Sangat cepat di HP, ringan, dan gratis selamanya.',
+      card1Point1: 'Input cepat kurang dari 5 detik',
+      card1Point2: 'Tanpa batasan kuota transaksi',
+      card2Badge: 'Multi-Dompet',
+      card2Title: 'Pisahkan Saldo Bank, E-Wallet & Tunai',
       card2Desc:
-        'Fitur aplikasi budgeting bulanan memudahkan alokasi pagu dana belanja makanan, transportasi, dan hiburan agar tidak overbudget sebelum gajian berikutnya.',
-      card3Title: 'Multi-Dompet & Rekening Terpisah',
+        'Hilangkan ilusi saldo masih banyak karena uang bercampur. Pantau arus kas masuk dan keluar per rekening secara visual dengan grafik yang jernih.',
+      card2Point1: 'Atur rekening BCA, Mandiri, GoPay, dan tunai',
+      card2Point2: 'Grafik arus kas masuk vs keluar bulanan',
+      card3Badge: 'Fitur PRO',
+      card3Title: 'Kontrol Batas Budget & Target Impian',
       card3Desc:
-        'Pisahkan uang operasional harian, tabungan bank, dan saldo e-wallet. Tidak ada lagi saldo bercampur yang membuat ilusi bahwa Anda masih punya banyak uang.',
-      card4Title: 'Bukan Sekadar Catatan, Tapi Target Nyata',
-      card4Desc:
-        'Pencatatan keuangan yang konsisten adalah fondasi membangun dana darurat, membayar tagihan tepat waktu, dan mewujudkan impian finansial masa depan.',
-    },
-    socialProof: {
-      tag: 'Dibuat untuk Pengelolaan Finansial yang Masuk Akal',
-      title: 'Cocok untuk Siapa Saja yang Ingin Finansial Lebih Rapi',
-      card1Title: 'Pencatat Keuangan Pemula',
-      card1Desc:
-        'Beralih dari cara manual di buku atau spreadsheet yang membingungkan ke aplikasi budgeting web yang ringan dan otomatis.',
-      card2Title: 'Pekerja & Freelancer',
-      card2Desc:
-        'Memisahkan uang operasional harian, rekening tabungan, dan dana cadangan agar arus kas tidak saling tercampur.',
-      card3Title: 'Pengatur Budget Bulanan',
-      card3Desc:
-        'Ingin membatasi pos pengeluaran harian (makanan, gaya hidup) agar tidak overbudget di tengah bulan.',
-      testimonials: [
-        {
-          quote:
-            'Dulu sering bingung gaji habis ke mana. Sekarang tinggal buka di HP dan catat setiap habis belanja, arus kas bulanan langsung kelihatan jelas.',
-          author: 'Dimas R., Karyawan Swasta',
-        },
-        {
-          quote:
-            'Paket Starter gratisnya sudah sangat cukup untuk pencatatan harian saya. Tampilannya bersih, ringan, dan tidak banyak tombol yang bikin pusing.',
-          author: 'Sarah A., Freelancer',
-        },
-        {
-          quote:
-            'Saya ambil paket PRO tahunan karena butuh fitur batas budget per kategori dan ekspor Excel. Harganya murah banget dibanding manfaat yang didapat.',
-          author: 'Reza P., Product Designer',
-        },
-      ],
-    },
-    features: {
-      tag: 'Fitur Aplikasi Keuangan',
-      title: 'Semua yang Kamu Butuhkan untuk Mencatat Pengeluaran & Budgeting',
-      subtitle:
-        'Mulai dari cara mencatat pengeluaran harian tanpa biaya, hingga fitur otomatisasi pagu anggaran di aplikasi budgeting PRO.',
-      f1Badge: 'Free',
-      f1Title: 'Catat Pengeluaran & Pemasukan Harian',
-      f1Desc:
-        'Catat setiap transaksi pengeluaran harianmu tanpa batasan jumlah. Pantau arus kas secara visual lewat grafik bulanan yang mudah dipahami.',
-      f2Badge: 'Free (2) · PRO (Unlimited)',
-      f2Title: 'Multi-Dompet & Rekening Bank',
-      f2Desc:
-        'Pisahkan uang tunai harian, rekening bank (BCA, Mandiri, BRI), atau e-wallet (GoPay, OVO). Akun Starter mendukung hingga 2 dompet; buka tanpa batas di PRO.',
-      f3Badge: 'PRO',
-      f3Title: 'Aplikasi Budgeting Bulanan & Overbudget Alert',
-      f3Desc:
-        'Tetapkan pagu anggaran per kategori (makanan, transportasi, hiburan) dan pantau persentase belanja agar tidak melebihi batas budget bulanan.',
-      f4Badge: 'PRO',
-      f4Title: 'Target Impian (Savings Goals)',
-      f4Desc:
-        'Rencanakan dana darurat, beli gadget baru, atau liburan. Pantau progress bar tabungan secara visual hingga nominal impian tercapai.',
-      f5Badge: 'PRO',
-      f5Title: 'Tagihan Rutin & Pengingat Jatuh Tempo',
-      f5Desc:
-        'Catat pengeluaran rutin bulanan seperti WiFi, listrik, atau langganan aplikasi. Lengkap dengan tanggal jatuh tempo agar tidak terkena denda keterlambatan.',
-      f6Badge: 'PRO',
-      f6Title: 'Ekspor Laporan Excel & PDF',
-      f6Desc:
-        'Unduh rekapitulasi data keuangan bulanan dalam format Excel (.xlsx) atau PDF kapan saja untuk arsip pribadi maupun evaluasi keuangan tahunan.',
-    },
-    howItWorks: {
-      tag: 'Alur Praktis',
-      title: 'Mulai Rapi Finansial dalam 3 Langkah Mudah',
-      step1Title: 'Masuk dengan Akun Google',
-      step1Desc:
-        'Cukup satu klik dengan akun Google Anda tanpa perlu menghafal password baru. Dashboard aplikasi budgeting siap dalam hitungan detik.',
-      step2Title: 'Atur Dompet & Pos Kategori Pengeluaran',
-      step2Desc:
-        'Tambahkan hingga 2 dompet di paket Free (misal: Rekening Utama & Tunai) serta sesuaikan pos kategori pengeluaran harian sesuai gaya hidupmu.',
-      step3Title: 'Catat Rutin & Evaluasi Budget Bulanan',
-      step3Desc:
-        'Catat pengeluaran harian secara konsisten. Upgrade ke PRO kapan saja saat kamu butuh pagu budget otomatis, target impian, atau ekspor data.',
+        'Pasang pagu belanja per pos kategori agar tidak overbudget sebelum gajian, serta pantau progres dana darurat atau target tabungan impianmu.',
+      card3Point1: 'Peringatan saat pengeluaran mendekati pagu',
+      card3Point2: 'Progress bar tabungan & ekspor Excel / PDF',
     },
     pricing: {
-      badge: 'Transparan & Sangat Terjangkau',
-      title: 'Pilihan Paket Aplikasi Budgeting yang Jujur & Masuk Akal',
+      badge: 'Transparan & Terjangkau',
+      title: 'Pilihan Paket yang Jujur & Masuk Akal',
       subtitle:
-        'Gratis untuk pencatatan pengeluaran harian; upgrade ke PRO untuk sistem budgeting otomatis, multi-dompet unlimited, dan ekspor laporan.',
+        'Mulai gratis untuk pencatatan harian, atau upgrade ke PRO untuk sistem budgeting otomatis, multi-dompet tanpa batas, dan ekspor data.',
       freeTitle: 'Paket Starter (Free)',
       freeBadge: 'Gratis Selamanya',
       freeDesc:
-        'Cocok untuk siapa saja yang ingin mulai membiasakan diri mencatat pengeluaran harian dan pemasukan tanpa ribet.',
+        'Cocok untuk siapa saja yang ingin mulai membiasakan diri mencatat pengeluaran dan pemasukan harian tanpa ribet.',
       freePrice: 'Rp 0',
       freePricePeriod: '/ selamanya',
       includedTitle: 'Fitur Termasuk:',
-      fInc1: 'Pencatatan Pengeluaran & Pemasukan Harian Unlimited',
+      fInc1: 'Pencatatan Transaksi Harian Unlimited',
       fInc2: 'Maksimal 2 Dompet / Rekening Bank',
       fInc3: 'Kategori Transaksi Lengkap',
       fInc4: 'Grafik Arus Kas & Statistik Bulanan',
@@ -194,107 +122,57 @@ export const landingTranslations = {
       bottomNote:
         'Data keuangan tetap milikmu sepenuhnya. Mulai Starter tanpa kartu kredit. Upgrade atau batalkan langganan kapan saja langsung dari dashboard.',
     },
-    privacy: {
-      tag: 'Privasi Pengguna',
-      title: 'Data Keuanganmu adalah Milik Pribadimu',
-      subtitle:
-        'Kami mengutamakan privasi dan transparansi tanpa membuat klaim keamanan yang berlebihan.',
-      card1Title: 'Login via Google OAuth2',
-      card1Desc:
-        'Kami tidak menyimpan password akun Anda. Autentikasi ditangani langsung oleh sistem resmi Google yang terpercaya.',
-      card2Title: 'Data Privat Per Akun',
-      card2Desc:
-        'Setiap catatan transaksi tersimpan secara terisolasi per pengguna dan tidak pernah dibagikan atau dijual ke pihak mana pun.',
-      card3Title: 'Tanpa Akses Rekening Bank',
-      card3Desc:
-        'Kami tidak pernah meminta nomor PIN kartu, kata sandi m-banking, maupun hak debit mutasi bank Anda.',
-      card4Title: 'Kontrol Data di Tangan Anda',
-      card4Desc:
-        'Anda memiliki kendali penuh untuk menambah, mengedit, mengekspor laporan, atau menghapus data transaksi kapan saja.',
-      readPolicy: 'Baca kebijakan privasi lengkap',
-    },
     faq: {
-      tag: 'Pertanyaan Populer',
-      title: 'Pertanyaan Seputar Cara Mencatat Pengeluaran & Fitur Budgeting (FAQ)',
+      tag: 'Bantuan & Jawaban',
+      title: 'Pertanyaan yang Sering Diajukan',
+      subtitle:
+        'Semua yang perlu kamu ketahui tentang Qwarts Finance dan cara penggunaannya.',
       items: [
         {
-          q: 'Bagaimana cara mencatat pengeluaran harian yang efektif agar tidak lupa?',
-          a: 'Kunci konsistensi mencatat pengeluaran harian adalah langsung mencatat setiap kali bertransaksi tanpa menunda. Buka Qwarts Finance melalui browser HP Anda dan masukkan nominal serta kategori dalam waktu kurang dari 5 detik. Tidak perlu repot login berulang kali atau menunggu struk menumpuk di dompet.',
+          q: 'Apakah Qwarts Finance benar-benar gratis?',
+          a: 'Ya! Paket Starter 100% gratis selamanya untuk pencatatan transaksi harian tanpa batasan kuota. Tidak memerlukan kartu kredit untuk mendaftar.',
         },
         {
-          q: 'Mengapa lebih baik memakai aplikasi budgeting bulanan dibanding buku catatan atau Excel manual?',
-          a: 'Buku catatan mudah hilang dan tidak bisa menjumlahkan pengeluaran secara otomatis. Spreadsheet Excel seringkali merepotkan saat dibuka di layar HP saat berbelanja. Aplikasi budgeting bulanan seperti Qwarts Finance menghitung sisa budget secara otomatis, memberikan peringatan overbudget, menyajikan grafik tren pengeluaran, serta mendukung sinkronisasi multi-perangkat.',
-        },
-        {
-          q: 'Apakah ada versi gratis? Apa saja batasannya?',
-          a: 'Ya! Paket Starter 100% gratis selamanya untuk pencatatan transaksi harian tanpa batasan jumlah. Batasannya adalah maksimal 2 dompet/rekening dan belum mencakup fitur PRO seperti batas budget per kategori, target impian (tabungan), pengingat tagihan rutin, serta ekspor data Excel/PDF.',
-        },
-        {
-          q: 'Apakah saya bisa login langsung dengan akun Google?',
-          a: 'Tentu saja. Anda bisa langsung mendaftar atau masuk dengan satu kali klik menggunakan akun Google (Google OAuth2). Tidak perlu repot mengisi formulir manual atau mengingat kata sandi baru.',
-        },
-        {
-          q: 'Berapa jumlah dompet di paket Free vs PRO?',
-          a: 'Di Paket Starter (Free), Anda dapat membuat hingga 2 dompet atau rekening (misalnya 1 rekening bank dan 1 dompet uang tunai). Pada Paket PRO, Anda dapat menambahkan rekening dan e-wallet tanpa batas (unlimited), seperti BCA, Mandiri, BRI, GoPay, OVO, Dana, dan lainnya.',
+          q: 'Apa perbedaan utama antara paket Free dan PRO?',
+          a: 'Paket Free mendukung hingga 2 dompet dan pencatatan transaksi unlimited. Paket PRO membuka dompet tanpa batas, pengaturan pagu budget bulanan per kategori dengan overbudget alert, target tabungan impian, pelacak tagihan rutin, serta ekspor laporan ke Excel dan PDF.',
         },
         {
           q: 'Bagaimana keamanan data finansial saya?',
-          a: 'Data keuangan Anda tersimpan per akun dan dilindungi standar keamanan modern. Kami tidak pernah meminta informasi sensitif perbankan seperti PIN kartu ATM, kata sandi m-banking, maupun token transaksi. Anda mencatat secara mandiri dan privat.',
+          a: 'Data transaksi tersimpan per akun secara terisolasi dan privat. Kami tidak pernah meminta PIN kartu ATM, kata sandi m-banking, maupun hak mutasi rekening bank Anda. Pencatatan dilakukan mandiri dan aman.',
         },
         {
-          q: 'Apa saja fitur yang termasuk di dalam paket PRO?',
-          a: 'Paket PRO mencakup: unlimited dompet & rekening, pengaturan batas budget bulanan per kategori dengan peringatan overbudget, fitur Target Impian (savings goals) dengan visualisasi progres, pelacak tagihan rutin & pengingat jatuh tempo, serta ekspor laporan ke Excel (.xlsx) dan PDF.',
+          q: 'Apakah bisa digunakan langsung dari browser ponsel?',
+          a: 'Sangat bisa. Tampilan Qwarts Finance dirancang responsif dan ringan menyerupai aplikasi native sehingga sangat nyaman dibuka kapan saja melalui browser ponsel Anda.',
         },
         {
-          q: 'Apa perbedaan bayar bulanan vs tahunan untuk paket PRO?',
-          a: 'Paket PRO bulanan berbiaya Rp 19.000/bulan dengan fleksibilitas bayar setiap bulan. Paket tahunan berbiaya Rp 149.000/tahun (setara ~Rp 12.400/bulan), yang memberikan penghematan biaya sekitar 35% dibanding bayar bulanan.',
-        },
-        {
-          q: 'Bisakah saya mengekspor data atau menghapus akun?',
-          a: 'Pengguna Paket PRO dapat mengekspor seluruh catatan transaksi ke format Excel (.xlsx) atau PDF kapan pun dibutuhkan untuk arsip pribadi. Anda juga dapat mengelola dan menghapus data catatan finansial Anda kapan saja melalui dashboard.',
+          q: 'Bagaimana cara mendaftar atau masuk ke akun?',
+          a: 'Cukup gunakan tombol login dengan Akun Google (Google OAuth2). Satu klik langsung masuk tanpa perlu repot mengingat atau mengatur password baru.',
         },
       ],
     },
     ctaBanner: {
-      title: 'Mulai Rapikan Keuangan & Catat Pengeluaran Hari Ini',
+      title: 'Mulai Rapikan Keuanganmu Hari Ini',
       subtitle:
-        'Gratis untuk pencatatan pengeluaran harian, upgrade ke PRO kapan pun kamu siap mengontrol pagu budget bulanan dan target tabungan impian.',
+        'Gratis untuk pencatatan transaksi harian. Upgrade ke PRO kapan saja saat kamu siap mengontrol batas budget dan target tabungan impian.',
       cta: 'Mulai Catat Gratis dengan Google',
-      note: 'Tanpa kartu kredit untuk Starter • Setup instan dalam 1 menit',
-    },
-    contact: {
-      tag: 'Layanan & Bantuan Pelanggan',
-      title: 'Hubungi Kami',
-      subtitle:
-        'Tim dukungan kami siap membantu kebutuhan kendala akun, pertanyaan fitur, dan pembayaran langganan Anda.',
-      emailTitle: 'Email Resmi Support',
-      emailDesc: 'Kirimkan pertanyaan atau laporan kendala Anda melalui email resmi kami.',
-      phoneTitle: 'WhatsApp & Telepon',
-      phoneDesc: 'Respon cepat bantuan pelanggan pada hari dan jam operasional.',
-      phoneBadge: 'WhatsApp Aktif',
-      addressTitle: 'Alamat Kantor / Domisili Usaha',
-      addressDesc:
-        'Jl. Bambu Hitam No.5, RT.5/RW.5, Setu, Kec. Cipayung, Kota Jakarta Timur, Daerah Khusus Ibukota Jakarta 13890, Indonesia',
-      officeHours: 'Senin – Minggu: 08:00 – 21:00 WIB',
-      paymentGatewayBadge: 'Sistem Pembayaran Terverifikasi & Aman:',
-      paymentGatewayDesc:
-        'Didukung oleh Duitku Payment Gateway • QRIS (Semua Bank & E-Wallet), Virtual Account (BCA, Mandiri, BRI, BNI), ShopeePay & E-Wallet.',
+      note: 'Tanpa kartu kredit • Setup instan dalam 1 menit',
     },
     footer: {
       brandDesc:
-        'Aplikasi budgeting bulanan pintar dan solusi cara mencatat pengeluaran harian berbasis web dan mobile untuk kontrol arus kas, pos anggaran, dan target tabungan impian.',
+        'Aplikasi pencatatan keuangan pribadi dan budgeting pintar berbasis web dan mobile untuk kontrol arus kas, pos anggaran, dan target impian.',
       statusActive: 'Operasional Layanan Aktif',
       colNavTitle: 'Navigasi',
-      navFeatures: 'Fitur Utama',
-      navDashboard: 'Tampilan Dashboard',
-      navPricing: 'Harga & Paket PRO',
-      navFaq: 'Pertanyaan (FAQ)',
-      navContact: 'Kontak Dukungan',
+      navFeatures: 'Fitur',
+      navDashboard: 'Dashboard',
+      navPricing: 'Harga',
+      navFaq: 'FAQ',
       colContactTitle: 'Kontak Dukungan',
-      colAddressTitle: 'Alamat Usaha & Legalitas',
+      emailTitle: 'Email Resmi',
+      whatsappTitle: 'WhatsApp',
       privacyPolicy: 'Kebijakan Privasi',
+      legalNote:
+        'Alamat lengkap kantor dan informasi legalitas operasional tercantum di halaman',
       copyright: 'Qwarts Finance. Hak cipta dilindungi undang-undang.',
-      helpContact: 'Bantuan & Kontak',
       enterDashboard: 'Masuk ke Dashboard',
     },
   },
@@ -302,45 +180,40 @@ export const landingTranslations = {
     nav: {
       features: 'Features',
       dashboard: 'Dashboard',
-      howItWorks: 'How It Works',
       pricing: 'Pricing',
-      privacy: 'Privacy',
       faq: 'FAQ',
-      contact: 'Contact',
       signIn: 'Sign In',
       getStarted: 'Start for Free',
     },
     hero: {
-      badge1: 'Free Budgeting App',
-      badge2: 'Daily Expense Tracker',
-      badge3: 'Mobile App (Coming Soon)',
+      eyebrow: 'Personal Finance & Budgeting Made Simple',
       headlinePrefix: 'Stop wondering where your paycheck went. ',
       headlineGradient: 'Take control of your cash flow.',
       subtitle:
-        'Track daily expenses, set category budget caps, and monitor savings goals automatically. 100% free forever, no credit card required.',
+        'Track daily expenses in seconds, monitor category budget caps, and achieve your dream savings goals automatically. 100% free forever, no credit card required.',
       ctaGoogle: 'Start Tracking Free',
       ctaSubtext: '1-click setup via Google • No credit card required',
       ctaPreview: 'View dashboard demo',
-      trust1: 'Free unlimited daily expense tracking',
-      trust2: 'Isolated & secure per-account data',
-      trust3: 'Responsive Web (Mobile App Coming Soon)',
+      trust1: 'Unlimited daily transaction logs',
+      trust2: 'Isolated & private per-account data',
+      trust3: 'Instant mobile browser access',
       mockupWindow: 'finance.qwarts.my.id/dashboard',
-      mockupBadge: 'Budgeting Dashboard Illustration',
+      mockupBadge: 'Dashboard Simulation',
       mockupNetWorthTitle: 'Total Net Worth',
       mockupNetWorthGrowth: '+18.4% this month',
       mockupActiveWallets: 'Active Wallets',
       mockupActiveWalletsValue: 'BCA, Mandiri, Cash',
-      mockupCashFlowTitle: 'Income & Expense Cash Flow',
+      mockupCashFlowTitle: 'Monthly Cash Flow',
       mockupCashFlowMonth: 'March 2026',
       mockupIncome: 'Income',
       mockupExpense: 'Expense',
       mockupChartNote: 'Cleanly organized in monthly charts',
-      mockupGoalsTitle: 'Dream Goals (PRO Feature)',
+      mockupGoalsTitle: 'Dream Goals',
       mockupGoalsName: '6-Month Emergency Fund',
       mockupGoalsTarget: 'Target Rp 20,000,000',
       mockupGoalsAchieved: '85% Achieved • Rp 3,000,000 remaining',
-      mockupTxTitle: 'Daily Expense & Income Log',
-      mockupTxSub: 'Sample simulated transaction log',
+      mockupTxTitle: 'Recent Transactions',
+      mockupTxSub: 'Daily transaction simulation',
       mockupTx1Title: 'Monthly Salary',
       mockupTx1Cat: 'BCA • Income',
       mockupTx2Title: 'Monthly Groceries',
@@ -349,102 +222,35 @@ export const landingTranslations = {
       mockupTx3Cat: 'Subscription',
       mockupDisclaimer: '*Sample demonstration data — not your actual balance',
     },
-    seoSection: {
-      tag: 'Smart Financial Guide',
-      title: 'Why Daily Expense Tracking & Monthly Budgeting Matter',
+    advantages: {
+      tag: 'Key Advantages',
+      title: 'Everything You Need, Zero Clutter',
       subtitle:
-        'Most people feel their income vanishes not because they earn too little, but because untracked micro-expenses (the latte factor) slowly drain cash reserves without being noticed.',
-      card1Title: 'Stop Daily Financial Leaks',
+        'Three essential pillars designed to help you stay consistent and take complete control over your money.',
+      card1Badge: 'Effortless',
+      card1Title: 'Log Expenses in Under 5 Seconds',
       card1Desc:
-        'By logging daily transactions on the go, you see exactly where every penny flows and can trim impulsive spending before it hurts your wallet.',
-      card2Title: 'Stay Disciplined with Category Budgets',
+        'Quickly record income and spending the moment transactions happen without navigating tedious forms. Lightweight, fast on mobile, and free forever.',
+      card1Point1: 'Fast mobile logging in seconds',
+      card1Point2: 'Unlimited daily transaction entries',
+      card2Badge: 'Multi-Wallet',
+      card2Title: 'Keep Bank, E-Wallet & Cash Separate',
       card2Desc:
-        'Monthly budgeting caps allow you to assign clear limits for dining, groceries, and entertainment so you never overspend before the next paycheck.',
-      card3Title: 'Keep Multi-Wallets & Accounts Separate',
+        'Avoid the illusion of extra money from mixed accounts. Visually track inflows and outflows per account with crystal-clear monthly cash flow charts.',
+      card2Point1: 'Manage bank accounts, e-wallets, and cash',
+      card2Point2: 'Automated income vs expense flow charts',
+      card3Badge: 'PRO Feature',
+      card3Title: 'Category Budget Caps & Dream Goals',
       card3Desc:
-        'Separate operational cash, bank savings, and e-wallet balances. No more mixed-up funds creating the illusion that you have excess spending money.',
-      card4Title: 'Not Just Records, Real Financial Milestones',
-      card4Desc:
-        'Consistent bookkeeping is the true foundation for building emergency reserves, paying recurring bills on time, and securing lifelong financial peace.',
-    },
-    socialProof: {
-      tag: 'Built for Sensible Financial Management',
-      title: 'Perfect for Anyone Who Wants Cleaner Finances',
-      card1Title: 'Beginner Budgeters',
-      card1Desc:
-        'Transition from messy paper notebooks or complicated spreadsheets to a lightweight, automated web budgeting app.',
-      card2Title: 'Employees & Freelancers',
-      card2Desc:
-        'Separate daily living expenses, savings accounts, and buffer funds so your cash flows never get tangled.',
-      card3Title: 'Monthly Budget Planners',
-      card3Desc:
-        'Set spending limits on daily categories (dining, lifestyle) to avoid overspending halfway through the month.',
-      testimonials: [
-        {
-          quote:
-            'I used to wonder where my paycheck disappeared every month. Now I just open it on my phone after shopping, and my monthly cash flow is immediately clear.',
-          author: 'Dimas R., Private Sector Employee',
-        },
-        {
-          quote:
-            'The free Starter plan is more than enough for my daily tracking. The interface is clean, lightweight, and clutter-free.',
-          author: 'Sarah A., Freelancer',
-        },
-        {
-          quote:
-            'I chose the yearly PRO plan for category budget caps and Excel export. It is remarkably affordable for the immense clarity it provides.',
-          author: 'Reza P., Product Designer',
-        },
-      ],
-    },
-    features: {
-      tag: 'Finance App Features',
-      title: 'Everything You Need for Daily Expense Tracking & Budgeting',
-      subtitle:
-        'From zero-cost daily expense tracking to automated monthly budgeting caps in the PRO plan.',
-      f1Badge: 'Free',
-      f1Title: 'Daily Income & Expense Tracking',
-      f1Desc:
-        'Record all your daily transactions without count limits. Visually monitor income and expenses with intuitive monthly cash flow charts.',
-      f2Badge: 'Free (2) · PRO (Unlimited)',
-      f2Title: 'Multi-Wallet & Bank Accounts',
-      f2Desc:
-        'Organize cash, bank accounts (BCA, Mandiri, BRI), and e-wallets (GoPay, OVO). Starter supports up to 2 wallets; unlock unlimited on PRO.',
-      f3Badge: 'PRO',
-      f3Title: 'Monthly Budgeting & Overbudget Alerts',
-      f3Desc:
-        'Set monthly spending caps per category (food, transit, leisure) and monitor percentages to prevent exceeding your budget limits.',
-      f4Badge: 'PRO',
-      f4Title: 'Dream Goals (Savings Goals)',
-      f4Desc:
-        'Plan for an emergency fund, a new gadget, or a holiday trip. Track visual progress bars until you hit your savings target.',
-      f5Badge: 'PRO',
-      f5Title: 'Recurring Bills & Reminders',
-      f5Desc:
-        'Keep track of routine monthly expenses like WiFi, utilities, or app subscriptions with due date reminders to prevent late fees.',
-      f6Badge: 'PRO',
-      f6Title: 'Export Reports to Excel & PDF',
-      f6Desc:
-        'Download monthly financial recaps in Excel (.xlsx) or PDF format anytime for personal archiving and annual reviews.',
-    },
-    howItWorks: {
-      tag: 'Practical Workflow',
-      title: 'Get Financially Organized in 3 Simple Steps',
-      step1Title: 'Sign in with Google Account',
-      step1Desc:
-        'One-click sign in with your Google account—no need to memorize new passwords. Your budgeting dashboard is ready in seconds.',
-      step2Title: 'Set Up Wallets & Expense Categories',
-      step2Desc:
-        'Add up to 2 wallets on the Free plan (e.g., Main Account & Cash) and customize daily expense categories to fit your lifestyle.',
-      step3Title: 'Track Regularly & Review Monthly Budgets',
-      step3Desc:
-        'Log daily transactions consistently. Upgrade to PRO whenever you want category budgets, dream goals, or file exports.',
+        'Set spending boundaries per category to prevent mid-month overspending, and track visual milestones for your emergency fund or holiday savings.',
+      card3Point1: 'Smart alerts when nearing budget limits',
+      card3Point2: 'Visual savings progress & Excel/PDF export',
     },
     pricing: {
       badge: 'Transparent & Accessible',
-      title: 'Honest, Sensible Pricing for Your Budgeting Journey',
+      title: 'Honest, Sensible Pricing for Everyone',
       subtitle:
-        'Free for daily expense tracking; upgrade to PRO for category budgets, unlimited wallets, savings goals, and data export.',
+        'Start free for daily expense tracking; upgrade to PRO for automated category budgets, unlimited wallets, savings goals, and data export.',
       freeTitle: 'Starter Plan (Free)',
       freeBadge: 'Free Forever',
       freeDesc:
@@ -491,107 +297,57 @@ export const landingTranslations = {
       bottomNote:
         'Your financial data belongs completely to you. Start free without a credit card. Upgrade or cancel anytime directly from your dashboard.',
     },
-    privacy: {
-      tag: 'User Privacy',
-      title: 'Your Financial Data Stays Yours',
-      subtitle:
-        'We prioritize genuine privacy and transparency without inflated security claims.',
-      card1Title: 'Login via Google OAuth2',
-      card1Desc:
-        'We never store your passwords. Authentication is handled directly by trusted, official Google systems.',
-      card2Title: 'Private Data Per Account',
-      card2Desc:
-        'Every transaction entry is isolated per user and is never shared or sold to any third party.',
-      card3Title: 'No Bank Account Access Required',
-      card3Desc:
-        'We never ask for ATM PINs, mobile banking passwords, SMS OTPs, or debit bank rights. Your tracking is manual and private.',
-      card4Title: 'Data Control in Your Hands',
-      card4Desc:
-        'You have full control to add, edit, export reports, or delete your transaction data whenever you wish.',
-      readPolicy: 'Read full privacy policy',
-    },
     faq: {
-      tag: 'Common Questions',
-      title: 'FAQ: Daily Expense Tracking & Monthly Budgeting',
+      tag: 'Help & Answers',
+      title: 'Frequently Asked Questions',
+      subtitle:
+        'Everything you need to know about Qwarts Finance and how to get started.',
       items: [
         {
-          q: 'What is the most effective way to track daily expenses consistently?',
-          a: 'The key to consistent daily expense tracking is logging purchases immediately without delay. Simply open Qwarts Finance on your mobile browser and log the amount and category in under 5 seconds. Avoid waiting until the weekend so no micro-expenses get forgotten.',
+          q: 'Is Qwarts Finance truly free to use?',
+          a: 'Yes! The Starter plan is 100% free forever for unlimited daily income and expense tracking. No credit card is required to sign up.',
         },
         {
-          q: 'Why use a monthly budgeting app instead of physical notebooks or Excel spreadsheets?',
-          a: 'Physical notebooks are easily lost and cannot calculate automated summaries. Excel spreadsheets are clumsy to navigate on mobile screens while on the go. A dedicated monthly budgeting app like Qwarts Finance calculates remaining budgets instantly, alerts you before overspending, generates visual charts, and syncs seamlessly across devices.',
+          q: 'What is the main difference between Free and PRO?',
+          a: 'The Free plan includes up to 2 wallets and unlimited transaction logging. The PRO plan unlocks unlimited wallets, monthly category budgets with overbudget alerts, dream savings goals, recurring bill reminders, and Excel/PDF report exports.',
         },
         {
-          q: 'Is there a free version? What are the limitations?',
-          a: 'Yes! The Starter plan is 100% free forever for unlimited daily transaction recording. The limitations are a maximum of 2 wallets/accounts, and it does not include PRO features such as category budgets, dream savings goals, recurring bill reminders, and Excel/PDF report exports.',
+          q: 'How secure is my financial data?',
+          a: 'Your financial entries are stored per account in private isolation. We never request ATM card PINs, banking passwords, or direct debit authority. Your bookkeeping is manual, confidential, and safe.',
         },
         {
-          q: 'Can I log in directly with my Google account?',
-          a: 'Certainly. You can sign up or log in with a single click using your Google account (Google OAuth2). There is no need to fill out manual forms or remember another password.',
+          q: 'Can I use this directly from my smartphone browser?',
+          a: 'Absolutely. Qwarts Finance is built to be responsive and lightweight, providing a smooth app-like experience directly in your mobile browser.',
         },
         {
-          q: 'How many wallets can I create in Starter vs PRO?',
-          a: 'On the Starter (Free) plan, you can create up to 2 wallets (for example, 1 bank account and 1 cash wallet). On the PRO plan, you can add unlimited wallets and e-wallets, such as BCA, Mandiri, BRI, GoPay, OVO, Dana, and others.',
-        },
-        {
-          q: 'How safe is my financial information?',
-          a: 'Your financial data is saved per account and guarded with modern security standards. We never ask for sensitive banking details like ATM card PINs, mobile banking passwords, or transaction tokens. Your records are manual and private.',
-        },
-        {
-          q: 'What features are included in the PRO plan?',
-          a: 'The PRO plan includes: unlimited wallets & accounts, monthly category budgets with overbudget alerts, Dream Goals (savings targets) with progress visualizers, recurring bill tracking with due date reminders, and report exports to Excel (.xlsx) and PDF.',
-        },
-        {
-          q: 'What is the difference between monthly vs yearly PRO billing?',
-          a: 'The monthly PRO plan costs Rp 19,000/month with the flexibility to pay month-by-month. The annual plan costs Rp 149,000/year (equivalent to ~Rp 12,400/month), offering about 35% savings compared to monthly payments.',
-        },
-        {
-          q: 'Can I export my data or delete my records?',
-          a: 'PRO users can export all transaction logs to Excel (.xlsx) or PDF format at any time for personal archives. You also have complete control to manage or delete your financial records at any point through the dashboard.',
+          q: 'How do I create an account or sign in?',
+          a: 'Simply click the Google Sign-In button (Google OAuth2). It takes just one click with no extra passwords to memorize.',
         },
       ],
     },
     ctaBanner: {
       title: 'Take Control of Your Personal Finances Today',
       subtitle:
-        'Free for daily expense tracking, upgrade to PRO whenever you are ready to master category budgets and dream savings.',
+        'Free for daily expense tracking. Upgrade to PRO whenever you want category budgets, dream savings, and data export.',
       cta: 'Start Tracking Free with Google',
-      note: 'No credit card needed for Starter • Instant 1-minute setup',
-    },
-    contact: {
-      tag: 'Customer Support & Help',
-      title: 'Contact Us',
-      subtitle:
-        'Our support team is ready to help with account questions, feature guidance, and subscription billing inquiries.',
-      emailTitle: 'Official Support Email',
-      emailDesc: 'Send your questions or problem reports to our official support email.',
-      phoneTitle: 'WhatsApp & Phone',
-      phoneDesc: 'Fast customer support assistance during operational hours.',
-      phoneBadge: 'WhatsApp Active',
-      addressTitle: 'Office / Registered Business Address',
-      addressDesc:
-        'Jl. Bambu Hitam No.5, RT.5/RW.5, Setu, Kec. Cipayung, East Jakarta City, Jakarta 13890, Indonesia',
-      officeHours: 'Monday – Sunday: 08:00 – 21:00 WIB (UTC+7)',
-      paymentGatewayBadge: 'Verified & Secure Payment System:',
-      paymentGatewayDesc:
-        'Powered by Duitku Payment Gateway • QRIS (All Banks & E-Wallets), Virtual Accounts (BCA, Mandiri, BRI, BNI), ShopeePay & E-Wallets.',
+      note: 'No credit card needed • Instant 1-minute setup',
     },
     footer: {
       brandDesc:
-        'Smart monthly budgeting app and daily expense tracking platform for web and mobile to control cash flow, budgeting categories, and savings goals.',
+        'Personal finance and smart budgeting app for web and mobile to take control of cash flow, category budgets, and savings goals.',
       statusActive: 'Operational Systems Online',
       colNavTitle: 'Navigation',
-      navFeatures: 'Main Features',
-      navDashboard: 'Dashboard View',
-      navPricing: 'Pricing & PRO Plan',
+      navFeatures: 'Features',
+      navDashboard: 'Dashboard',
+      navPricing: 'Pricing',
       navFaq: 'FAQ',
-      navContact: 'Support Contact',
       colContactTitle: 'Customer Support',
-      colAddressTitle: 'Business Address & Legal',
+      emailTitle: 'Official Email',
+      whatsappTitle: 'WhatsApp',
       privacyPolicy: 'Privacy Policy',
+      legalNote:
+        'Full business address and operational legality details can be found on our',
       copyright: 'Qwarts Finance. All rights reserved.',
-      helpContact: 'Help & Contact',
       enterDashboard: 'Open Dashboard',
     },
   },

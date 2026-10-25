@@ -3,37 +3,39 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
+  AlertCircle,
+  ArrowDownRight,
   ArrowRight,
+  ArrowUpRight,
   BarChart3,
+  Bell,
+  Building2,
+  Calendar,
   Check,
   CheckCircle2,
   ChevronDown,
   Clock,
   CreditCard,
   Download,
-  FileSpreadsheet,
+  Eye,
+  EyeOff,
   Languages,
-  Lock,
   Mail,
-  MapPin,
   Menu,
   Phone,
   PieChart,
+  Plus,
   Quote,
-  Shield,
-  ShieldCheck,
   Sparkles,
-  Star,
   Target,
+  TrendingDown,
   TrendingUp,
-  Users,
   Wallet,
   X,
   Zap,
 } from '@/components/animated-icons'
 import { landingTranslations, type LandingLanguage } from '@/lib/landing-translations'
 import { TextAnimation } from '@/components/motion/text-animation'
-import { NumberTicker } from '@/components/motion/number-ticker'
 import { Tabs, TabsList, TabsTrigger } from '@/components/motion/tabs'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/motion/accordion'
 import { Progress } from '@/components/motion/progress'
@@ -71,7 +73,10 @@ function GoogleIcon({ className = 'h-5 w-5' }: { className?: string }) {
 
 export default function LandingPage() {
   const [lang, setLang] = useState<LandingLanguage>('id')
-  const [previewTab, setPreviewTab] = useState<'interactive' | 'overview' | 'budget' | 'goals' | 'mobile'>('interactive')
+  const [previewTab, setPreviewTab] = useState<'overview' | 'budget' | 'goals' | 'mobile'>('overview')
+  const [hideBalance, setHideBalance] = useState(false)
+  const [simulatedDeposit, setSimulatedDeposit] = useState(0)
+  const [depositSuccessToast, setDepositSuccessToast] = useState(false)
 
   useEffect(() => {
     try {
@@ -91,6 +96,17 @@ export default function LandingPage() {
     } catch {
       // ignore
     }
+  }
+
+  const handleSimulateDeposit = () => {
+    setSimulatedDeposit((prev) => prev + 500000)
+    setDepositSuccessToast(true)
+    setTimeout(() => setDepositSuccessToast(false), 2500)
+  }
+
+  const formatRupiah = (val: number) => {
+    if (hideBalance) return '••••••••'
+    return `Rp ${new Intl.NumberFormat('id-ID').format(val)}`
   }
 
   const t = landingTranslations[lang]
@@ -180,8 +196,8 @@ export default function LandingPage() {
             </span>
           </Link>
 
-          {/* Minimalist Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-sm font-medium text-slate-300">
+          {/* Minimalist Desktop Navigation (Fitur, Dashboard, Harga, FAQ) */}
+          <nav className="hidden md:flex items-center gap-7 lg:gap-8 text-sm font-medium text-slate-300">
             <a href="#fitur" className="transition hover:text-white">
               {t.nav.features}
             </a>
@@ -191,37 +207,9 @@ export default function LandingPage() {
             <a href="#harga" className="transition hover:text-white">
               {t.nav.pricing}
             </a>
-
-            {/* EaseUI Dropdown Menu for secondary links */}
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-slate-900 border border-transparent hover:border-slate-800 text-slate-300 hover:text-white">
-                <span>{lang === 'id' ? 'Lainnya' : 'More'}</span>
-                <ChevronDown className="h-4 w-4 opacity-70" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 p-1.5">
-                <DropdownMenuItem href="#cara-kerja">
-                  <Zap className="h-4 w-4 text-cyan-400" />
-                  <span>{t.nav.howItWorks}</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem href="#panduan">
-                  <Sparkles className="h-4 w-4 text-amber-400" />
-                  <span>{lang === 'id' ? 'Panduan Penggunaan' : 'User Guide'}</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem href="#privasi">
-                  <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                  <span>{t.nav.privacy}</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem href="#faq">
-                  <Quote className="h-4 w-4 text-teal-400" />
-                  <span>{t.nav.faq}</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem href="#kontak">
-                  <Mail className="h-4 w-4 text-indigo-400" />
-                  <span>{t.nav.contact}</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <a href="#faq" className="transition hover:text-white">
+              {t.nav.faq}
+            </a>
           </nav>
 
           {/* Right Actions */}
@@ -252,13 +240,13 @@ export default function LandingPage() {
               <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Link>
 
-            {/* Mobile Navigation Dropdown Menu (EaseUI) */}
+            {/* Mobile Navigation Dropdown Menu */}
             <div className="md:hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 hover:text-white">
                   <Menu className="h-5 w-5" />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-60 p-2">
+                <DropdownMenuContent align="end" className="w-56 p-2">
                   <DropdownMenuItem href="#fitur">
                     <Sparkles className="h-4 w-4 text-teal-400" />
                     <span>{t.nav.features}</span>
@@ -271,26 +259,9 @@ export default function LandingPage() {
                     <CreditCard className="h-4 w-4 text-emerald-400" />
                     <span>{t.nav.pricing}</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem href="#cara-kerja">
-                    <Zap className="h-4 w-4 text-amber-400" />
-                    <span>{t.nav.howItWorks}</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem href="#panduan">
-                    <Sparkles className="h-4 w-4 text-teal-400" />
-                    <span>{lang === 'id' ? 'Panduan' : 'Guide'}</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem href="#faq">
                     <Quote className="h-4 w-4 text-slate-400" />
                     <span>{t.nav.faq}</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem href="#privasi">
-                    <ShieldCheck className="h-4 w-4 text-slate-400" />
-                    <span>{t.nav.privacy}</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem href="#kontak">
-                    <Mail className="h-4 w-4 text-slate-400" />
-                    <span>{t.nav.contact}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem href="/sign-in" className="text-teal-400 font-bold">
@@ -304,36 +275,16 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Hero Section */}
+      {/* 1. Hero Section */}
       <section className="relative z-10 mx-auto max-w-7xl px-4 pt-16 pb-20 sm:px-6 lg:px-8 lg:pt-24">
         <div className="mx-auto max-w-3xl text-center">
-          {/* Top Badges Row: Product Hunt Launch Badge + Feature Badges */}
-          <div className="flex flex-wrap items-center justify-center gap-2.5">
-            <a
-              href="https://www.producthunt.com/products/qwarts-finance"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-3.5 py-1 text-xs font-semibold text-orange-300 shadow-sm backdrop-blur-md transition hover:border-orange-500/60 hover:bg-orange-500/20 hover:scale-105 cursor-pointer"
-            >
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#FF6154] text-white font-black text-[10px] shadow-sm">
-                P
-              </span>
-              <span>Featured on <strong className="text-white font-bold">Product Hunt</strong></span>
-              <span className="text-orange-500/60">•</span>
-              <span className="text-orange-400 font-normal">Upvote 🚀</span>
-            </a>
-
-            {/* SEO Badges */}
-            <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1 text-xs font-semibold text-teal-300 shadow-sm backdrop-blur-md">
-              <span>{t.hero.badge1}</span>
-              <span className="text-slate-500">•</span>
-              <span>{t.hero.badge2}</span>
-              <span className="text-slate-500">•</span>
-              <span>{t.hero.badge3}</span>
-            </div>
+          {/* Single Clean Eyebrow Badge */}
+          <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold text-teal-300 shadow-sm backdrop-blur-md">
+            <Sparkles className="h-3.5 w-3.5 text-teal-400" />
+            <span>{t.hero.eyebrow}</span>
           </div>
 
-          {/* Heading Manfaat (Target Search Keywords: cara mencatat pengeluaran harian, aplikasi budgeting bulanan) */}
+          {/* Natural Headline */}
           <h1 className="mt-6 text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl text-white">
             {t.hero.headlinePrefix}
             <TextAnimation
@@ -345,7 +296,7 @@ export default function LandingPage() {
             />
           </h1>
 
-          {/* Subtitle Solution & Value Proposition */}
+          {/* Natural Subtitle */}
           <p className="mt-6 text-base sm:text-lg leading-relaxed text-slate-300">
             {t.hero.subtitle}
           </p>
@@ -378,24 +329,23 @@ export default function LandingPage() {
 
           {/* Trust badges */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400">
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-              <span>{t.hero.trust1}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck className="h-4 w-4 text-teal-400" />
-              <span>{t.hero.trust2}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Zap className="h-4 w-4 text-cyan-400" />
-              <span>{t.hero.trust3}</span>
-            </div>
+            <span className="flex items-center gap-1.5">
+              <Check className="h-4 w-4 text-teal-400" />
+              {t.hero.trust1}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Check className="h-4 w-4 text-teal-400" />
+              {t.hero.trust2}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Check className="h-4 w-4 text-teal-400" />
+              {t.hero.trust3}
+            </span>
           </div>
         </div>
 
-        {/* Dashboard Preview Mockup Showcase with Product Hunt Gallery Tabs */}
-        <div id="preview" className="mt-16 sm:mt-20">
-          {/* Gallery Switcher Tabs (EaseUI Tabs with Animated Sliding Indicator) */}
+        {/* 2. Real Project Showcase (Dashboard Utama, Budget Planner, Target Impian) */}
+        <div id="preview" className="mt-16 sm:mt-20 scroll-mt-24">
           <div className="flex justify-center mb-6">
             <Tabs
               value={previewTab}
@@ -403,10 +353,6 @@ export default function LandingPage() {
               variant="pill"
             >
               <TabsList className="flex-wrap justify-center gap-1 sm:gap-1.5 p-1.5">
-                <TabsTrigger value="interactive">
-                  <span>⚡</span>
-                  <span>{lang === 'id' ? 'Simulasi Interaktif' : 'Interactive Demo'}</span>
-                </TabsTrigger>
                 <TabsTrigger value="overview">
                   <span>📊</span>
                   <span>{lang === 'id' ? 'Dashboard Utama' : 'Dashboard Overview'}</span>
@@ -414,10 +360,16 @@ export default function LandingPage() {
                 <TabsTrigger value="budget">
                   <span>🎯</span>
                   <span>{lang === 'id' ? 'Budget Planner' : 'Budget Planner'}</span>
+                  <Badge variant="accent" className="text-[10px] py-0 px-1.5 ml-1 font-semibold">
+                    PRO
+                  </Badge>
                 </TabsTrigger>
                 <TabsTrigger value="goals">
                   <span>🏆</span>
                   <span>{lang === 'id' ? 'Target Impian' : 'Savings Goals'}</span>
+                  <Badge variant="accent" className="text-[10px] py-0 px-1.5 ml-1 font-semibold">
+                    PRO
+                  </Badge>
                 </TabsTrigger>
                 <TabsTrigger value="mobile">
                   <span>📱</span>
@@ -442,220 +394,477 @@ export default function LandingPage() {
                 </span>
               </div>
               <div className="flex items-center gap-2 text-xs font-semibold text-teal-400">
-                <span className="h-2 w-2 rounded-full bg-teal-400" />
+                <span className="h-2 w-2 rounded-full bg-teal-400 animate-pulse" />
                 <span>
-                  {previewTab === 'interactive'
-                    ? t.hero.mockupBadge
-                    : previewTab === 'overview'
-                      ? 'Preview: Dashboard Overview'
-                      : previewTab === 'budget'
-                        ? 'Preview: Budget Planner'
-                        : previewTab === 'goals'
-                          ? 'Preview: Target Impian (Savings Goals)'
-                          : 'Preview: Mobile App Showcase'}
+                  {previewTab === 'overview'
+                    ? lang === 'id' ? 'Tampilan Asli: Dashboard Utama' : 'Live View: Dashboard Overview'
+                    : previewTab === 'budget'
+                      ? lang === 'id' ? 'Tampilan Asli: Budget Planner & Pagu Bulanan' : 'Live View: Budget Planner'
+                      : previewTab === 'goals'
+                        ? lang === 'id' ? 'Tampilan Asli: Target Impian (Savings Goals)' : 'Live View: Savings Goals'
+                        : lang === 'id' ? 'Pratinjau: Mobile Native App (iOS & Android)' : 'Showcase: Native Mobile App'}
                 </span>
               </div>
             </div>
 
-            {/* Tab 1: Interactive Live Mockup */}
-            {previewTab === 'interactive' && (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Card 1: Total Saldo */}
-                  <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shadow-lg">
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                      {t.hero.mockupNetWorthTitle}
-                    </p>
-                    <p className="mt-2 text-3xl font-black text-white flex items-baseline gap-1">
-                      <span>Rp</span>
-                      <NumberTicker value={28750000} format={(v) => new Intl.NumberFormat('id-ID').format(v)} />
-                    </p>
-                    <div className="mt-3 flex items-center gap-2 text-xs text-emerald-400 font-semibold">
-                      <TrendingUp className="h-3.5 w-3.5" />
-                      <span>{t.hero.mockupNetWorthGrowth}</span>
-                    </div>
-                    <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-                      <span>{t.hero.mockupActiveWallets}</span>
-                      <span className="text-teal-400 font-medium">{t.hero.mockupActiveWalletsValue}</span>
-                    </div>
-                  </div>
-
-                  {/* Card 2: Pemasukan & Pengeluaran */}
-                  <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shadow-lg">
-                    <div className="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                      <span>{t.hero.mockupCashFlowTitle}</span>
-                      <Badge variant="accent" className="font-normal">{t.hero.mockupCashFlowMonth}</Badge>
-                    </div>
-                    <div className="mt-3 space-y-2.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-300">{t.hero.mockupIncome}</span>
-                        <span className="font-bold text-emerald-400 flex items-baseline gap-0.5">
-                          <span>+Rp</span>
-                          <NumberTicker value={12500000} format={(v) => new Intl.NumberFormat('id-ID').format(v)} />
-                        </span>
+            {/* TAB 1: Real Dashboard Overview (Tampilan Asli Project) */}
+            {previewTab === 'overview' && (
+              <div className="space-y-4">
+                {/* Greeting & Fast Pulse Bar (matching dashboard.tsx) */}
+                <div className="rounded-2xl border border-teal-500/20 bg-gradient-to-r from-teal-950/50 via-slate-900/70 to-emerald-950/40 p-4 backdrop-blur-md">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 font-black text-base shadow-md">
+                        D
                       </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-300">{t.hero.mockupExpense}</span>
-                        <span className="font-bold text-rose-400 flex items-baseline gap-0.5">
-                          <span>-Rp</span>
-                          <NumberTicker value={4050000} format={(v) => new Intl.NumberFormat('id-ID').format(v)} />
-                        </span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-extrabold text-white text-sm sm:text-base">
+                            {lang === 'id' ? 'Selamat Datang, Dimas Pratama' : 'Welcome back, Dimas Pratama'} 👋
+                          </h3>
+                          <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] font-black text-amber-300">
+                            PRO Member ⭐
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+                          <Calendar className="h-3 w-3 text-teal-400" />
+                          <span>{lang === 'id' ? '25 Oktober 2026 • Periode Aktif' : 'October 25, 2026 • Active Period'}</span>
+                        </div>
                       </div>
-                      <Progress value={32} barClassName="bg-teal-400" className="pt-1" />
                     </div>
-                    <p className="mt-3 text-[11px] text-slate-400">{t.hero.mockupChartNote}</p>
-                  </div>
 
-                  {/* Card 3: Target Impian (Goals - PRO) */}
-                  <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shadow-lg">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                        {t.hero.mockupGoalsTitle}
-                      </span>
-                      <Target className="h-4 w-4 text-teal-400" />
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setHideBalance(!hideBalance)}
+                        className="flex items-center gap-1.5 rounded-xl border border-slate-700/80 bg-slate-900/80 px-2.5 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-800 transition cursor-pointer"
+                        title={hideBalance ? 'Tampilkan Saldo' : 'Sembunyikan Saldo'}
+                      >
+                        {hideBalance ? <EyeOff className="h-3.5 w-3.5 text-slate-400" /> : <Eye className="h-3.5 w-3.5 text-slate-400" />}
+                        <span>{hideBalance ? (lang === 'id' ? 'Tampilkan' : 'Show') : (lang === 'id' ? 'Sembunyikan' : 'Hide')}</span>
+                      </button>
+                      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-400">
+                        {lang === 'id' ? 'Sisa Budget: ' : 'Budget Left: '}{formatRupiah(2450000)}
+                      </div>
                     </div>
-                    <p className="mt-2 text-lg font-bold text-white">{t.hero.mockupGoalsName}</p>
-                    <div className="mt-2 flex items-center justify-between text-xs font-semibold">
-                      <span className="text-teal-300 flex items-baseline gap-0.5">
-                        <span>Rp</span>
-                        <NumberTicker value={17000000} format={(v) => new Intl.NumberFormat('id-ID').format(v)} />
-                      </span>
-                      <span className="text-slate-400">{t.hero.mockupGoalsTarget}</span>
-                    </div>
-                    <Progress value={85} barClassName="bg-gradient-to-r from-teal-400 to-emerald-400" className="pt-2" />
-                    <p className="mt-2 text-[11px] text-emerald-400 font-medium">
-                      {t.hero.mockupGoalsAchieved}
-                    </p>
                   </div>
                 </div>
 
-                {/* Bottom mini showcase: Recent transactions */}
-                <div className="mt-4 rounded-2xl border border-slate-800/80 bg-slate-950/50 p-4">
-                  <div className="flex items-center justify-between mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    <span>{t.hero.mockupTxTitle}</span>
-                    <span className="text-slate-500 font-medium text-[11px]">{t.hero.mockupTxSub}</span>
+                {/* 4 Financial Metric Cards (exact layout as dashboard.tsx) */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  {/* Card 1: Total Saldo Bersih */}
+                  <div className="col-span-2 sm:col-span-1 rounded-2xl border border-slate-800 bg-slate-950/70 p-4 sm:p-5 shadow-lg">
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      {lang === 'id' ? 'Total Kekayaan Bersih' : 'Total Net Worth'}
+                    </span>
+                    <p className="mt-2 text-2xl sm:text-3xl font-black text-white tabular-nums tracking-tight">
+                      {formatRupiah(28750000)}
+                    </p>
+                    <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
+                      <TrendingUp className="h-3.5 w-3.5" />
+                      <span>+18.4% {lang === 'id' ? 'bulan ini' : 'this month'}</span>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="flex items-center justify-between rounded-xl bg-slate-900/80 p-3 border border-slate-800">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+
+                  {/* Card 2: Pemasukan Bulan Ini */}
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 sm:p-5 shadow-lg">
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      {lang === 'id' ? 'Pemasukan' : 'Income'}
+                    </span>
+                    <p className="mt-2 text-xl sm:text-2xl font-bold text-emerald-400 tabular-nums">
+                      +{formatRupiah(12500000)}
+                    </p>
+                    <span className="text-[11px] text-slate-400 mt-2 block">
+                      {lang === 'id' ? 'Gaji & Pendapatan Sampingan' : 'Salary & Side Projects'}
+                    </span>
+                  </div>
+
+                  {/* Card 3: Pengeluaran Bulan Ini */}
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 sm:p-5 shadow-lg">
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      {lang === 'id' ? 'Pengeluaran' : 'Expense'}
+                    </span>
+                    <p className="mt-2 text-xl sm:text-2xl font-bold text-rose-400 tabular-nums">
+                      -{formatRupiah(4050000)}
+                    </p>
+                    <div className="mt-2">
+                      <Progress value={32.4} barClassName="bg-teal-400" />
+                      <span className="text-[10px] text-slate-400 mt-1 block">Rasio 32.4% dari Pemasukan</span>
+                    </div>
+                  </div>
+
+                  {/* Card 4: Arus Kas Bersih */}
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 sm:p-5 shadow-lg">
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      {lang === 'id' ? 'Arus Kas Bersih' : 'Net Cash Flow'}
+                    </span>
+                    <p className="mt-2 text-xl sm:text-2xl font-bold text-teal-300 tabular-nums">
+                      +{formatRupiah(8450000)}
+                    </p>
+                    <span className="text-[11px] text-emerald-400 font-semibold mt-2 block">
+                      📈 {lang === 'id' ? 'Surplus Keuangan Sehat' : 'Healthy Cash Surplus'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Multi-Wallet Grid (Real accounts) */}
+                <div className="rounded-2xl border border-slate-800/80 bg-slate-950/50 p-4">
+                  <div className="flex items-center justify-between mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-teal-400" />
+                      <span>{lang === 'id' ? 'Multi-Dompet Terhubung' : 'Connected Multi-Wallets'}</span>
+                    </div>
+                    <span className="text-teal-400 font-medium text-[11px]">4 Dompet Aktif</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="rounded-xl border border-slate-800 bg-slate-900/90 p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white">Bank BCA</span>
+                        <span className="text-[10px] rounded bg-blue-500/10 text-blue-400 px-1 font-semibold">Bank</span>
+                      </div>
+                      <p className="mt-2 text-sm font-black text-white tabular-nums">{formatRupiah(18250000)}</p>
+                      <span className="text-[10px] text-slate-400">Rekening Utama</span>
+                    </div>
+                    <div className="rounded-xl border border-slate-800 bg-slate-900/90 p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white">Bank Mandiri</span>
+                        <span className="text-[10px] rounded bg-amber-500/10 text-amber-400 px-1 font-semibold">Bank</span>
+                      </div>
+                      <p className="mt-2 text-sm font-black text-white tabular-nums">{formatRupiah(7500000)}</p>
+                      <span className="text-[10px] text-slate-400">Dana Cadangan</span>
+                    </div>
+                    <div className="rounded-xl border border-slate-800 bg-slate-900/90 p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white">GoPay</span>
+                        <span className="text-[10px] rounded bg-cyan-500/10 text-cyan-400 px-1 font-semibold">E-Wallet</span>
+                      </div>
+                      <p className="mt-2 text-sm font-black text-white tabular-nums">{formatRupiah(1850000)}</p>
+                      <span className="text-[10px] text-slate-400">Belanja & Transport</span>
+                    </div>
+                    <div className="rounded-xl border border-slate-800 bg-slate-900/90 p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white">Uang Tunai</span>
+                        <span className="text-[10px] rounded bg-emerald-500/10 text-emerald-400 px-1 font-semibold">Cash</span>
+                      </div>
+                      <p className="mt-2 text-sm font-black text-white tabular-nums">{formatRupiah(1150000)}</p>
+                      <span className="text-[10px] text-slate-400">Dompet Fisik</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Transaksi Terakhir (matching dashboard.tsx) */}
+                <div className="rounded-2xl border border-slate-800/80 bg-slate-950/50 p-4">
+                  <div className="flex items-center justify-between mb-3 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    <span>{lang === 'id' ? 'Catatan Transaksi Terakhir' : 'Recent Transactions'}</span>
+                    <span className="text-slate-500 text-[11px]">{lang === 'id' ? 'Sinkronisasi Otomatis' : 'Auto Synced'}</span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between rounded-xl bg-slate-900/80 p-3 border border-slate-800/80">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
                           <TrendingUp className="h-4 w-4" />
                         </div>
-                        <div className="text-left">
-                          <p className="text-xs font-bold text-white">{t.hero.mockupTx1Title}</p>
-                          <p className="text-[10px] text-slate-400">{t.hero.mockupTx1Cat}</p>
+                        <div>
+                          <p className="text-xs font-bold text-white">{lang === 'id' ? 'Gaji Bulanan Perusahaan' : 'Monthly Salary'}</p>
+                          <p className="text-[10px] text-slate-400">BCA • Pemasukan Rutin • 25 Okt 2026</p>
                         </div>
                       </div>
-                      <span className="text-xs font-bold text-emerald-400">+10.000.000</span>
+                      <span className="text-xs font-bold text-emerald-400 tabular-nums">+{formatRupiah(10000000)}</span>
                     </div>
 
-                    <div className="flex items-center justify-between rounded-xl bg-slate-900/80 p-3 border border-slate-800">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-400">
+                    <div className="flex items-center justify-between rounded-xl bg-slate-900/80 p-3 border border-slate-800/80">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-rose-500/10 text-rose-400">
                           <CreditCard className="h-4 w-4" />
                         </div>
-                        <div className="text-left">
-                          <p className="text-xs font-bold text-white">{t.hero.mockupTx2Title}</p>
-                          <p className="text-[10px] text-slate-400">{t.hero.mockupTx2Cat}</p>
+                        <div>
+                          <p className="text-xs font-bold text-white">{lang === 'id' ? 'Belanja Supermarket Bulanan' : 'Monthly Grocery Shopping'}</p>
+                          <p className="text-[10px] text-slate-400">Mandiri • Makanan & Pokok • 24 Okt 2026</p>
                         </div>
                       </div>
-                      <span className="text-xs font-bold text-rose-400">-750.000</span>
+                      <span className="text-xs font-bold text-rose-400 tabular-nums">-{formatRupiah(850000)}</span>
                     </div>
 
-                    <div className="flex items-center justify-between rounded-xl bg-slate-900/80 p-3 border border-slate-800">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
+                    <div className="flex items-center justify-between rounded-xl bg-slate-900/80 p-3 border border-slate-800/80">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
                           <Zap className="h-4 w-4" />
                         </div>
-                        <div className="text-left">
-                          <p className="text-xs font-bold text-white">{t.hero.mockupTx3Title}</p>
-                          <p className="text-[10px] text-slate-400">{t.hero.mockupTx3Cat}</p>
+                        <div>
+                          <p className="text-xs font-bold text-white">{lang === 'id' ? 'Langganan WiFi & Listrik PLN' : 'Internet WiFi & Utilities'}</p>
+                          <p className="text-[10px] text-slate-400">GoPay • Tagihan Bulanan • 22 Okt 2026</p>
                         </div>
                       </div>
-                      <span className="text-xs font-bold text-rose-400">-375.000</span>
+                      <span className="text-xs font-bold text-rose-400 tabular-nums">-{formatRupiah(375000)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: Real Budget Planner (Tampilan Asli Project) */}
+            {previewTab === 'budget' && (
+              <div className="space-y-4">
+                {/* Budget Header Stats */}
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 shadow-sm">
+                    <p className="text-xs text-slate-400 font-semibold">{lang === 'id' ? 'Total Pagu Anggaran' : 'Total Budget Cap'}</p>
+                    <p className="text-xl sm:text-2xl font-black text-white mt-1 tabular-nums">{formatRupiah(6000000)}</p>
+                    <p className="text-[11px] text-teal-400 mt-1.5">5 {lang === 'id' ? 'Kategori Pos Belanja' : 'Budget Categories'}</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 shadow-sm">
+                    <p className="text-xs text-slate-400 font-semibold">{lang === 'id' ? 'Total Terpakai' : 'Total Spent'}</p>
+                    <p className="text-xl sm:text-2xl font-black text-amber-400 mt-1 tabular-nums">{formatRupiah(4350000)}</p>
+                    <p className="text-[11px] text-slate-400 mt-1.5">72.5% {lang === 'id' ? 'dari total pagu' : 'of total cap'}</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 shadow-sm">
+                    <p className="text-xs text-slate-400 font-semibold">{lang === 'id' ? 'Sisa Anggaran Aman' : 'Remaining Budget'}</p>
+                    <p className="text-xl sm:text-2xl font-black text-emerald-400 mt-1 tabular-nums">{formatRupiah(1650000)}</p>
+                    <p className="text-[11px] text-emerald-400 mt-1.5">✓ {lang === 'id' ? 'Terkendali hingga akhir bulan' : 'On track until month-end'}</p>
+                  </div>
+                </div>
+
+                {/* Overbudget Warning Alert Banner (real project component) */}
+                <div className="rounded-2xl border border-rose-500/40 bg-rose-950/30 p-3.5 flex items-start gap-3 text-xs">
+                  <AlertCircle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-rose-300">
+                      {lang === 'id' ? 'Peringatan Batas Anggaran (Overbudget Alert):' : 'Overbudget Warning:'}
+                    </span>
+                    <p className="text-slate-300 mt-0.5 leading-relaxed">
+                      {lang === 'id'
+                        ? 'Pengeluaran pada kategori Gaya Hidup & Hiburan telah melebihi batas anggaran sebesar Rp 150.000 (125%). Sistem Qwarts Finance PRO otomatis memperingatkan Anda agar tidak mengorbankan pos tabungan.'
+                        : 'Spending on Lifestyle & Leisure has exceeded the monthly cap by Rp 150,000 (125%). Qwarts Finance PRO automatically flags this alert.'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Category Budgets Grid (matching dashboard.tsx) */}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {/* Category 1 */}
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-bold text-sm text-white">🍔 {lang === 'id' ? 'Makanan & Minuman' : 'Food & Dining'}</span>
+                      <span className="rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-bold">
+                        {lang === 'id' ? 'Aman (84%)' : 'Safe (84%)'}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline justify-between text-xs mt-3">
+                      <span className="text-slate-400">{lang === 'id' ? 'Terpakai: ' : 'Spent: '}<strong className="text-white">{formatRupiah(2100000)}</strong></span>
+                      <span className="text-slate-400">{lang === 'id' ? 'Pagu: ' : 'Cap: '}{formatRupiah(2500000)}</span>
+                    </div>
+                    <Progress value={84} barClassName="bg-emerald-400" className="mt-2" />
+                    <p className="mt-2 text-[11px] text-emerald-400 font-medium">{lang === 'id' ? 'Sisa anggaran: ' : 'Remaining: '}{formatRupiah(400000)}</p>
+                  </div>
+
+                  {/* Category 2 */}
+                  <div className="rounded-2xl border border-amber-500/30 bg-slate-950/80 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-bold text-sm text-white">🚗 {lang === 'id' ? 'Transportasi & Bensin' : 'Transport & Gas'}</span>
+                      <span className="rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[10px] font-bold">
+                        {lang === 'id' ? 'Menipis (95%)' : 'Near Cap (95%)'}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline justify-between text-xs mt-3">
+                      <span className="text-slate-400">{lang === 'id' ? 'Terpakai: ' : 'Spent: '}<strong className="text-white">{formatRupiah(950000)}</strong></span>
+                      <span className="text-slate-400">{lang === 'id' ? 'Pagu: ' : 'Cap: '}{formatRupiah(1000000)}</span>
+                    </div>
+                    <Progress value={95} barClassName="bg-amber-400" className="mt-2" />
+                    <p className="mt-2 text-[11px] text-amber-300 font-medium">{lang === 'id' ? 'Sisa anggaran: ' : 'Remaining: '}{formatRupiah(50000)}</p>
+                  </div>
+
+                  {/* Category 3 (Overbudget) */}
+                  <div className="rounded-2xl border border-rose-500/40 bg-rose-950/20 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-bold text-sm text-white">☕ {lang === 'id' ? 'Gaya Hidup & Hiburan' : 'Lifestyle & Leisure'}</span>
+                      <span className="rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40 px-2 py-0.5 text-[10px] font-bold">
+                        ⚠️ Overbudget (125%)
+                      </span>
+                    </div>
+                    <div className="flex items-baseline justify-between text-xs mt-3">
+                      <span className="text-slate-400">{lang === 'id' ? 'Terpakai: ' : 'Spent: '}<strong className="text-rose-400">{formatRupiah(750000)}</strong></span>
+                      <span className="text-slate-400">{lang === 'id' ? 'Pagu: ' : 'Cap: '}{formatRupiah(600000)}</span>
+                    </div>
+                    <Progress value={100} barClassName="bg-rose-500" className="mt-2" />
+                    <p className="mt-2 text-[11px] text-rose-400 font-bold">{lang === 'id' ? 'Melebihi batas pagu sebesar ' : 'Exceeded cap by '}{formatRupiah(150000)}</p>
+                  </div>
+
+                  {/* Category 4 */}
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-bold text-sm text-white">💡 {lang === 'id' ? 'Tagihan Rutin & Listrik' : 'Utilities & Bills'}</span>
+                      <span className="rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2 py-0.5 text-[10px] font-bold">
+                        {lang === 'id' ? 'Aman (61%)' : 'Safe (61%)'}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline justify-between text-xs mt-3">
+                      <span className="text-slate-400">{lang === 'id' ? 'Terpakai: ' : 'Spent: '}<strong className="text-white">{formatRupiah(550000)}</strong></span>
+                      <span className="text-slate-400">{lang === 'id' ? 'Pagu: ' : 'Cap: '}{formatRupiah(900000)}</span>
+                    </div>
+                    <Progress value={61} barClassName="bg-cyan-400" className="mt-2" />
+                    <p className="mt-2 text-[11px] text-cyan-300 font-medium">{lang === 'id' ? 'Sisa anggaran: ' : 'Remaining: '}{formatRupiah(350000)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: Real Target Impian (Savings Goals - Tampilan Asli Project) */}
+            {previewTab === 'goals' && (
+              <div className="space-y-4">
+                {/* Goals Summary Stats */}
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 shadow-sm">
+                    <p className="text-xs text-slate-400 font-semibold">{lang === 'id' ? 'Total Target Tabungan' : 'Total Goal Targets'}</p>
+                    <p className="text-xl sm:text-2xl font-black text-white mt-1 tabular-nums">{formatRupiah(62000000)}</p>
+                    <p className="text-[11px] text-teal-400 mt-1.5">3 {lang === 'id' ? 'Target Impian Aktif' : 'Active Savings Goals'}</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 shadow-sm">
+                    <p className="text-xs text-slate-400 font-semibold">{lang === 'id' ? 'Total Dana Terkumpul' : 'Total Saved So Far'}</p>
+                    <p className="text-xl sm:text-2xl font-black text-emerald-400 mt-1 tabular-nums">{formatRupiah(44000000 + simulatedDeposit)}</p>
+                    <p className="text-[11px] text-slate-400 mt-1.5">{lang === 'id' ? 'Sisa: ' : 'Remaining: '}{formatRupiah(Math.max(0, 18000000 - simulatedDeposit))}</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 shadow-sm">
+                    <p className="text-xs text-slate-400 font-semibold">{lang === 'id' ? 'Rata-rata Progres' : 'Overall Progress'}</p>
+                    <p className="text-xl sm:text-2xl font-black text-teal-300 mt-1">71.0%</p>
+                    <Progress value={71} barClassName="bg-gradient-to-r from-teal-400 to-emerald-400" className="mt-2" />
+                  </div>
+                </div>
+
+                {/* Goals Cards Grid (exact layout as dashboard.tsx) */}
+                <div className="grid gap-4 sm:grid-cols-3">
+                  {/* Goal 1: Dana Darurat */}
+                  <div className="rounded-2xl border border-teal-500/30 bg-slate-950/80 p-5 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                            <Target className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-sm text-white">Dana Darurat 6 Bulan</h4>
+                            <span className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                              <Clock className="h-3 w-3 text-slate-500" />
+                              Target: Des 2026
+                            </span>
+                          </div>
+                        </div>
+                        <span className="rounded-md bg-teal-500/15 text-teal-300 border border-teal-500/30 px-2 py-0.5 text-[10px] font-bold">
+                          85%
+                        </span>
+                      </div>
+
+                      <div className="mt-4 space-y-1.5">
+                        <div className="flex items-baseline justify-between text-xs">
+                          <span className="font-bold text-white tabular-nums">{formatRupiah(25500000 + simulatedDeposit)}</span>
+                          <span className="text-slate-400">{formatRupiah(30000000)}</span>
+                        </div>
+                        <Progress value={Math.min(100, Math.round(((25500000 + simulatedDeposit) / 30000000) * 100))} barClassName="bg-gradient-to-r from-teal-400 to-emerald-400" />
+                        <p className="text-[11px] text-emerald-400 font-medium pt-1">
+                          Sisa {formatRupiah(Math.max(0, 4500000 - simulatedDeposit))} lagi
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
+                      <span className="text-[10px] text-slate-500 font-medium">BCA Prioritas</span>
+                      <button
+                        type="button"
+                        onClick={handleSimulateDeposit}
+                        className="rounded-lg bg-teal-500/15 border border-teal-500/30 hover:bg-teal-500/25 px-2.5 py-1 text-[11px] font-bold text-teal-300 transition cursor-pointer"
+                      >
+                        + Setor Rp 500rb
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Goal 2: Laptop Kerja */}
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-5 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                            <Zap className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-sm text-white">MacBook Pro M3</h4>
+                            <span className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                              <Clock className="h-3 w-3 text-slate-500" />
+                              Target: Jun 2027
+                            </span>
+                          </div>
+                        </div>
+                        <span className="rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 text-[10px] font-bold">
+                          65%
+                        </span>
+                      </div>
+
+                      <div className="mt-4 space-y-1.5">
+                        <div className="flex items-baseline justify-between text-xs">
+                          <span className="font-bold text-white tabular-nums">{formatRupiah(14300000)}</span>
+                          <span className="text-slate-400">{formatRupiah(22000000)}</span>
+                        </div>
+                        <Progress value={65} barClassName="bg-gradient-to-r from-cyan-400 to-blue-500" />
+                        <p className="text-[11px] text-cyan-400 font-medium pt-1">
+                          Sisa {formatRupiah(7700000)} lagi
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
+                      <span className="text-[10px] text-slate-500 font-medium">Bank Mandiri</span>
+                      <span className="text-[10px] text-slate-400">Rutin Rp 1.5jt/bln</span>
+                    </div>
+                  </div>
+
+                  {/* Goal 3: Liburan Akhir Tahun */}
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-5 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            <Sparkles className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-sm text-white">Liburan ke Jepang</h4>
+                            <span className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                              <Clock className="h-3 w-3 text-slate-500" />
+                              Target: Nov 2027
+                            </span>
+                          </div>
+                        </div>
+                        <span className="rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[10px] font-bold">
+                          42%
+                        </span>
+                      </div>
+
+                      <div className="mt-4 space-y-1.5">
+                        <div className="flex items-baseline justify-between text-xs">
+                          <span className="font-bold text-white tabular-nums">{formatRupiah(4200000)}</span>
+                          <span className="text-slate-400">{formatRupiah(10000000)}</span>
+                        </div>
+                        <Progress value={42} barClassName="bg-gradient-to-r from-amber-400 to-emerald-400" />
+                        <p className="text-[11px] text-amber-300 font-medium pt-1">
+                          Sisa {formatRupiah(5800000)} lagi
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
+                      <span className="text-[10px] text-slate-500 font-medium">BCA Prioritas</span>
+                      <span className="text-[10px] text-slate-400">Rutin Rp 500rb/bln</span>
                     </div>
                   </div>
                 </div>
 
-                <p className="mt-3 text-center text-xs font-medium text-slate-500">
-                  {t.hero.mockupDisclaimer}
-                </p>
-              </>
-            )}
-
-            {/* Tab 2: Dashboard Overview Screenshot */}
-            {previewTab === 'overview' && (
-              <div className="space-y-3">
-                <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
-                  <img
-                    src="/product-hunt/1-dashboard-overview.jpg"
-                    alt="Qwarts Finance - Dashboard Overview"
-                    className="w-full h-auto object-cover rounded-2xl"
-                  />
-                </div>
-                <div className="flex items-center justify-between px-2 text-xs text-slate-400">
-                  <span>Dashboard Overview — Net Worth, Cash Flow, Multi-Wallets</span>
-                  <a
-                    href="/product-hunt/1-dashboard-overview.jpg"
-                    download="qwarts-finance-dashboard.jpg"
-                    className="inline-flex items-center gap-1.5 text-teal-400 hover:text-teal-300 font-semibold"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    <span>Download Image</span>
-                  </a>
-                </div>
+                {depositSuccessToast && (
+                  <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/70 p-3 text-center text-xs font-bold text-emerald-300 animate-fadeIn">
+                    🎉 Setoran simulasi berhasil ditambahkan! Saldo tabungan bertambah Rp 500.000.
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Tab 3: Budget Planner Screenshot */}
-            {previewTab === 'budget' && (
-              <div className="space-y-3">
-                <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
-                  <img
-                    src="/product-hunt/2-budget-analytics.jpg"
-                    alt="Qwarts Finance - Budget Planner & Analytics"
-                    className="w-full h-auto object-cover rounded-2xl"
-                  />
-                </div>
-                <div className="flex items-center justify-between px-2 text-xs text-slate-400">
-                  <span>Monthly Budget Planner — Category Spending Caps & Overbudget Warning</span>
-                  <a
-                    href="/product-hunt/2-budget-analytics.jpg"
-                    download="qwarts-finance-budget-planner.jpg"
-                    className="inline-flex items-center gap-1.5 text-teal-400 hover:text-teal-300 font-semibold"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    <span>Download Image</span>
-                  </a>
-                </div>
-              </div>
-            )}
-
-            {/* Tab 4: Savings Goals Screenshot */}
-            {previewTab === 'goals' && (
-              <div className="space-y-3">
-                <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
-                  <img
-                    src="/product-hunt/3-savings-goals.jpg"
-                    alt="Qwarts Finance - Savings Goals (Target Impian)"
-                    className="w-full h-auto object-cover rounded-2xl"
-                  />
-                </div>
-                <div className="flex items-center justify-between px-2 text-xs text-slate-400">
-                  <span>Savings Goals (Target Impian) — Milestone Visualizer & Emergency Fund</span>
-                  <a
-                    href="/product-hunt/3-savings-goals.jpg"
-                    download="qwarts-finance-savings-goals.jpg"
-                    className="inline-flex items-center gap-1.5 text-teal-400 hover:text-teal-300 font-semibold"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    <span>Download Image</span>
-                  </a>
-                </div>
-              </div>
-            )}
-
-            {/* Tab 5: Mobile App Screenshot */}
+            {/* TAB 4: Mobile App Showcase */}
             {previewTab === 'mobile' && (
               <div className="space-y-3">
                 <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
@@ -692,310 +901,125 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Educational SEO Guide Section: Mengapa Cara Mencatat Pengeluaran & Budgeting Penting */}
-      <section id="panduan" className="relative z-10 border-t border-slate-800/80 bg-slate-900/30 py-16 sm:py-24">
+      {/* 3. Tiga Keunggulan Utama */}
+      <section id="fitur" className="relative z-10 border-t border-slate-800/80 bg-slate-900/40 py-20 sm:py-28 scroll-mt-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold text-teal-300">
+            <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold text-teal-300 shadow-sm backdrop-blur-md">
               <Sparkles className="h-3.5 w-3.5 text-teal-400" />
-              <span>{t.seoSection.tag}</span>
+              <span>{t.advantages.tag}</span>
             </div>
-            <h2 className="mt-4 text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white">
-              {t.seoSection.title}
+            <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl">
+              {t.advantages.title}
             </h2>
-            <p className="mt-4 text-sm sm:text-base text-slate-300 leading-relaxed">
-              {t.seoSection.subtitle}
+            <p className="mt-4 text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl mx-auto">
+              {t.advantages.subtitle}
             </p>
           </div>
 
-          <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto">
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 backdrop-blur-sm transition hover:border-teal-500/40">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-500/10 text-teal-400 mb-4">
-                <TrendingUp className="h-5 w-5" />
-              </div>
-              <h3 className="text-base font-bold text-white">{t.seoSection.card1Title}</h3>
-              <p className="mt-2 text-xs sm:text-sm text-slate-400 leading-relaxed">
-                {t.seoSection.card1Desc}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 backdrop-blur-sm transition hover:border-teal-500/40">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 mb-4">
-                <PieChart className="h-5 w-5" />
-              </div>
-              <h3 className="text-base font-bold text-white">{t.seoSection.card2Title}</h3>
-              <p className="mt-2 text-xs sm:text-sm text-slate-400 leading-relaxed">
-                {t.seoSection.card2Desc}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 backdrop-blur-sm transition hover:border-teal-500/40">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 mb-4">
-                <Wallet className="h-5 w-5" />
-              </div>
-              <h3 className="text-base font-bold text-white">{t.seoSection.card3Title}</h3>
-              <p className="mt-2 text-xs sm:text-sm text-slate-400 leading-relaxed">
-                {t.seoSection.card3Desc}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6 backdrop-blur-sm transition hover:border-teal-500/40">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400 mb-4">
-                <Target className="h-5 w-5" />
-              </div>
-              <h3 className="text-base font-bold text-white">{t.seoSection.card4Title}</h3>
-              <p className="mt-2 text-xs sm:text-sm text-slate-400 leading-relaxed">
-                {t.seoSection.card4Desc}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Social Proof Section (Section D) */}
-      <section className="relative z-10 border-t border-slate-800/80 bg-slate-900/20 py-16 sm:py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/20 bg-teal-500/5 px-3.5 py-1 text-xs font-semibold text-teal-400">
-              <Users className="h-3.5 w-3.5" />
-              <span>{t.socialProof.tag}</span>
-            </div>
-            <h2 className="mt-4 text-2xl sm:text-3xl font-extrabold text-white">
-              {t.socialProof.title}
-            </h2>
-          </div>
-
-          {/* 3 Bullet "Cocok Untuk" */}
-          <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-6">
-              <div className="h-2 w-10 bg-teal-400 rounded-full mb-4" />
-              <h3 className="text-base font-bold text-white">{t.socialProof.card1Title}</h3>
-              <p className="mt-2 text-xs sm:text-sm text-slate-400 leading-relaxed">
-                {t.socialProof.card1Desc}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-6">
-              <div className="h-2 w-10 bg-emerald-400 rounded-full mb-4" />
-              <h3 className="text-base font-bold text-white">{t.socialProof.card2Title}</h3>
-              <p className="mt-2 text-xs sm:text-sm text-slate-400 leading-relaxed">
-                {t.socialProof.card2Desc}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-6">
-              <div className="h-2 w-10 bg-cyan-400 rounded-full mb-4" />
-              <h3 className="text-base font-bold text-white">{t.socialProof.card3Title}</h3>
-              <p className="mt-2 text-xs sm:text-sm text-slate-400 leading-relaxed">
-                {t.socialProof.card3Desc}
-              </p>
-            </div>
-          </div>
-
-          {/* Testimonials */}
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {t.socialProof.testimonials.map((item, idx) => (
-              <div
-                key={idx}
-                className="relative rounded-2xl border border-slate-800/80 bg-slate-900/40 p-6 flex flex-col justify-between"
-              >
-                <div>
-                  <Quote className="h-5 w-5 text-teal-400/60 mb-3" />
-                  <p className="text-xs sm:text-sm text-slate-300 italic leading-relaxed">
-                    &ldquo;{item.quote}&rdquo;
-                  </p>
-                </div>
-                <div className="mt-5 pt-4 border-t border-slate-800/80">
-                  <p className="text-xs font-semibold text-teal-300">{item.author}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Core Features Section (Section E - 6 Cards with Badges) */}
-      <section id="fitur" className="relative z-10 border-t border-slate-800/80 bg-slate-900/40 py-20 sm:py-28">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="text-xs font-bold uppercase tracking-widest text-teal-400">
-              {t.features.tag}
-            </div>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-              {t.features.title}
-            </h2>
-            <p className="mt-4 text-slate-400 text-sm sm:text-base">
-              {t.features.subtitle}
-            </p>
-          </div>
-
-          <div className="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Feature 1 */}
-            <div className="group rounded-3xl border border-slate-800 bg-slate-950/70 p-7 shadow-lg transition hover:border-teal-500/40 hover:bg-slate-900/80 flex flex-col justify-between">
+          <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
+            {/* Keunggulan 1: Catat Cepat */}
+            <div className="group relative rounded-3xl border border-slate-800 bg-slate-950/60 p-7 lg:p-8 backdrop-blur-xl transition duration-300 hover:border-teal-500/40 hover:bg-slate-900/60 flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-500/10 text-teal-400 group-hover:bg-teal-500/20 transition">
-                    <TrendingUp className="h-6 w-6" />
-                  </div>
-                  <span className="rounded-full bg-teal-500/10 border border-teal-500/20 px-3 py-1 text-xs font-bold text-teal-300">
-                    {t.features.f1Badge}
-                  </span>
-                </div>
-                <h3 className="mt-5 text-xl font-bold text-white">{t.features.f1Title}</h3>
-                <p className="mt-2 text-sm text-slate-400 leading-relaxed">
-                  {t.features.f1Desc}
-                </p>
-              </div>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="group rounded-3xl border border-slate-800 bg-slate-950/70 p-7 shadow-lg transition hover:border-teal-500/40 hover:bg-slate-900/80 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-400 group-hover:bg-cyan-500/20 transition">
-                    <CreditCard className="h-6 w-6" />
-                  </div>
-                  <span className="rounded-full bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 text-[11px] font-bold text-cyan-300">
-                    {t.features.f2Badge}
-                  </span>
-                </div>
-                <h3 className="mt-5 text-xl font-bold text-white">{t.features.f2Title}</h3>
-                <p className="mt-2 text-sm text-slate-400 leading-relaxed">
-                  {t.features.f2Desc}
-                </p>
-              </div>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="group rounded-3xl border border-slate-800 bg-slate-950/70 p-7 shadow-lg transition hover:border-teal-500/40 hover:bg-slate-900/80 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20 transition">
-                    <PieChart className="h-6 w-6" />
-                  </div>
-                  <span className="rounded-full bg-amber-500/20 border border-amber-500/30 px-3 py-1 text-xs font-extrabold text-amber-300">
-                    {t.features.f3Badge}
-                  </span>
-                </div>
-                <h3 className="mt-5 text-xl font-bold text-white">{t.features.f3Title}</h3>
-                <p className="mt-2 text-sm text-slate-400 leading-relaxed">
-                  {t.features.f3Desc}
-                </p>
-              </div>
-            </div>
-
-            {/* Feature 4 */}
-            <div className="group rounded-3xl border border-slate-800 bg-slate-950/70 p-7 shadow-lg transition hover:border-teal-500/40 hover:bg-slate-900/80 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20 transition">
-                    <Target className="h-6 w-6" />
-                  </div>
-                  <span className="rounded-full bg-amber-500/20 border border-amber-500/30 px-3 py-1 text-xs font-extrabold text-amber-300">
-                    {t.features.f4Badge}
-                  </span>
-                </div>
-                <h3 className="mt-5 text-xl font-bold text-white">{t.features.f4Title}</h3>
-                <p className="mt-2 text-sm text-slate-400 leading-relaxed">
-                  {t.features.f4Desc}
-                </p>
-              </div>
-            </div>
-
-            {/* Feature 5 */}
-            <div className="group rounded-3xl border border-slate-800 bg-slate-950/70 p-7 shadow-lg transition hover:border-teal-500/40 hover:bg-slate-900/80 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 group-hover:bg-rose-500/20 transition">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-500/10 text-teal-400 border border-teal-500/20 group-hover:scale-110 transition duration-300">
                     <Zap className="h-6 w-6" />
                   </div>
-                  <span className="rounded-full bg-amber-500/20 border border-amber-500/30 px-3 py-1 text-xs font-extrabold text-amber-300">
-                    {t.features.f5Badge}
+                  <span className="rounded-full bg-teal-500/10 border border-teal-500/20 px-3 py-1 text-xs font-semibold text-teal-300">
+                    {t.advantages.card1Badge}
                   </span>
                 </div>
-                <h3 className="mt-5 text-xl font-bold text-white">{t.features.f5Title}</h3>
-                <p className="mt-2 text-sm text-slate-400 leading-relaxed">
-                  {t.features.f5Desc}
+                <h3 className="text-xl font-bold text-white tracking-tight">
+                  {t.advantages.card1Title}
+                </h3>
+                <p className="mt-3 text-sm text-slate-400 leading-relaxed">
+                  {t.advantages.card1Desc}
                 </p>
               </div>
+              <ul className="mt-6 pt-5 border-t border-slate-800/80 space-y-2.5 text-xs text-slate-300 font-medium">
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-teal-400 shrink-0" />
+                  <span>{t.advantages.card1Point1}</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-teal-400 shrink-0" />
+                  <span>{t.advantages.card1Point2}</span>
+                </li>
+              </ul>
             </div>
 
-            {/* Feature 6 */}
-            <div className="group rounded-3xl border border-slate-800 bg-slate-950/70 p-7 shadow-lg transition hover:border-teal-500/40 hover:bg-slate-900/80 flex flex-col justify-between">
+            {/* Keunggulan 2: Multi-Dompet */}
+            <div className="group relative rounded-3xl border border-slate-800 bg-slate-950/60 p-7 lg:p-8 backdrop-blur-xl transition duration-300 hover:border-cyan-500/40 hover:bg-slate-900/60 flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 transition">
-                    <Download className="h-6 w-6" />
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 group-hover:scale-110 transition duration-300">
+                    <PieChart className="h-6 w-6" />
                   </div>
-                  <span className="rounded-full bg-amber-500/20 border border-amber-500/30 px-3 py-1 text-xs font-extrabold text-amber-300">
-                    {t.features.f6Badge}
+                  <span className="rounded-full bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 text-xs font-semibold text-cyan-300">
+                    {t.advantages.card2Badge}
                   </span>
                 </div>
-                <h3 className="mt-5 text-xl font-bold text-white">{t.features.f6Title}</h3>
-                <p className="mt-2 text-sm text-slate-400 leading-relaxed">
-                  {t.features.f6Desc}
+                <h3 className="text-xl font-bold text-white tracking-tight">
+                  {t.advantages.card2Title}
+                </h3>
+                <p className="mt-3 text-sm text-slate-400 leading-relaxed">
+                  {t.advantages.card2Desc}
                 </p>
               </div>
+              <ul className="mt-6 pt-5 border-t border-slate-800/80 space-y-2.5 text-xs text-slate-300 font-medium">
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-cyan-400 shrink-0" />
+                  <span>{t.advantages.card2Point1}</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-cyan-400 shrink-0" />
+                  <span>{t.advantages.card2Point2}</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Keunggulan 3: Budget & Target */}
+            <div className="group relative rounded-3xl border border-slate-800 bg-slate-950/60 p-7 lg:p-8 backdrop-blur-xl transition duration-300 hover:border-emerald-500/40 hover:bg-slate-900/60 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 group-hover:scale-110 transition duration-300">
+                    <Target className="h-6 w-6" />
+                  </div>
+                  <span className="rounded-full bg-amber-500/10 border border-amber-500/30 px-3 py-1 text-xs font-semibold text-amber-300">
+                    {t.advantages.card3Badge}
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-white tracking-tight">
+                  {t.advantages.card3Title}
+                </h3>
+                <p className="mt-3 text-sm text-slate-400 leading-relaxed">
+                  {t.advantages.card3Desc}
+                </p>
+              </div>
+              <ul className="mt-6 pt-5 border-t border-slate-800/80 space-y-2.5 text-xs text-slate-300 font-medium">
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <span>{t.advantages.card3Point1}</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <span>{t.advantages.card3Point2}</span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
       </section>
 
-      {/* How It Works Section (Section F - 3 Steps) */}
-      <section id="cara-kerja" className="relative z-10 py-20 sm:py-28">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="text-xs font-bold uppercase tracking-widest text-teal-400">
-              {t.howItWorks.tag}
-            </div>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-              {t.howItWorks.title}
-            </h2>
-          </div>
-
-          <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="relative rounded-3xl border border-slate-800 bg-slate-900/40 p-8 text-center backdrop-blur-sm">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-500/10 text-2xl font-black text-teal-400 border border-teal-500/20">
-                1
-              </div>
-              <h3 className="mt-6 text-lg font-bold text-white">{t.howItWorks.step1Title}</h3>
-              <p className="mt-2 text-sm text-slate-400">
-                {t.howItWorks.step1Desc}
-              </p>
-            </div>
-
-            <div className="relative rounded-3xl border border-slate-800 bg-slate-900/40 p-8 text-center backdrop-blur-sm">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-2xl font-black text-emerald-400 border border-emerald-500/20">
-                2
-              </div>
-              <h3 className="mt-6 text-lg font-bold text-white">{t.howItWorks.step2Title}</h3>
-              <p className="mt-2 text-sm text-slate-400">
-                {t.howItWorks.step2Desc}
-              </p>
-            </div>
-
-            <div className="relative rounded-3xl border border-slate-800 bg-slate-900/40 p-8 text-center backdrop-blur-sm">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                3
-              </div>
-              <h3 className="mt-6 text-lg font-bold text-white">{t.howItWorks.step3Title}</h3>
-              <p className="mt-2 text-sm text-slate-400">
-                {t.howItWorks.step3Desc}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section (Section G) */}
-      <section id="harga" className="relative z-10 border-t border-slate-800/80 py-20 sm:py-28">
+      {/* 4. Pricing Section */}
+      <section id="harga" className="relative z-10 border-t border-slate-800/80 py-20 sm:py-28 scroll-mt-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold text-teal-300 shadow-sm backdrop-blur-md">
               <Sparkles className="h-3.5 w-3.5 text-teal-400" />
               <span>{t.pricing.badge}</span>
             </div>
-            <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
+            <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl">
               {t.pricing.title}
             </h2>
             <p className="mt-4 text-sm sm:text-base text-slate-300 leading-relaxed font-medium">
@@ -1106,7 +1130,7 @@ export default function LandingPage() {
                   {t.pricing.proDesc}
                 </p>
 
-                {/* Harga Bulanan dan Tahunan Berdampingan */}
+                {/* Harga Bulanan dan Tahunan */}
                 <div className="mt-6 rounded-2xl border border-teal-500/30 bg-teal-950/30 p-4">
                   <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-teal-500/20 pb-3">
                     <div>
@@ -1190,86 +1214,14 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Catatan di Bawah Kartu */}
           <p className="mt-8 text-center text-xs text-slate-400 max-w-xl mx-auto">
             {t.pricing.bottomNote}
           </p>
         </div>
       </section>
 
-      {/* Keamanan & Privasi Section (Section H) */}
-      <section id="privasi" className="relative z-10 border-t border-slate-800/80 bg-slate-900/30 py-20 sm:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-xs font-semibold text-teal-300">
-              <Shield className="h-3.5 w-3.5 text-teal-400" />
-              <span>{t.privacy.tag}</span>
-            </div>
-            <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-              {t.privacy.title}
-            </h2>
-            <p className="mt-3 text-sm sm:text-base text-slate-400">
-              {t.privacy.subtitle}
-            </p>
-          </div>
-
-          {/* 4 Poin Konkret */}
-          <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500/10 text-teal-400 mb-4">
-                <Lock className="h-5 w-5" />
-              </div>
-              <h3 className="text-base font-bold text-white">{t.privacy.card1Title}</h3>
-              <p className="mt-2 text-xs text-slate-400 leading-relaxed">
-                {t.privacy.card1Desc}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 mb-4">
-                <ShieldCheck className="h-5 w-5" />
-              </div>
-              <h3 className="text-base font-bold text-white">{t.privacy.card2Title}</h3>
-              <p className="mt-2 text-xs text-slate-400 leading-relaxed">
-                {t.privacy.card2Desc}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 mb-4">
-                <CreditCard className="h-5 w-5" />
-              </div>
-              <h3 className="text-base font-bold text-white">{t.privacy.card3Title}</h3>
-              <p className="mt-2 text-xs text-slate-400 leading-relaxed">
-                {t.privacy.card3Desc}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400 mb-4">
-                <FileSpreadsheet className="h-5 w-5" />
-              </div>
-              <h3 className="text-base font-bold text-white">{t.privacy.card4Title}</h3>
-              <p className="mt-2 text-xs text-slate-400 leading-relaxed">
-                {t.privacy.card4Desc}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-8 text-center">
-            <Link
-              href="/privacy"
-              className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-teal-400 hover:text-teal-300 transition"
-            >
-              <span>{t.privacy.readPolicy}</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section id="faq" className="relative z-10 border-t border-slate-800/80 bg-slate-900/30 py-20 sm:py-28">
+      {/* 5. Short FAQ Section */}
+      <section id="faq" className="relative z-10 border-t border-slate-800/80 bg-slate-900/30 py-20 sm:py-28 scroll-mt-16">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="text-xs font-bold uppercase tracking-widest text-teal-400">
@@ -1278,6 +1230,9 @@ export default function LandingPage() {
             <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
               {t.faq.title}
             </h2>
+            <p className="mt-3 text-sm text-slate-400">
+              {t.faq.subtitle}
+            </p>
           </div>
 
           <div className="mt-12">
@@ -1301,8 +1256,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Closing CTA Banner (Section J) */}
-      <section className="relative z-10 py-20">
+      {/* Closing CTA Banner */}
+      <section className="relative z-10 py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="relative overflow-hidden rounded-3xl border border-teal-500/30 bg-gradient-to-r from-teal-950/80 via-slate-900/90 to-emerald-950/80 p-8 text-center sm:p-14 shadow-2xl backdrop-blur-xl">
             <div className="relative z-10 mx-auto max-w-2xl">
@@ -1329,104 +1284,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Contact & Support Section */}
-      <section id="kontak" className="relative z-10 border-t border-slate-800/80 bg-slate-900/40 py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto">
-            <div className="text-xs font-bold uppercase tracking-widest text-teal-400">
-              {t.contact.tag}
-            </div>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-              {t.contact.title}
-            </h2>
-            <p className="mt-4 text-sm sm:text-base text-slate-400">
-              {t.contact.subtitle}
-            </p>
-          </div>
-
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Email Support */}
-            <div className="flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-950/70 p-6 backdrop-blur-md transition hover:border-teal-500/50">
-              <div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-500/10 text-teal-400 mb-4">
-                  <Mail className="h-6 w-6" />
-                </div>
-                <h3 className="text-base font-bold text-white">{t.contact.emailTitle}</h3>
-                <p className="mt-1 text-xs text-slate-400">
-                  {t.contact.emailDesc}
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-slate-800/80">
-                <a
-                  href="mailto:mails@qwarts.my.id"
-                  className="text-sm font-semibold text-teal-400 hover:text-teal-300 transition break-all"
-                >
-                  mails@qwarts.my.id
-                </a>
-              </div>
-            </div>
-
-            {/* Telepon / WhatsApp */}
-            <div className="flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-950/70 p-6 backdrop-blur-md transition hover:border-teal-500/50">
-              <div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 mb-4">
-                  <Phone className="h-6 w-6" />
-                </div>
-                <h3 className="text-base font-bold text-white">{t.contact.phoneTitle}</h3>
-                <p className="mt-1 text-xs text-slate-400">
-                  {t.contact.phoneDesc}
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
-                <a
-                  href="https://wa.me/6281776370728"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-semibold text-emerald-400 hover:text-emerald-300 transition"
-                >
-                  +62 817-7637-0728
-                </a>
-                <span className="text-[11px] text-slate-400">{t.contact.phoneBadge}</span>
-              </div>
-            </div>
-
-            {/* Alamat Usaha / Kantor */}
-            <div className="flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-950/70 p-6 backdrop-blur-md transition hover:border-teal-500/50 sm:col-span-2 lg:col-span-1">
-              <div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 mb-4">
-                  <MapPin className="h-6 w-6" />
-                </div>
-                <h3 className="text-base font-bold text-white">{t.contact.addressTitle}</h3>
-                <p className="mt-2 text-xs text-slate-300 leading-relaxed">
-                  {t.contact.addressDesc}
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center gap-2 text-[11px] text-slate-400">
-                <Clock className="h-3.5 w-3.5 text-teal-400 shrink-0" />
-                <span>{t.contact.officeHours}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Payment Gateway Trust Badge */}
-          <div className="mt-10 rounded-2xl border border-slate-800/80 bg-slate-950/50 p-5 text-center flex flex-col sm:flex-row items-center justify-center gap-4 text-xs text-slate-400">
-            <span className="font-semibold text-slate-200 flex items-center gap-1.5">
-              <ShieldCheck className="h-4 w-4 text-teal-400" />
-              {t.contact.paymentGatewayBadge}
-            </span>
-            <span className="text-slate-300">
-              {t.contact.paymentGatewayDesc}
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
+      {/* Simplified, Professional Footer */}
       <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950 pt-16 pb-12 text-slate-400 text-xs">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 gap-10 md:grid-cols-4 lg:gap-12 pb-12 border-b border-slate-800/80">
-            {/* Kolom 1: Brand & Profil Usaha */}
-            <div className="md:col-span-1 space-y-4">
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-3 lg:gap-12 pb-12 border-b border-slate-800/80">
+            {/* Kolom 1: Brand & Status */}
+            <div className="space-y-4">
               <div className="flex items-center gap-2.5">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-emerald-600 text-white font-black text-sm shadow-md shadow-teal-500/20">
                   Q
@@ -1435,7 +1298,7 @@ export default function LandingPage() {
                   Qwarts <span className="text-teal-400">Finance</span>
                 </span>
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
                 {t.footer.brandDesc}
               </p>
               <Link
@@ -1448,62 +1311,45 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            {/* Kolom 2: Navigasi Halaman */}
+            {/* Kolom 2: Navigasi */}
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 mb-4">
                 {t.footer.colNavTitle}
               </h4>
               <ul className="space-y-2.5">
                 <li><a href="#fitur" className="hover:text-teal-400 transition">{t.footer.navFeatures}</a></li>
-                <li><a href="#panduan" className="hover:text-teal-400 transition">{lang === 'id' ? 'Panduan Budgeting' : 'Budgeting Guide'}</a></li>
                 <li><a href="#preview" className="hover:text-teal-400 transition">{t.footer.navDashboard}</a></li>
                 <li><a href="#harga" className="hover:text-teal-400 transition">{t.footer.navPricing}</a></li>
                 <li><a href="#faq" className="hover:text-teal-400 transition">{t.footer.navFaq}</a></li>
+                <li><Link href="/privacy" className="hover:text-teal-400 transition">{t.footer.privacyPolicy}</Link></li>
                 <li><Link href="/status" className="hover:text-teal-400 transition">{lang === 'id' ? 'Status Sistem' : 'System Status'}</Link></li>
-                <li><a href="#kontak" className="hover:text-teal-400 transition">{t.footer.navContact}</a></li>
               </ul>
             </div>
 
-            {/* Kolom 3: Kontak Support Resmi */}
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 mb-4">
+            {/* Kolom 3: Kontak Support Resmi & Legal Notice */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">
                 {t.footer.colContactTitle}
               </h4>
               <ul className="space-y-2.5">
-                <li className="flex items-start gap-2">
-                  <Mail className="h-4 w-4 text-teal-400 shrink-0 mt-0.5" />
-                  <a href="mailto:mails@qwarts.my.id" className="hover:text-teal-300 transition break-all">
+                <li className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-teal-400 shrink-0" />
+                  <a href="mailto:mails@qwarts.my.id" className="hover:text-teal-300 transition">
                     mails@qwarts.my.id
                   </a>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Phone className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                <li className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-emerald-400 shrink-0" />
                   <a href="https://wa.me/6281776370728" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-300 transition">
-                    +62 817-7637-0728 (WhatsApp)
+                    +62 817-7637-0728 ({t.footer.whatsappTitle})
                   </a>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Clock className="h-4 w-4 text-slate-500 shrink-0 mt-0.5" />
-                  <span>{t.contact.officeHours}</span>
-                </li>
               </ul>
-            </div>
-
-            {/* Kolom 4: Alamat Usaha & Legal */}
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 mb-4">
-                {t.footer.colAddressTitle}
-              </h4>
-              <div className="space-y-2.5 text-xs text-slate-400 leading-relaxed">
-                <div className="flex items-start gap-2">
-                  <MapPin className="h-4 w-4 text-cyan-400 shrink-0 mt-0.5" />
-                  <span>{t.contact.addressDesc}</span>
-                </div>
-                <div className="pt-2">
-                  <Link href="/privacy" className="font-medium text-teal-400 hover:text-teal-300 underline">
-                    {t.footer.privacyPolicy}
-                  </Link>
-                </div>
+              <div className="pt-2 text-xs text-slate-500 leading-relaxed">
+                <span>{t.footer.legalNote} </span>
+                <Link href="/privacy" className="font-semibold text-teal-400 hover:text-teal-300 underline">
+                  {t.footer.privacyPolicy}
+                </Link>.
               </div>
             </div>
           </div>
@@ -1521,7 +1367,6 @@ export default function LandingPage() {
               </button>
               <Link href="/status" className="hover:text-white transition">{lang === 'id' ? 'Status Sistem' : 'System Status'}</Link>
               <Link href="/privacy" className="hover:text-white transition">{t.footer.privacyPolicy}</Link>
-              <a href="#kontak" className="hover:text-white transition">{t.footer.helpContact}</a>
               <Link href="/sign-in" className="hover:text-white transition">{t.footer.enterDashboard}</Link>
             </div>
           </div>

@@ -1,5 +1,5 @@
 // Service Worker for Qwarts Finance PWA
-const CACHE_NAME = 'qwarts-finance-v1'
+const CACHE_NAME = 'qwarts-finance-v2'
 
 const STATIC_ASSETS = [
   '/',
@@ -45,14 +45,26 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // Skip internal auth, API mutate routes, or Next.js development hot-reload
-  if (url.pathname.startsWith('/api/') || url.pathname.includes('/_next/webpack-hmr')) {
+  // Never intercept localhost or development requests in Service Worker
+  if (
+    url.hostname === 'localhost' ||
+    url.hostname === '127.0.0.1' ||
+    url.hostname === '[::1]'
+  ) {
     return
   }
 
-  // Static files: Stale-While-Revalidate
+  // Skip internal auth, API mutate routes, or Next.js development hot-reload
   if (
-    url.pathname.startsWith('/_next/static/') ||
+    url.pathname.startsWith('/api/') ||
+    url.pathname.includes('/_next/webpack-hmr') ||
+    url.pathname.includes('/_next/static/development/')
+  ) {
+    return
+  }
+
+  // Static images and icons
+  if (
     url.pathname.endsWith('.png') ||
     url.pathname.endsWith('.jpg') ||
     url.pathname.endsWith('.svg') ||
