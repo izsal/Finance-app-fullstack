@@ -1,7 +1,10 @@
 import { cookies, headers } from 'next/headers'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { user as userTable } from '@/lib/schema'
+import { eq } from 'drizzle-orm'
 import { getFinanceData } from '@/app/actions/finance'
+import { ensureTahap2Tables } from '@/lib/db-init'
 import Dashboard from '@/components/dashboard'
 import LandingPage from '@/components/landing-page'
 
@@ -21,9 +24,22 @@ export default async function Page() {
     return <LandingPage />
   }
 
-  const userRecord = await db.query.user.findFirst({
+  // Pastikan semua kolom baru sudah ada di DB sebelum query apapun
+  await ensureTahap2Tables()
+
+  let userRecord = await db.query.user.findFirst({
     where: (u, { eq }) => eq(u.id, session.user.id),
   })
+
+  // Auto-downgrade PRO users whose subscription has expired
+  if (userRecord?.plan === 'pro' && userRecord.proExpiresAt && new Date() > userRecord.proExpiresAt) {
+    await db
+      .update(userTable)
+      .set({ plan: 'free', proExpiresAt: null, updatedAt: new Date() })
+      .where(eq(userTable.id, session.user.id))
+    userRecord = { ...userRecord, plan: 'free', proExpiresAt: null }
+    console.log(`[page] User ${session.user.id} PRO expired — auto-downgraded to free`)
+  }
 
   const data = await getFinanceData()
   return (
@@ -31,6 +47,7 @@ export default async function Page() {
       user={{
         ...session.user,
         plan: userRecord?.plan || 'free',
+        proExpiresAt: userRecord?.proExpiresAt?.toISOString() ?? null,
       }}
       initialData={data}
     />

@@ -82,27 +82,38 @@ export async function POST(req: NextRequest) {
       // SUCCESSFUL PAYMENT!
       console.log(`[Duitku Success] Order ${merchantOrderId} paid successfully!`)
 
+      // Calculate expiry date based on billing cycle
+      const now = new Date()
+      const expiresAt = new Date(now)
+      if (paymentRecord.billingCycle === 'yearly') {
+        expiresAt.setFullYear(expiresAt.getFullYear() + 1)
+      } else {
+        expiresAt.setMonth(expiresAt.getMonth() + 1)
+      }
+
       // Update payment status in database
       await db
         .update(paymentsTable)
         .set({
           status: 'SUCCESS',
           reference: reference || paymentRecord?.reference,
+          expiresAt,
           updatedAt: new Date(),
         })
         .where(eq(paymentsTable.orderId, String(merchantOrderId)))
 
-      // Upgrade user to PRO in database
+      // Upgrade user to PRO in database with expiry
       if (paymentRecord?.userId) {
         await db
           .update(userTable)
           .set({
             plan: 'pro',
+            proExpiresAt: expiresAt,
             updatedAt: new Date(),
           })
           .where(eq(userTable.id, paymentRecord.userId))
 
-        console.log(`[Duitku] User ${paymentRecord.userId} successfully upgraded to PRO!`)
+        console.log(`[Duitku] User ${paymentRecord.userId} upgraded to PRO until ${expiresAt.toISOString()}`)
       }
     } else {
       // Failed / Expired

@@ -102,6 +102,7 @@ import { DatePickerInput } from '@/components/date-picker-input'
 import { PwaInstallPrompt } from '@/components/pwa-install-prompt'
 import { exportFinanceToExcel } from '@/lib/excel-export'
 import { t, type Language } from '@/lib/i18n'
+import { OnboardingChecklist } from '@/components/onboarding-checklist'
 import {
   Area,
   AreaChart,
@@ -150,7 +151,7 @@ export default function Dashboard({
   user,
   initialData,
 }: {
-  user: { name: string; email: string; image?: string | null; emailVerified?: boolean; plan?: string }
+  user: { name: string; email: string; image?: string | null; emailVerified?: boolean; plan?: string; proExpiresAt?: string | null }
   initialData: Data
 }) {
   const [currentUser, setCurrentUser] = useState(user)
@@ -1162,6 +1163,16 @@ export default function Dashboard({
                 </div>
               </div>
 
+              {/* Onboarding Checklist — only shows for new users who haven't dismissed it */}
+              <OnboardingChecklist
+                hasWallets={data.wallets.length > 0}
+                hasTransactions={data.transactions.length > 0}
+                hasCategories={data.categories.length > 0}
+                isPro={isPro}
+                lang={lang}
+                onNavigate={(tabName) => setTab(tabName as any)}
+              />
+
               {/* Personalized Greeting & Daily Pulse Banner */}
               <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-white/50 dark:to-slate-900/50 p-4 sm:p-6 backdrop-blur-sm shadow-sm">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -1364,10 +1375,10 @@ export default function Dashboard({
                             <div className="flex items-center gap-2.5">
                               <div
                                 className={`flex h-8 w-8 items-center justify-center rounded-xl text-white ${isBank
-                                    ? 'bg-blue-600 shadow-sm shadow-blue-500/20'
-                                    : isCash
-                                      ? 'bg-amber-600 shadow-sm shadow-amber-500/20'
-                                      : 'bg-emerald-600 shadow-sm shadow-emerald-500/20'
+                                  ? 'bg-blue-600 shadow-sm shadow-blue-500/20'
+                                  : isCash
+                                    ? 'bg-amber-600 shadow-sm shadow-amber-500/20'
+                                    : 'bg-emerald-600 shadow-sm shadow-emerald-500/20'
                                   }`}
                               >
                                 {isBank ? <Building2 className="h-4 w-4" /> : isCash ? <Wallet className="h-4 w-4" /> : <Smartphone className="h-4 w-4" />}
@@ -1685,10 +1696,10 @@ export default function Dashboard({
                           <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
                             <div
                               className={`h-full rounded-full transition-all ${overallCurrentBudgetPct > 100
-                                  ? 'bg-rose-500'
-                                  : overallCurrentBudgetPct >= 80
-                                    ? 'bg-amber-500'
-                                    : 'bg-teal-500'
+                                ? 'bg-rose-500'
+                                : overallCurrentBudgetPct >= 80
+                                  ? 'bg-amber-500'
+                                  : 'bg-teal-500'
                                 }`}
                               style={{ width: `${Math.min(100, overallCurrentBudgetPct)}%` }}
                             />
@@ -2649,12 +2660,12 @@ export default function Dashboard({
                               <div className="flex items-center gap-2.5">
                                 <div
                                   className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-black text-xs ${isPaid
-                                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400'
-                                      : isOverdue
-                                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 ring-2 ring-rose-500/30'
-                                        : isDueSoon
-                                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400 ring-2 ring-amber-500/30'
-                                          : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
+                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400'
+                                    : isOverdue
+                                      ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 ring-2 ring-rose-500/30'
+                                      : isDueSoon
+                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400 ring-2 ring-amber-500/30'
+                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
                                     }`}
                                 >
                                   {s.dueDate}
@@ -2788,12 +2799,12 @@ export default function Dashboard({
                                     <div className="flex items-center gap-2.5">
                                       <div
                                         className={`flex h-9 w-9 items-center justify-center rounded-xl font-black text-xs ${isPaid
-                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400'
-                                            : isOverdue
-                                              ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 ring-2 ring-rose-500/30'
-                                              : isDueSoon
-                                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400 ring-2 ring-amber-500/30'
-                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
+                                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400'
+                                          : isOverdue
+                                            ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 ring-2 ring-rose-500/30'
+                                            : isDueSoon
+                                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400 ring-2 ring-amber-500/30'
+                                              : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
                                           }`}
                                       >
                                         {s.dueDate}
@@ -2801,12 +2812,12 @@ export default function Dashboard({
                                       <div>
                                         <p className="font-bold text-slate-800 dark:text-slate-200">{lang === 'en' ? `${s.dueDate}th each month` : `Tgl ${s.dueDate} tiap bulan`}</p>
                                         <p className={`text-[10px] ${isPaid
-                                            ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
-                                            : isOverdue
-                                              ? 'text-rose-500 font-bold'
-                                              : isDueSoon
-                                                ? 'text-amber-600 dark:text-amber-400 font-bold'
-                                                : 'text-slate-400'
+                                          ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                                          : isOverdue
+                                            ? 'text-rose-500 font-bold'
+                                            : isDueSoon
+                                              ? 'text-amber-600 dark:text-amber-400 font-bold'
+                                              : 'text-slate-400'
                                           }`}>
                                           {isPaid
                                             ? (s.lastPaidAt ? `${t('sub_paid_on', lang)} ${new Date(s.lastPaidAt).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short' })}` : t('sub_status_paid', lang))
@@ -3884,6 +3895,20 @@ export default function Dashboard({
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
                         {isPro ? t('pro_active_text', lang) : t('free_active_text', lang)}
                       </p>
+                      {/* PRO expiry info */}
+                      {isPro && currentUser.proExpiresAt && (() => {
+                        const expiresDate = new Date(currentUser.proExpiresAt)
+                        const daysLeft = Math.ceil((expiresDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                        const isExpiringSoon = daysLeft <= 7
+                        return (
+                          <p className={`text-xs mt-1 font-medium ${isExpiringSoon ? 'text-amber-500 dark:text-amber-400' : 'text-slate-400'}`}>
+                            {isExpiringSoon ? '⚠️ ' : '📅 '}
+                            {lang === 'id'
+                              ? `Aktif hingga ${expiresDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })} (${daysLeft} hari lagi)`
+                              : `Active until ${expiresDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })} (${daysLeft} days left)`}
+                          </p>
+                        )
+                      })()}
                     </div>
 
                     {!isPro ? (
@@ -4361,8 +4386,8 @@ export default function Dashboard({
                   {showUpgradeModal.description
                     ? showUpgradeModal.description
                     : (lang === 'en'
-                        ? 'Unlock all powerful PRO features without limits. Instant activation upon checkout.'
-                        : 'Buka seluruh fitur unggulan tanpa batas. Pembayaran otomatis dan aktif detik ini juga.')}
+                      ? 'Unlock all powerful PRO features without limits. Instant activation upon checkout.'
+                      : 'Buka seluruh fitur unggulan tanpa batas. Pembayaran otomatis dan aktif detik ini juga.')}
                 </p>
               </div>
 
@@ -4419,11 +4444,10 @@ export default function Dashboard({
                 <button
                   type="button"
                   onClick={() => setSelectedUpgradePlan('yearly')}
-                  className={`relative rounded-2xl p-3 sm:p-3.5 text-left transition cursor-pointer border ${
-                    selectedUpgradePlan === 'yearly'
-                      ? 'border-amber-400/80 bg-gradient-to-b from-amber-500/15 via-slate-900/90 to-slate-950 shadow-lg shadow-amber-500/15 ring-1 ring-amber-400/50'
-                      : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
-                  }`}
+                  className={`relative rounded-2xl p-3 sm:p-3.5 text-left transition cursor-pointer border ${selectedUpgradePlan === 'yearly'
+                    ? 'border-amber-400/80 bg-gradient-to-b from-amber-500/15 via-slate-900/90 to-slate-950 shadow-lg shadow-amber-500/15 ring-1 ring-amber-400/50'
+                    : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
+                    }`}
                 >
                   <span className="absolute -top-2.5 right-3 rounded-full bg-gradient-to-r from-amber-500 to-amber-400 px-2 py-0.5 text-[9px] font-black text-slate-950 uppercase tracking-wider shadow-sm">
                     {lang === 'en' ? 'SAVE 35%' : 'HEMAT 35%'}
@@ -4432,11 +4456,10 @@ export default function Dashboard({
                     <span className="text-[11px] font-bold text-amber-300">
                       {lang === 'en' ? 'Yearly Plan' : 'Paket Tahunan'}
                     </span>
-                    <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${
-                      selectedUpgradePlan === 'yearly'
-                        ? 'border-amber-400 bg-amber-400 text-slate-950'
-                        : 'border-slate-600 bg-transparent'
-                    }`}>
+                    <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${selectedUpgradePlan === 'yearly'
+                      ? 'border-amber-400 bg-amber-400 text-slate-950'
+                      : 'border-slate-600 bg-transparent'
+                      }`}>
                       {selectedUpgradePlan === 'yearly' && <Check className="h-3 w-3 stroke-[3]" />}
                     </div>
                   </div>
@@ -4450,21 +4473,19 @@ export default function Dashboard({
                 <button
                   type="button"
                   onClick={() => setSelectedUpgradePlan('monthly')}
-                  className={`relative rounded-2xl p-3 sm:p-3.5 text-left transition cursor-pointer border ${
-                    selectedUpgradePlan === 'monthly'
-                      ? 'border-teal-400/80 bg-gradient-to-b from-teal-500/15 via-slate-900/90 to-slate-950 shadow-lg shadow-teal-500/15 ring-1 ring-teal-400/50'
-                      : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
-                  }`}
+                  className={`relative rounded-2xl p-3 sm:p-3.5 text-left transition cursor-pointer border ${selectedUpgradePlan === 'monthly'
+                    ? 'border-teal-400/80 bg-gradient-to-b from-teal-500/15 via-slate-900/90 to-slate-950 shadow-lg shadow-teal-500/15 ring-1 ring-teal-400/50'
+                    : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold text-slate-300">
                       {lang === 'en' ? 'Monthly Plan' : 'Paket Bulanan'}
                     </span>
-                    <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${
-                      selectedUpgradePlan === 'monthly'
-                        ? 'border-teal-400 bg-teal-400 text-slate-950'
-                        : 'border-slate-600 bg-transparent'
-                    }`}>
+                    <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${selectedUpgradePlan === 'monthly'
+                      ? 'border-teal-400 bg-teal-400 text-slate-950'
+                      : 'border-slate-600 bg-transparent'
+                      }`}>
                       {selectedUpgradePlan === 'monthly' && <Check className="h-3 w-3 stroke-[3]" />}
                     </div>
                   </div>
@@ -4535,9 +4556,8 @@ export default function Dashboard({
         <div className="grid grid-cols-5 items-center">
           <button
             onClick={() => setTab('Overview')}
-            className={`flex flex-col items-center justify-center py-1 transition cursor-pointer ${
-              tab === 'Overview' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-            }`}
+            className={`flex flex-col items-center justify-center py-1 transition cursor-pointer ${tab === 'Overview' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+              }`}
           >
             <LayoutDashboard className="h-5 w-5" />
             <span className="text-[10px] mt-0.5">Overview</span>
@@ -4545,9 +4565,8 @@ export default function Dashboard({
 
           <button
             onClick={() => setTab('Transaksi')}
-            className={`flex flex-col items-center justify-center py-1 transition cursor-pointer ${
-              tab === 'Transaksi' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-            }`}
+            className={`flex flex-col items-center justify-center py-1 transition cursor-pointer ${tab === 'Transaksi' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+              }`}
           >
             <Receipt className="h-5 w-5" />
             <span className="text-[10px] mt-0.5">{lang === 'en' ? 'Tx' : 'Transaksi'}</span>
@@ -4566,9 +4585,8 @@ export default function Dashboard({
 
           <button
             onClick={() => setTab('Dompet')}
-            className={`flex flex-col items-center justify-center py-1 transition cursor-pointer ${
-              tab === 'Dompet' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-            }`}
+            className={`flex flex-col items-center justify-center py-1 transition cursor-pointer ${tab === 'Dompet' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+              }`}
           >
             <WalletCards className="h-5 w-5" />
             <span className="text-[10px] mt-0.5">{lang === 'en' ? 'Wallets' : 'Dompet'}</span>
@@ -4703,11 +4721,11 @@ function TransactionModal({
           } else {
             setScanMessage(
               json.message ||
-                (res.status === 429
-                  ? lang === 'en'
-                    ? 'Too many scan requests. Please wait a moment.'
-                    : 'Terlalu banyak permintaan scan. Harap tunggu sebentar.'
-                  : lang === 'en'
+              (res.status === 429
+                ? lang === 'en'
+                  ? 'Too many scan requests. Please wait a moment.'
+                  : 'Terlalu banyak permintaan scan. Harap tunggu sebentar.'
+                : lang === 'en'
                   ? 'Failed to read receipt'
                   : 'Gagal membaca struk belanja')
             )
@@ -4952,9 +4970,8 @@ function TransactionModal({
         <button
           type="button"
           onClick={() => handleTypeChange('expense')}
-          className={`flex items-center justify-center gap-1.5 rounded-xl py-2 sm:py-2.5 transition cursor-pointer ${
-            type === 'expense' ? 'bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
+          className={`flex items-center justify-center gap-1.5 rounded-xl py-2 sm:py-2.5 transition cursor-pointer ${type === 'expense' ? 'bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
         >
           <ArrowUpRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           <span>{lang === 'en' ? 'Expense' : 'Pengeluaran'}</span>
@@ -4962,9 +4979,8 @@ function TransactionModal({
         <button
           type="button"
           onClick={() => handleTypeChange('income')}
-          className={`flex items-center justify-center gap-1.5 rounded-xl py-2 sm:py-2.5 transition cursor-pointer ${
-            type === 'income' ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
+          className={`flex items-center justify-center gap-1.5 rounded-xl py-2 sm:py-2.5 transition cursor-pointer ${type === 'income' ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
         >
           <ArrowDownRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           <span>{lang === 'en' ? 'Income' : 'Pemasukan'}</span>
@@ -6135,15 +6151,15 @@ function PaySubscriptionModal({
 
       {/* Modern iOS-Style Toggle Card */}
       <div className={`rounded-2xl border transition-all duration-200 p-3 sm:p-4 ${markAsPaid
-          ? 'border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20'
-          : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40'
+        ? 'border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20'
+        : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40'
         }`}>
         <div className="flex items-center justify-between gap-3">
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <span className={`flex h-6 w-6 items-center justify-center rounded-lg text-xs font-bold transition-colors ${markAsPaid
-                  ? 'bg-emerald-500 text-white shadow-xs'
-                  : 'bg-slate-200 dark:bg-slate-800 text-slate-400'
+                ? 'bg-emerald-500 text-white shadow-xs'
+                : 'bg-slate-200 dark:bg-slate-800 text-slate-400'
                 }`}>
                 <CheckCircle2 className="h-3.5 w-3.5" />
               </span>

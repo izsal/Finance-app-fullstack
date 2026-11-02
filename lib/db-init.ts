@@ -2,6 +2,11 @@ import { pool } from './db'
 
 let isInitialized = false
 
+/**
+ * Runs ALTER TABLE migrations to add new columns that may not exist yet.
+ * Safe to call multiple times — uses IF NOT EXISTS so it's idempotent.
+ * Called at the start of page.tsx before any DB queries that use new columns.
+ */
 export async function ensureTahap2Tables() {
   if (isInitialized) return
   try {
@@ -38,12 +43,19 @@ export async function ensureTahap2Tables() {
         );
 
         ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS "lastPaidAt" TIMESTAMP;
+
+        -- Add proExpiresAt to user table for subscription expiry tracking
+        ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "proExpiresAt" TIMESTAMP;
+
+        -- Add expiresAt to payments table
+        ALTER TABLE payments ADD COLUMN IF NOT EXISTS "expiresAt" TIMESTAMP;
       `)
       isInitialized = true
     } finally {
       client.release()
     }
   } catch (err) {
+    // Log tapi jangan throw — app tetap jalan meski migration gagal
     console.error('Error ensuring tables:', err)
   }
 }

@@ -1322,6 +1322,7 @@ export default function LandingPage() {
                 <li><a href="#harga" className="hover:text-teal-400 transition">{t.footer.navPricing}</a></li>
                 <li><a href="#faq" className="hover:text-teal-400 transition">{t.footer.navFaq}</a></li>
                 <li><Link href="/privacy" className="hover:text-teal-400 transition">{t.footer.privacyPolicy}</Link></li>
+                <li><Link href="/terms" className="hover:text-teal-400 transition">{t.footer.termsOfService}</Link></li>
                 <li><Link href="/status" className="hover:text-teal-400 transition">{lang === 'id' ? 'Status Sistem' : 'System Status'}</Link></li>
               </ul>
             </div>
@@ -1349,6 +1350,12 @@ export default function LandingPage() {
                 <span>{t.footer.legalNote} </span>
                 <Link href="/privacy" className="font-semibold text-teal-400 hover:text-teal-300 underline">
                   {t.footer.privacyPolicy}
+                </Link>
+                {' '}
+                {lang === 'id' ? 'dan' : 'and'}
+                {' '}
+                <Link href="/terms" className="font-semibold text-teal-400 hover:text-teal-300 underline">
+                  {t.footer.termsOfService}
                 </Link>.
               </div>
             </div>
@@ -1367,6 +1374,7 @@ export default function LandingPage() {
               </button>
               <Link href="/status" className="hover:text-white transition">{lang === 'id' ? 'Status Sistem' : 'System Status'}</Link>
               <Link href="/privacy" className="hover:text-white transition">{t.footer.privacyPolicy}</Link>
+              <Link href="/terms" className="hover:text-white transition">{t.footer.termsOfService}</Link>
               <Link href="/sign-in" className="hover:text-white transition">{t.footer.enterDashboard}</Link>
             </div>
           </div>

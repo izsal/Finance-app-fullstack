@@ -6,6 +6,7 @@ export const user = pgTable('user', {
   email: text('email').notNull().unique(),
   emailVerified: boolean('emailVerified').notNull().default(false),
   plan: text('plan').notNull().default('free'),
+  proExpiresAt: timestamp('proExpiresAt'),
   image: text('image'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
@@ -126,6 +127,7 @@ export const payments = pgTable('payments', {
   status: text('status').notNull().default('PENDING'),
   paymentUrl: text('paymentUrl'),
   reference: text('reference'),
+  expiresAt: timestamp('expiresAt'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 })

@@ -361,15 +361,15 @@ export function AuthForm({ mode = 'sign-in' }: { mode?: 'sign-in' | 'sign-up' | 
               {isForgotPassword
                 ? 'Lupa Kata Sandi'
                 : signup
-                ? 'Mulai Gratis Sekarang'
-                : 'Selamat Datang Kembali'}
+                  ? 'Mulai Gratis Sekarang'
+                  : 'Selamat Datang Kembali'}
             </h1>
             <p className="mt-2 text-xs sm:text-sm text-slate-400">
               {isForgotPassword
                 ? 'Masukkan email Anda untuk menerima tautan pemulihan kata sandi.'
                 : signup
-                ? 'Kelola cashflow, budget, dan impian finansialmu dengan rapi.'
-                : 'Masuk untuk memantau saldo dan transaksi keuanganmu.'}
+                  ? 'Kelola cashflow, budget, dan impian finansialmu dengan rapi.'
+                  : 'Masuk untuk memantau saldo dan transaksi keuanganmu.'}
             </p>
           </div>
 
@@ -744,6 +744,13 @@ export function AuthForm({ mode = 'sign-in' }: { mode?: 'sign-in' | 'sign-up' | 
         {/* Footer info */}
         <p className="mt-6 text-center text-xs text-slate-500">
           Data keuangan Anda aman, terenkripsi, dan terisolasi privat di qwarts.my.id.
+          {' '}Dengan mendaftar, Anda menyetujui{' '}
+          <Link href="/terms" className="text-teal-400 hover:underline" target="_blank" rel="noopener noreferrer">
+            Syarat &amp; Ketentuan
+          </Link>{' '}dan{' '}
+          <Link href="/privacy" className="text-teal-400 hover:underline" target="_blank" rel="noopener noreferrer">
+            Kebijakan Privasi
+          </Link>{' '}kami.
         </p>
       </div>
     </main>

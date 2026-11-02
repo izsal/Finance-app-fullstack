@@ -170,6 +170,7 @@ export const landingTranslations = {
       emailTitle: 'Email Resmi',
       whatsappTitle: 'WhatsApp',
       privacyPolicy: 'Kebijakan Privasi',
+      termsOfService: 'Syarat & Ketentuan',
       legalNote:
         'Alamat lengkap kantor dan informasi legalitas operasional tercantum di halaman',
       copyright: 'Qwarts Finance. Hak cipta dilindungi undang-undang.',
@@ -345,6 +346,7 @@ export const landingTranslations = {
       emailTitle: 'Official Email',
       whatsappTitle: 'WhatsApp',
       privacyPolicy: 'Privacy Policy',
+      termsOfService: 'Terms of Service',
       legalNote:
         'Full business address and operational legality details can be found on our',
       copyright: 'Qwarts Finance. All rights reserved.',

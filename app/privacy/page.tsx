@@ -124,8 +124,16 @@ export default function PrivacyPolicyPage() {
         </div>
 
         {/* Footer info */}
-        <div className="mt-12 pt-6 border-t border-slate-800 text-center text-xs text-slate-500">
+        <div className="mt-12 pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <p>© {new Date().getFullYear()} Qwarts Finance. Hak cipta dilindungi undang-undang.</p>
+          <div className="flex items-center gap-4">
+            <Link href="/terms" className="hover:text-teal-400 transition">
+              Syarat &amp; Ketentuan
+            </Link>
+            <Link href="/" className="hover:text-teal-400 transition">
+              Kembali ke Beranda
+            </Link>
+          </div>
         </div>
       </div>
     </div>
