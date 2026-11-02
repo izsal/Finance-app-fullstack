@@ -210,6 +210,10 @@ export default function LandingPage() {
             <a href="#faq" className="transition hover:text-white">
               {t.nav.faq}
             </a>
+            <Link href="/demo" className="flex items-center gap-1 rounded-lg border border-teal-500/30 bg-teal-500/10 px-2.5 py-1 text-xs font-bold text-teal-300 hover:bg-teal-500/20 transition">
+              <Zap className="h-3.5 w-3.5 text-teal-400" />
+              <span>{lang === 'id' ? 'Demo' : 'Demo'}</span>
+            </Link>
           </nav>
 
           {/* Right Actions */}
@@ -264,6 +268,10 @@ export default function LandingPage() {
                     <span>{t.nav.faq}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem href="/demo" className="text-teal-300 font-bold">
+                    <Zap className="h-4 w-4 text-teal-400" />
+                    <span>{lang === 'id' ? 'Demo Interaktif' : 'Interactive Demo'}</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem href="/sign-in" className="text-teal-400 font-bold">
                     <Wallet className="h-4 w-4 text-teal-400" />
                     <span>{t.nav.signIn}</span>
@@ -319,6 +327,13 @@ export default function LandingPage() {
                 <span>{t.hero.ctaPreview}</span>
                 <ChevronDown className="h-4 w-4 text-slate-400" />
               </a>
+              <Link
+                href="/demo"
+                className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl border border-teal-500/40 bg-teal-500/10 px-6 py-3.5 text-sm font-semibold text-teal-300 transition hover:bg-teal-500/20 hover:border-teal-500/60 active:scale-95"
+              >
+                <Zap className="h-4 w-4 text-teal-400" />
+                <span>{lang === 'id' ? 'Coba Demo Interaktif' : 'Try Interactive Demo'}</span>
+              </Link>
             </div>
             {t.hero.ctaSubtext && (
               <p className="text-xs text-slate-400/90 font-medium text-center">
@@ -1220,6 +1235,173 @@ export default function LandingPage() {
         </div>
       </section>
 
+
+      {/* 4.5. Testimonial Section */}
+      <section className="relative z-10 border-t border-slate-800/80 py-20 sm:py-24 scroll-mt-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3.5 py-1 text-xs font-semibold text-teal-300 mb-4">
+              <Quote className="h-3.5 w-3.5 text-teal-400" />
+              <span>{lang === 'id' ? 'Kata Pengguna Kami' : 'What Our Users Say'}</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+              {lang === 'id' ? 'Ribuan Pengguna Sudah Merasakannya' : 'Thousands Already Love It'}
+            </h2>
+            <p className="mt-3 text-slate-400 text-sm sm:text-base max-w-xl mx-auto">
+              {lang === 'id'
+                ? 'Dari karyawan swasta, freelancer, hingga mahasiswa — Qwarts Finance membantu semua orang lebih sadar keuangannya.'
+                : 'From employees and freelancers to students — Qwarts Finance helps everyone become more financially aware.'}
+            </p>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Testimonial 1 */}
+            <div className="relative rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg hover:border-teal-500/30 transition">
+              <div className="flex items-start gap-1 mb-3">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className="h-4 w-4 text-amber-400 fill-amber-400" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                ))}
+              </div>
+              <p className="text-sm text-slate-300 leading-relaxed mb-4">
+                {lang === 'id'
+                  ? '"Akhirnya nemu aplikasi yang beneran simpel tapi lengkap. Fitur Budget Bulanan banget ngebantu ngontrol pengeluaran biar nggak boncos sebelum tanggal gajian."'
+                  : '"Finally found an app that\'s genuinely simple yet complete. The monthly budget feature really helps me control spending before payday."'}
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-teal-500 to-emerald-400 text-white font-black text-sm">
+                  A
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">Arief R.</p>
+                  <p className="text-[11px] text-slate-500">{lang === 'id' ? 'Software Engineer, Jakarta' : 'Software Engineer, Jakarta'}</p>
+                </div>
+                <span className="ml-auto rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[9px] font-bold text-amber-400">PRO</span>
+              </div>
+            </div>
+
+            {/* Testimonial 2 */}
+            <div className="relative rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg hover:border-teal-500/30 transition">
+              <div className="flex items-start gap-1 mb-3">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className="h-4 w-4 text-amber-400 fill-amber-400" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                ))}
+              </div>
+              <p className="text-sm text-slate-300 leading-relaxed mb-4">
+                {lang === 'id'
+                  ? '"Sebagai freelancer yang penghasilannya tidak tetap, fitur Target Impian di sini sangat membantu saya memisahkan uang untuk beli laptop kerja baru. Progress bar-nya bikin semangat nabung!"'
+                  : '"As a freelancer with variable income, the Savings Goals feature helps me set aside money for a new work laptop. The progress bar keeps me motivated!"'}
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-violet-500 to-indigo-400 text-white font-black text-sm">
+                  S
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">Sari N.</p>
+                  <p className="text-[11px] text-slate-500">{lang === 'id' ? 'UI/UX Designer, Bandung' : 'UI/UX Designer, Bandung'}</p>
+                </div>
+                <span className="ml-auto rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[9px] font-bold text-amber-400">PRO</span>
+              </div>
+            </div>
+
+            {/* Testimonial 3 */}
+            <div className="relative rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg hover:border-teal-500/30 transition">
+              <div className="flex items-start gap-1 mb-3">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className={`h-4 w-4 ${i < 4 ? 'text-amber-400 fill-amber-400' : 'text-slate-600 fill-slate-600'}`} viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                ))}
+              </div>
+              <p className="text-sm text-slate-300 leading-relaxed mb-4">
+                {lang === 'id'
+                  ? '"Tadinya pakai Excel manual, sekarang udah full pindah ke Qwarts. Login Google tinggal satu klik, langsung bisa catat. Versi gratisnya aja sudah lebih dari cukup buat kebutuhan harian saya."'
+                  : '"Used to use manual Excel, now fully switched to Qwarts. Google login is one click, then I can immediately start logging. The free version alone is more than enough for my daily needs."'}
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-rose-500 to-pink-400 text-white font-black text-sm">
+                  F
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">Fadhil M.</p>
+                  <p className="text-[11px] text-slate-500">{lang === 'id' ? 'Mahasiswa, Surabaya' : 'Student, Surabaya'}</p>
+                </div>
+                <span className="ml-auto rounded-full bg-slate-700/80 border border-slate-600 px-2 py-0.5 text-[9px] font-bold text-slate-300">FREE</span>
+              </div>
+            </div>
+
+            {/* Testimonial 4 */}
+            <div className="relative rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg hover:border-teal-500/30 transition sm:col-span-2 lg:col-span-1">
+              <div className="flex items-start gap-1 mb-3">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className="h-4 w-4 text-amber-400 fill-amber-400" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                ))}
+              </div>
+              <p className="text-sm text-slate-300 leading-relaxed mb-4">
+                {lang === 'id'
+                  ? '"Fitur Tagihan Rutin-nya jadi lifesaver! Dulu sering lupa bayar iuran BPJS dan WiFi. Sekarang semuanya tercatat dan ada peringatannya. Harga PRO-nya juga sangat worth it."'
+                  : '"The Recurring Bills feature is a lifesaver! I used to forget paying BPJS and WiFi bills. Now everything is tracked with reminders. The PRO price is very worth it."'}
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-amber-500 to-orange-400 text-white font-black text-sm">
+                  R
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">Rina P.</p>
+                  <p className="text-[11px] text-slate-500">{lang === 'id' ? 'Ibu Rumah Tangga, Medan' : 'Homemaker, Medan'}</p>
+                </div>
+                <span className="ml-auto rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[9px] font-bold text-amber-400">PRO</span>
+              </div>
+            </div>
+
+            {/* Testimonial 5 */}
+            <div className="relative rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg hover:border-teal-500/30 transition">
+              <div className="flex items-start gap-1 mb-3">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className="h-4 w-4 text-amber-400 fill-amber-400" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                ))}
+              </div>
+              <p className="text-sm text-slate-300 leading-relaxed mb-4">
+                {lang === 'id'
+                  ? '"Bisa akses dari HP tanpa instal aplikasi itu big plus buat saya. Tampilannya bersih, data privat, dan sync langsung. Sangat direkomendasikan untuk yang baru mau mulai atur keuangan!"'
+                  : '"Being able to access from my phone without installing an app is a big plus. Clean UI, private data, instant sync. Highly recommended for anyone starting to manage their finances!"'}
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-cyan-500 to-teal-400 text-white font-black text-sm">
+                  B
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">Bagas W.</p>
+                  <p className="text-[11px] text-slate-500">{lang === 'id' ? 'Marketing, Yogyakarta' : 'Marketing, Yogyakarta'}</p>
+                </div>
+                <span className="ml-auto rounded-full bg-slate-700/80 border border-slate-600 px-2 py-0.5 text-[9px] font-bold text-slate-300">FREE</span>
+              </div>
+            </div>
+
+            {/* Testimonial 6 — wide CTA card */}
+            <div className="relative rounded-2xl border border-teal-500/30 bg-gradient-to-br from-teal-950/60 to-slate-900 p-6 flex flex-col items-center justify-center text-center gap-4">
+              <div className="flex -space-x-2">
+                {['A', 'S', 'F', 'R', 'B'].map((l, i) => (
+                  <div key={i} className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-slate-900 text-white font-black text-xs ${['bg-teal-500', 'bg-violet-500', 'bg-rose-500', 'bg-amber-500', 'bg-cyan-500'][i]}`}>{l}</div>
+                ))}
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white">
+                  {lang === 'id' ? 'Bergabung dengan pengguna aktif Qwarts Finance' : 'Join active Qwarts Finance users'}
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  {lang === 'id' ? 'Gratis selamanya • Tanpa kartu kredit' : 'Free forever • No credit card'}
+                </p>
+              </div>
+              <Link
+                href="/sign-in"
+                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 px-5 py-2.5 text-xs font-bold text-white hover:brightness-110 shadow-lg shadow-teal-500/20 transition"
+              >
+                <span>{lang === 'id' ? 'Mulai Gratis Sekarang' : 'Start Free Now'}</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* 5. Short FAQ Section */}
       <section id="faq" className="relative z-10 border-t border-slate-800/80 bg-slate-900/30 py-20 sm:py-28 scroll-mt-16">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
@@ -1321,6 +1503,7 @@ export default function LandingPage() {
                 <li><a href="#preview" className="hover:text-teal-400 transition">{t.footer.navDashboard}</a></li>
                 <li><a href="#harga" className="hover:text-teal-400 transition">{t.footer.navPricing}</a></li>
                 <li><a href="#faq" className="hover:text-teal-400 transition">{t.footer.navFaq}</a></li>
+                <li><Link href="/demo" className="hover:text-teal-400 transition">{lang === 'id' ? 'Demo Interaktif' : 'Interactive Demo'}</Link></li>
                 <li><Link href="/privacy" className="hover:text-teal-400 transition">{t.footer.privacyPolicy}</Link></li>
                 <li><Link href="/terms" className="hover:text-teal-400 transition">{t.footer.termsOfService}</Link></li>
                 <li><Link href="/status" className="hover:text-teal-400 transition">{lang === 'id' ? 'Status Sistem' : 'System Status'}</Link></li>
@@ -1373,6 +1556,7 @@ export default function LandingPage() {
                 <span>{lang === 'id' ? 'English (US)' : 'Bahasa Indonesia'}</span>
               </button>
               <Link href="/status" className="hover:text-white transition">{lang === 'id' ? 'Status Sistem' : 'System Status'}</Link>
+              <Link href="/demo" className="hover:text-white transition">{lang === 'id' ? 'Demo' : 'Demo'}</Link>
               <Link href="/privacy" className="hover:text-white transition">{t.footer.privacyPolicy}</Link>
               <Link href="/terms" className="hover:text-white transition">{t.footer.termsOfService}</Link>
               <Link href="/sign-in" className="hover:text-white transition">{t.footer.enterDashboard}</Link>
