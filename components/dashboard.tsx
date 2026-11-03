@@ -117,6 +117,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { AnalisisCharts } from '@/components/analisis-charts'
 
 type Data = {
   wallets: WalletType[]
@@ -3465,6 +3466,20 @@ export default function Dashboard({
                   </div>
                 </div>
 
+                {/* Visual Analytics Charts */}
+                <AnalisisCharts
+                  transactions={data.transactions}
+                  categories={data.categories}
+                  wallets={data.wallets}
+                  budgets={data.budgets}
+                  goals={data.goals}
+                  subscriptions={data.subscriptions}
+                  lang={lang}
+                  theme={theme}
+                  hideBalance={hideBalance}
+                />
+
+                {/* Excel Export Info Card */}
                 <div className="rounded-3xl border border-emerald-200/80 dark:border-emerald-900/60 bg-gradient-to-br from-emerald-50/70 via-white to-teal-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-emerald-950/30 p-8 shadow-sm">
                   <div className="max-w-2xl space-y-3">
                     <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300">
