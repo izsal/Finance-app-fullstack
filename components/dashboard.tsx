@@ -26,6 +26,7 @@ import {
   updateTransaction,
   updateWallet,
   upsertBudget,
+  deleteAllTransactions,
 } from '@/app/actions/finance'
 import { authClient, signOut } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
@@ -187,6 +188,10 @@ export default function Dashboard({
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
   const [passwordStatus, setPasswordStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  // Delete all transactions state
+  const [isDeletingAllTx, setIsDeletingAllTx] = useState(false)
+  const [showDeleteTxConfirm, setShowDeleteTxConfirm] = useState(false)
 
   // Resend email verification state
   const [isResendingEmail, setIsResendingEmail] = useState(false)
@@ -4180,6 +4185,81 @@ export default function Dashboard({
                     <RefreshCw className="h-4 w-4 text-emerald-600" />
                     <span>{lang === 'en' ? 'Seed / Add Default Categories' : 'Seed / Tambah Kategori Default'}</span>
                   </button>
+                </div>
+
+                {/* Danger Zone divider */}
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-5 mt-2">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Trash2 className="h-4 w-4 text-rose-500" />
+                    <span className="text-xs font-bold text-rose-500 uppercase tracking-wider">
+                      {lang === 'en' ? 'Danger Zone' : 'Zona Berbahaya'}
+                    </span>
+                  </div>
+
+                  <div className="rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/20 p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-rose-700 dark:text-rose-300">
+                        {lang === 'en' ? 'Reset All Transactions' : 'Hapus Semua Transaksi'}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                        {lang === 'en'
+                          ? 'Permanently delete all transaction records. Wallet balances and categories are kept. This cannot be undone.'
+                          : 'Hapus permanen seluruh riwayat transaksi. Dompet dan kategori tetap tersimpan. Tindakan ini tidak bisa dibatalkan.'}
+                      </p>
+                    </div>
+
+                    {!showDeleteTxConfirm ? (
+                      <button
+                        onClick={() => setShowDeleteTxConfirm(true)}
+                        className="shrink-0 flex items-center gap-2 rounded-xl border border-rose-300 dark:border-rose-800 bg-white dark:bg-rose-950/40 px-4 py-2.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/70 transition"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span>{lang === 'en' ? 'Reset Transactions' : 'Hapus Semua Transaksi'}</span>
+                      </button>
+                    ) : (
+                      <div className="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                        <p className="text-xs font-semibold text-rose-600 dark:text-rose-400 text-center sm:text-left">
+                          {lang === 'en' ? 'Sure? This is permanent.' : 'Yakin? Tidak bisa dibatalkan.'}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setShowDeleteTxConfirm(false)}
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                            <span>{lang === 'en' ? 'Cancel' : 'Batal'}</span>
+                          </button>
+                          <button
+                            disabled={isDeletingAllTx}
+                            onClick={async () => {
+                              setIsDeletingAllTx(true)
+                              try {
+                                const fresh = await deleteAllTransactions()
+                                setShowDeleteTxConfirm(false)
+                                handleSuccess(
+                                  lang === 'en'
+                                    ? 'All transactions deleted. Starting fresh!'
+                                    : 'Semua transaksi berhasil dihapus. Mulai dari nol!',
+                                  fresh
+                                )
+                              } catch (err: any) {
+                                showToast(err?.message || (lang === 'en' ? 'Failed to delete transactions' : 'Gagal menghapus transaksi'), 'error')
+                              } finally {
+                                setIsDeletingAllTx(false)
+                              }
+                            }}
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-60 px-3.5 py-2 text-xs font-bold text-white transition"
+                          >
+                            {isDeletingAllTx ? (
+                              <><RefreshCw className="h-3.5 w-3.5 animate-spin" /><span>{lang === 'en' ? 'Deleting...' : 'Menghapus...'}</span></>
+                            ) : (
+                              <><Trash2 className="h-3.5 w-3.5" /><span>{lang === 'en' ? 'Yes, Delete All' : 'Ya, Hapus Semua'}</span></>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

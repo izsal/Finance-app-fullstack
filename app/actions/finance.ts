@@ -59,14 +59,14 @@ export async function seedDefaults() {
   if (!existing.length) {
     const defaultWallets = isPro
       ? [
-          { userId: uid, name: "Tunai / Cash", type: "Tunai", balance: 0, color: "emerald" },
-          { userId: uid, name: "BCA / Bank Utama", type: "Bank", balance: 0, color: "teal" },
-          { userId: uid, name: "GoPay / OVO / Dana", type: "E-wallet", balance: 0, color: "indigo" },
-        ]
+        { userId: uid, name: "Tunai / Cash", type: "Tunai", balance: 0, color: "emerald" },
+        { userId: uid, name: "BCA / Bank Utama", type: "Bank", balance: 0, color: "teal" },
+        { userId: uid, name: "GoPay / OVO / Dana", type: "E-wallet", balance: 0, color: "indigo" },
+      ]
       : [
-          { userId: uid, name: "Tunai / Cash", type: "Tunai", balance: 0, color: "emerald" },
-          { userId: uid, name: "BCA / Bank Utama", type: "Bank", balance: 0, color: "teal" },
-        ];
+        { userId: uid, name: "Tunai / Cash", type: "Tunai", balance: 0, color: "emerald" },
+        { userId: uid, name: "BCA / Bank Utama", type: "Bank", balance: 0, color: "teal" },
+      ];
     await db.insert(wallets).values(defaultWallets);
   }
 
@@ -626,5 +626,19 @@ export async function checkEmailRegistered(email: string) {
     columns: { id: true, email: true },
   });
   return { exists: !!existingUser };
+}
+
+/**
+ * Hapus SEMUA transaksi milik user yang sedang login.
+ * Wallet balance tidak direset — hanya history transaksi yang dihapus.
+ * Digunakan untuk memulai pencatatan dari nol.
+ */
+export async function deleteAllTransactions() {
+  const uid = await userId();
+  const result = await db
+    .delete(transactions)
+    .where(eq(transactions.userId, uid));
+  revalidatePath("/");
+  return getFinanceData();
 }
 
