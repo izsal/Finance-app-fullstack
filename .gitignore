@@ -68,3 +68,9 @@ __v0_jsx-dev-runtime.ts
 .package-lock.json
 pnpm-lock.yaml
 pnpm-workspace.yaml
+
+# Dokumen pribadi (rekening koran / e-statement) - jangan pernah di-push
+docs/*.pdf
+
+# Konfigurasi lokal Command Code (permissions, taste)
+.commandcode/

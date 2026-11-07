@@ -98,6 +98,8 @@ export function checkRateLimit(
 export const RATE_LIMITS = {
   // Upload & scan struk AI: 5 request per 60 detik (mencegah abuse AI Gemini & traffic data besar)
   SCAN_RECEIPT: { limit: 5, windowMs: 60 * 1000 },
+  // Import rekening koran PDF: 5 request per 60 detik (parsing PDF 14+ halaman cukup berat)
+  PARSE_STATEMENT: { limit: 5, windowMs: 60 * 1000 },
   // Autentikasi (login / register): 10 request per 60 detik (mencegah brute-force password)
   AUTH: { limit: 10, windowMs: 60 * 1000 },
   // Endpoint API umum: 60 request per 60 detik
