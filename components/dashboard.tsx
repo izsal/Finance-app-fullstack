@@ -95,22 +95,26 @@ import {
   X,
   Zap,
 } from '@/components/animated-icons'
+import { FileUp, Mic } from 'lucide-react'
 import type { Budget, Category, Goal, Subscription, Transaction, Wallet as WalletType } from '@/lib/schema'
 import { formatIndoDate, formatRupiah } from '@/lib/utils'
 import { RupiahInput } from '@/components/rupiah-input'
 import { CustomSelect, CustomCreatableSelect, type OptionType } from '@/components/custom-select'
 import { DatePickerInput } from '@/components/date-picker-input'
 import { PwaInstallPrompt } from '@/components/pwa-install-prompt'
+import { VoiceInputButton } from '@/components/voice-input-button'
+import { PdfImportModal } from '@/components/pdf-import-modal'
 import { exportFinanceToExcel } from '@/lib/excel-export'
 import { t, type Language } from '@/lib/i18n'
 import { OnboardingChecklist } from '@/components/onboarding-checklist'
 import {
   Area,
-  AreaChart,
   Bar,
   BarChart,
   Cell,
+  ComposedChart,
   Legend,
+  Line,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -272,6 +276,7 @@ export default function Dashboard({
   // Modal states
   const [showModal, setShowModal] = useState<
     | { type: 'transaction'; editData?: Transaction | { type?: 'income' | 'expense' } }
+    | { type: 'importPdf' }
     | { type: 'transfer' }
     | { type: 'wallet'; editData?: WalletType }
     | { type: 'category'; editData?: Category }
@@ -402,14 +407,20 @@ export default function Dashboard({
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [walletFilter, setWalletFilter] = useState<string>('all')
-  const [dateFilter, setDateFilter] = useState<'all' | '7days' | '30days' | 'month'>('all')
+  const [dateFilter, setDateFilter] = useState<'all' | '7days' | '30days' | 'month' | 'lastmonth' | 'custom'>('all')
+  const [customStartDate, setCustomStartDate] = useState('')
+  const [customEndDate, setCustomEndDate] = useState('')
+  const [chartStartDate, setChartStartDate] = useState('')
+  const [chartEndDate, setChartEndDate] = useState('')
+  const [cashflowChartType, setCashflowChartType] = useState<'area' | 'bar' | 'combo'>('area')
+  const [selectedExpenseCategoryId, setSelectedExpenseCategoryId] = useState<number | null>(null)
   const TX_ITEMS_PER_PAGE = 10
   const [txPage, setTxPage] = useState(1)
 
   // Reset pagination to page 1 whenever search or filter criteria change
   useEffect(() => {
     setTxPage(1)
-  }, [searchQuery, typeFilter, categoryFilter, walletFilter, dateFilter])
+  }, [searchQuery, typeFilter, categoryFilter, walletFilter, dateFilter, customStartDate, customEndDate])
 
   // Selected Budget Month
   const currentMonthStr = useMemo(() => new Date().toISOString().slice(0, 7), [])
@@ -531,8 +542,10 @@ export default function Dashboard({
       }
 
       if (dateFilter !== 'all') {
-        const txDate = new Date(t.date)
         const now = new Date()
+        const txDate = new Date(t.date)
+        const txDay = txDate.toISOString().slice(0, 10)
+
         if (dateFilter === '7days') {
           const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
           if (txDate < sevenDaysAgo) return false
@@ -540,14 +553,20 @@ export default function Dashboard({
           const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
           if (txDate < thirtyDaysAgo) return false
         } else if (dateFilter === 'month') {
-          const currentYm = now.toISOString().slice(0, 7)
-          if (new Date(t.date).toISOString().slice(0, 7) !== currentYm) return false
+          if (txDay.slice(0, 7) !== now.toISOString().slice(0, 7)) return false
+        } else if (dateFilter === 'lastmonth') {
+          const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+          const lastMonthKey = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`
+          if (txDay.slice(0, 7) !== lastMonthKey) return false
+        } else if (dateFilter === 'custom') {
+          if (customStartDate && txDay < customStartDate) return false
+          if (customEndDate && txDay > customEndDate) return false
         }
       }
 
       return true
     })
-  }, [data.transactions, typeFilter, categoryFilter, walletFilter, searchQuery, dateFilter, categoryMap, walletMap])
+  }, [data.transactions, typeFilter, categoryFilter, walletFilter, searchQuery, dateFilter, customStartDate, customEndDate, categoryMap, walletMap])
 
   // Transactions Pagination Computation
   const totalTxPages = Math.max(1, Math.ceil(filteredTransactions.length / TX_ITEMS_PER_PAGE))
@@ -574,7 +593,17 @@ export default function Dashboard({
   // Chart Data: Cashflow Trend
   const cashflowChartData = useMemo(() => {
     const map = new Map<string, { date: string; displayDate: string; income: number; expense: number }>()
-    const sorted = [...data.transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    const hasRange = Boolean(chartStartDate || chartEndDate)
+
+    const sorted = [...data.transactions]
+      .filter((t) => {
+        if (!hasRange) return true
+        const day = new Date(t.date).toISOString().slice(0, 10)
+        if (chartStartDate && day < chartStartDate) return false
+        if (chartEndDate && day > chartEndDate) return false
+        return true
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
     sorted.forEach((t) => {
       const key = new Date(t.date).toISOString().slice(0, 10)
@@ -591,8 +620,12 @@ export default function Dashboard({
       if (t.type === 'expense') entry.expense += t.amount
     })
 
-    return Array.from(map.values()).slice(-10)
-  }, [data.transactions])
+    const points = Array.from(map.values()).map((point) => ({
+      ...point,
+      net: point.income - point.expense,
+    }))
+    return hasRange ? points : points.slice(-10)
+  }, [data.transactions, chartStartDate, chartEndDate])
 
   // Chart Data: Expense Category Donut
   const categoryExpenseChartData = useMemo(() => {
@@ -616,6 +649,18 @@ export default function Dashboard({
       .filter((item) => item.value > 0)
       .sort((a, b) => b.value - a.value)
   }, [data.transactions, categoryMap])
+
+  const expensePieTotal = useMemo(
+    () => categoryExpenseChartData.reduce((sum, item) => sum + item.value, 0),
+    [categoryExpenseChartData]
+  )
+
+  const selectedExpenseCategory = useMemo(
+    () => categoryExpenseChartData.find((item) => item.id === selectedExpenseCategoryId) ?? null,
+    [categoryExpenseChartData, selectedExpenseCategoryId]
+  )
+
+  const expensePieData = selectedExpenseCategory ? [selectedExpenseCategory] : categoryExpenseChartData
 
   // Budgets for Selected Month
   const monthlyBudgets = useMemo(() => {
@@ -1747,25 +1792,93 @@ export default function Dashboard({
               {/* Charts Section */}
               <div className="grid gap-6 lg:grid-cols-3">
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm lg:col-span-2 min-w-0 overflow-hidden">
-                  <div className="flex items-center justify-between mb-6">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
                     <div>
                       <h3 className="font-bold text-slate-900 dark:text-white text-lg">{t('cashflow_chart', lang)}</h3>
                       <p className="text-xs text-slate-400">{t('cashflow_sub', lang)}</p>
                     </div>
-                    <div className="flex items-center gap-3 text-xs font-semibold">
-                      <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> {t('cashflow_in', lang)}
-                      </span>
-                      <span className="flex items-center gap-1.5 text-rose-500 dark:text-rose-400">
-                        <span className="h-2.5 w-2.5 rounded-full bg-rose-500" /> {t('cashflow_out', lang)}
-                      </span>
+                    <div className="flex flex-col items-start gap-2 sm:items-end">
+                      <div className="flex items-center gap-3 text-xs font-semibold">
+                        <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> {t('cashflow_in', lang)}
+                        </span>
+                        <span className="flex items-center gap-1.5 text-rose-500 dark:text-rose-400">
+                          <span className="h-2.5 w-2.5 rounded-full bg-rose-500" /> {t('cashflow_out', lang)}
+                        </span>
+                        {cashflowChartType === 'combo' && (
+                          <span className="flex items-center gap-1.5 text-violet-500 dark:text-violet-400">
+                            <span className="h-0.5 w-4 rounded-full bg-violet-500" /> {lang === 'en' ? 'Net' : 'Selisih'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="inline-flex rounded-lg bg-slate-100 dark:bg-slate-800 p-0.5 text-[10px] font-bold">
+                        {([
+                          { id: 'area', label: 'Area' },
+                          { id: 'bar', label: lang === 'en' ? 'Bar' : 'Batang' },
+                          { id: 'combo', label: lang === 'en' ? 'Combo' : 'Kombinasi' },
+                        ] as const).map((option) => (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => setCashflowChartType(option.id)}
+                            className={`rounded-md px-2 py-1 transition ${cashflowChartType === option.id
+                              ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                              }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
+                  </div>
+
+                  <div className="mb-5 flex flex-wrap items-center gap-2 text-[11px]">
+                    <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 transition-colors hover:border-emerald-400/60 dark:border-slate-700/80 dark:bg-slate-950/40 dark:hover:border-emerald-500/40">
+                      <span className="font-semibold text-slate-500 dark:text-slate-400">{t('date_from', lang)}</span>
+                      <input
+                        type="date"
+                        value={chartStartDate}
+                        max={chartEndDate || undefined}
+                        onChange={(e) => setChartStartDate(e.target.value)}
+                        className="min-w-0 rounded-md bg-transparent px-1 py-0.5 text-[11px] font-semibold text-slate-700 [color-scheme:light] focus:outline-none focus-visible:text-emerald-600 dark:text-slate-200 dark:[color-scheme:dark] dark:focus-visible:text-emerald-400"
+                      />
+                      <span className="text-slate-400 dark:text-slate-500">–</span>
+                      <span className="font-semibold text-slate-500 dark:text-slate-400">{t('date_to', lang)}</span>
+                      <input
+                        type="date"
+                        value={chartEndDate}
+                        min={chartStartDate || undefined}
+                        onChange={(e) => setChartEndDate(e.target.value)}
+                        className="min-w-0 rounded-md bg-transparent px-1 py-0.5 text-[11px] font-semibold text-slate-700 [color-scheme:light] focus:outline-none focus-visible:text-emerald-600 dark:text-slate-200 dark:[color-scheme:dark] dark:focus-visible:text-emerald-400"
+                      />
+                      {(chartStartDate || chartEndDate) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setChartStartDate('')
+                            setChartEndDate('')
+                          }}
+                          className="rounded p-0.5 text-slate-400 transition-colors hover:text-rose-500 dark:text-slate-500 dark:hover:text-rose-400"
+                          title={lang === 'en' ? 'Clear chart range' : 'Hapus rentang chart'}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                    <span className="text-slate-400 font-medium">
+                      {chartStartDate || chartEndDate
+                        ? `${cashflowChartData.length} ${lang === 'en' ? 'active days in range' : 'hari aktif dalam rentang'}`
+                        : lang === 'en'
+                          ? 'Last 10 active days'
+                          : '10 hari terakhir yang ada transaksi'}
+                    </span>
                   </div>
 
                   <div className="h-72 w-full">
                     {cashflowChartData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={cashflowChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <ComposedChart data={cashflowChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                           <defs>
                             <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
@@ -1795,25 +1908,79 @@ export default function Dashboard({
                               fontWeight: 600,
                             }}
                           />
-                          <Area
-                            type="monotone"
-                            dataKey="income"
-                            name={t('cashflow_in', lang)}
-                            stroke="#10b981"
-                            strokeWidth={2.5}
-                            fillOpacity={1}
-                            fill="url(#incomeGrad)"
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="expense"
-                            name={t('cashflow_out', lang)}
-                            stroke="#f43f5e"
-                            strokeWidth={2.5}
-                            fillOpacity={1}
-                            fill="url(#expenseGrad)"
-                          />
-                        </AreaChart>
+                          {cashflowChartType === 'area' && (
+                            <>
+                              <Area
+                                type="monotone"
+                                dataKey="income"
+                                name={t('cashflow_in', lang)}
+                                stroke="#10b981"
+                                strokeWidth={2.5}
+                                fillOpacity={1}
+                                fill="url(#incomeGrad)"
+                              />
+                              <Area
+                                type="monotone"
+                                dataKey="expense"
+                                name={t('cashflow_out', lang)}
+                                stroke="#f43f5e"
+                                strokeWidth={2.5}
+                                fillOpacity={1}
+                                fill="url(#expenseGrad)"
+                              />
+                            </>
+                          )}
+
+                          {cashflowChartType === 'bar' && (
+                            <>
+                              <Bar
+                                dataKey="income"
+                                name={t('cashflow_in', lang)}
+                                fill="#10b981"
+                                radius={[5, 5, 0, 0]}
+                                maxBarSize={26}
+                              />
+                              <Bar
+                                dataKey="expense"
+                                name={t('cashflow_out', lang)}
+                                fill="#f43f5e"
+                                radius={[5, 5, 0, 0]}
+                                maxBarSize={26}
+                              />
+                            </>
+                          )}
+
+                          {cashflowChartType === 'combo' && (
+                            <>
+                              <Bar
+                                dataKey="income"
+                                name={t('cashflow_in', lang)}
+                                fill="#10b981"
+                                radius={[5, 5, 0, 0]}
+                                maxBarSize={22}
+                                fillOpacity={0.85}
+                              />
+                              <Bar
+                                dataKey="expense"
+                                name={t('cashflow_out', lang)}
+                                fill="#f43f5e"
+                                radius={[5, 5, 0, 0]}
+                                maxBarSize={22}
+                                fillOpacity={0.85}
+                              />
+                              <Line
+                                type="monotone"
+                                dataKey="net"
+                                name={lang === 'en' ? 'Net cash flow' : 'Selisih arus kas'}
+                                stroke="#8b5cf6"
+                                strokeWidth={2.5}
+                                strokeDasharray="5 3"
+                                dot={false}
+                                activeDot={{ r: 4 }}
+                              />
+                            </>
+                          )}
+                        </ComposedChart>
                       </ResponsiveContainer>
                     ) : (
                       <div className="flex h-full items-center justify-center text-xs text-slate-400">
@@ -1825,40 +1992,79 @@ export default function Dashboard({
 
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between min-w-0 overflow-hidden">
                   <div>
-                    <h3 className="font-bold text-slate-900 dark:text-white text-lg">{t('expense_category_chart', lang)}</h3>
-                    <p className="text-xs text-slate-400">{t('expense_category_sub', lang)}</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h3 className="font-bold text-slate-900 dark:text-white text-lg">{t('expense_category_chart', lang)}</h3>
+                        <p className="text-xs text-slate-400">{t('expense_category_sub', lang)}</p>
+                      </div>
+                      {selectedExpenseCategory && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedExpenseCategoryId(null)}
+                          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 transition hover:bg-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-400 dark:hover:bg-emerald-950"
+                          title={lang === 'en' ? 'Show all categories' : 'Tampilkan semua kategori'}
+                        >
+                          <span className="max-w-[90px] truncate">{selectedExpenseCategory.name}</span>
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="h-52 w-full my-2">
+                  <div className="relative h-52 w-full my-2">
                     {categoryExpenseChartData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={categoryExpenseChartData}
-                            dataKey="value"
-                            nameKey="name"
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={50}
-                            outerRadius={75}
-                            paddingAngle={3}
-                          >
-                            {categoryExpenseChartData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            formatter={(val: any) => [formatRupiah(Number(val)), 'Total']}
-                            contentStyle={{
-                              backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff',
-                              color: theme === 'dark' ? '#f8fafc' : '#0f172a',
-                              borderRadius: '0.75rem',
-                              border: theme === 'dark' ? '1px solid #334155' : '1px solid #e2e8f0',
-                              fontSize: '12px',
-                            }}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
+                      <>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={expensePieData}
+                              dataKey="value"
+                              nameKey="name"
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={50}
+                              outerRadius={75}
+                              paddingAngle={selectedExpenseCategory ? 0 : 3}
+                              className="cursor-pointer"
+                              onClick={(entry: any) => {
+                                const id = entry?.id ?? entry?.payload?.id
+                                if (typeof id !== 'number') return
+                                setSelectedExpenseCategoryId((previous) => (previous === id ? null : id))
+                              }}
+                            >
+                              {expensePieData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              formatter={(val: any) => [formatRupiah(Number(val)), 'Total']}
+                              contentStyle={{
+                                backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff',
+                                color: theme === 'dark' ? '#f8fafc' : '#0f172a',
+                                borderRadius: '0.75rem',
+                                border: theme === 'dark' ? '1px solid #334155' : '1px solid #e2e8f0',
+                                fontSize: '12px',
+                              }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+
+                        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="text-[9px] font-bold uppercase tracking-wide text-slate-400">
+                            {selectedExpenseCategory
+                              ? (lang === 'en' ? 'Selected' : 'Dipilih')
+                              : 'Total'}
+                          </span>
+                          <span className="max-w-[100px] truncate text-[11px] font-bold text-slate-700 dark:text-slate-200">
+                            {selectedExpenseCategory
+                              ? selectedExpenseCategory.name
+                              : (lang === 'en' ? 'All categories' : 'Semua kategori')}
+                          </span>
+                          <span className="text-sm font-black text-slate-900 dark:text-white">
+                            {maskBalance(selectedExpenseCategory ? selectedExpenseCategory.value : expensePieTotal)}
+                          </span>
+                        </div>
+                      </>
                     ) : (
                       <div className="flex h-full items-center justify-center text-xs text-slate-400">
                         {t('expense_empty', lang)}
@@ -1867,15 +2073,38 @@ export default function Dashboard({
                   </div>
 
                   <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800 max-h-36 overflow-y-auto">
-                    {categoryExpenseChartData.slice(0, 4).map((c) => (
-                      <div key={c.id} className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c.color }} />
-                          <span className="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[120px]">{c.name}</span>
-                        </div>
-                        <span className="font-bold text-slate-900 dark:text-white">{maskBalance(c.value)}</span>
-                      </div>
-                    ))}
+                    {categoryExpenseChartData.map((c) => {
+                      const isSelected = selectedExpenseCategoryId === c.id
+                      const percent = expensePieTotal > 0 ? Math.round((c.value / expensePieTotal) * 100) : 0
+
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() =>
+                            setSelectedExpenseCategoryId((previous) => (previous === c.id ? null : c.id))
+                          }
+                          className={`flex w-full items-center justify-between rounded-lg px-1.5 py-1 text-xs transition ${isSelected
+                            ? 'bg-emerald-50 ring-1 ring-emerald-500/40 dark:bg-emerald-950/40'
+                            : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                            }`}
+                        >
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: c.color }} />
+                            <span className={`truncate max-w-[120px] ${isSelected
+                              ? 'font-bold text-emerald-700 dark:text-emerald-300'
+                              : 'font-medium text-slate-700 dark:text-slate-300'
+                              }`}>
+                              {c.name}
+                            </span>
+                            <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                              {percent}%
+                            </span>
+                          </div>
+                          <span className="font-bold text-slate-900 dark:text-white">{maskBalance(c.value)}</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               </div>
@@ -1989,6 +2218,13 @@ export default function Dashboard({
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button
+                    onClick={() => setShowModal({ type: 'importPdf' })}
+                    className="flex items-center gap-2 rounded-xl border border-violet-500/40 bg-violet-50 dark:bg-violet-950/40 px-3.5 py-2.5 text-xs font-bold text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-950 transition shadow-sm"
+                  >
+                    <FileUp className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                    <span>{lang === 'en' ? 'Import PDF' : 'Import PDF'}</span>
+                  </button>
+                  <button
                     onClick={handleExportExcel}
                     className="flex items-center gap-2 rounded-xl border border-emerald-600/30 bg-emerald-50 dark:bg-emerald-950/40 px-3.5 py-2.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-950 transition shadow-sm"
                   >
@@ -2051,15 +2287,16 @@ export default function Dashboard({
                   />
                 </div>
 
-                {/* Date presets */}
+                {/* Date presets + custom range */}
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <span className="font-semibold text-slate-400 mr-1">{t('period', lang)}</span>
                     {[
                       { id: 'all', label: t('period_all', lang) },
                       { id: '7days', label: t('period_7days', lang) },
                       { id: '30days', label: t('period_30days', lang) },
                       { id: 'month', label: t('period_month', lang) },
+                      { id: 'lastmonth', label: t('period_lastmonth', lang) },
                     ].map((p) => (
                       <button
                         key={p.id}
@@ -2072,6 +2309,49 @@ export default function Dashboard({
                         {p.label}
                       </button>
                     ))}
+
+                    <div className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 transition-colors ${dateFilter === 'custom'
+                      ? 'border-emerald-500/60 bg-emerald-50 dark:border-emerald-500/50 dark:bg-emerald-950/40'
+                      : 'border-slate-200 bg-slate-50/60 hover:border-emerald-400/60 dark:border-slate-700/80 dark:bg-slate-950/40 dark:hover:border-emerald-500/40'
+                      }`}>
+                      <span className="font-semibold text-slate-500 dark:text-slate-400">{t('date_from', lang)}</span>
+                      <input
+                        type="date"
+                        value={customStartDate}
+                        max={customEndDate || undefined}
+                        onChange={(e) => {
+                          setCustomStartDate(e.target.value)
+                          setDateFilter('custom')
+                        }}
+                        className="min-w-0 rounded-md bg-transparent px-1 py-0.5 text-[11px] font-semibold text-slate-700 [color-scheme:light] focus:outline-none focus-visible:text-emerald-600 dark:text-slate-200 dark:[color-scheme:dark] dark:focus-visible:text-emerald-400"
+                      />
+                      <span className="text-slate-400 dark:text-slate-500">–</span>
+                      <span className="font-semibold text-slate-500 dark:text-slate-400">{t('date_to', lang)}</span>
+                      <input
+                        type="date"
+                        value={customEndDate}
+                        min={customStartDate || undefined}
+                        onChange={(e) => {
+                          setCustomEndDate(e.target.value)
+                          setDateFilter('custom')
+                        }}
+                        className="min-w-0 rounded-md bg-transparent px-1 py-0.5 text-[11px] font-semibold text-slate-700 [color-scheme:light] focus:outline-none focus-visible:text-emerald-600 dark:text-slate-200 dark:[color-scheme:dark] dark:focus-visible:text-emerald-400"
+                      />
+                      {(customStartDate || customEndDate) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCustomStartDate('')
+                            setCustomEndDate('')
+                            setDateFilter('all')
+                          }}
+                          className="rounded p-0.5 text-slate-400 transition-colors hover:text-rose-500 dark:text-slate-500 dark:hover:text-rose-400"
+                          title={lang === 'en' ? 'Clear date range' : 'Hapus rentang tanggal'}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <span className="text-slate-400 font-medium">
@@ -4374,6 +4654,16 @@ export default function Dashboard({
                 />
               )}
 
+              {/* 2. PDF Statement Import Modal */}
+              {showModal.type === 'importPdf' && (
+                <PdfImportModal
+                  data={data}
+                  lang={lang}
+                  close={() => setShowModal(null)}
+                  done={handleSuccess}
+                />
+              )}
+
               {/* 2. Transfer Form Modal */}
               {showModal.type === 'transfer' && (
                 <TransferModal data={data} lang={lang} close={() => setShowModal(null)} done={handleSuccess} />
@@ -5058,6 +5348,56 @@ function TransactionModal({
             <span>{scanMessage}</span>
           </div>
         )}
+      </div>
+
+      {/* Voice Input Card */}
+      <div className="rounded-2xl border border-violet-500/30 bg-violet-500/10 dark:bg-violet-950/30 p-2.5 sm:p-3 text-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-500/20 text-violet-600 dark:text-violet-400">
+              <Mic className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-100">
+                <span className="truncate">{lang === 'en' ? 'Voice Input' : 'Input Suara'}</span>
+                <span className="shrink-0 rounded-full bg-violet-500 px-1.5 py-0.2 text-[9px] font-black text-white">AI 🎙️</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 sm:line-clamp-none">
+                {lang === 'en'
+                  ? 'Say e.g. "Lunch 25k" to auto-fill all fields'
+                  : 'Bilang cth: "Jajan 25 ribu" untuk isi otomatis'}
+              </p>
+            </div>
+          </div>
+          <div className="self-end sm:self-auto shrink-0">
+            <VoiceInputButton
+              lang={lang}
+              disabled={submitting}
+              onResult={(result) => {
+                if (result.amount > 0) setAmount(result.amount)
+                if (result.type) {
+                  setType(result.type)
+                  // reset category ke tipe yang sesuai
+                  const firstMatch = categoriesList.find((c) => c.type === result.type)
+                  if (firstMatch) setCategoryId(firstMatch.id)
+                }
+                if (result.description) setDescription(result.description)
+                if (result.date) setDate(result.date)
+                if (result.categoryId) {
+                  setCategoryId(result.categoryId)
+                } else if (result.categoryName) {
+                  const matched = categoriesList.find(
+                    (c) =>
+                      c.type === (result.type || 'expense') &&
+                      c.name.toLowerCase().includes(result.categoryName.toLowerCase())
+                  )
+                  if (matched) setCategoryId(matched.id)
+                }
+              }}
+              onError={(msg) => console.warn('[VoiceInput]', msg)}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Type Switcher */}

@@ -247,6 +247,67 @@ export async function addTransaction(form: {
   return getFinanceData();
 }
 
+export async function importTransactions(form: {
+  walletId: number;
+  transactions: Array<{
+    categoryId?: number | null;
+    type: string;
+    amount: number;
+    description: string;
+    date: string;
+  }>;
+}) {
+  const uid = await userId();
+  const wallet = await db
+    .select()
+    .from(wallets)
+    .where(and(eq(wallets.id, form.walletId), eq(wallets.userId, uid)));
+  if (!wallet.length) throw new Error("Dompet tidak ditemukan");
+
+  const userCats = await db
+    .select()
+    .from(categories)
+    .where(eq(categories.userId, uid));
+  if (!userCats.length) throw new Error("Buat kategori terlebih dahulu sebelum mengimpor");
+
+  const catIds = new Set(userCats.map((c) => c.id));
+
+  const rows = form.transactions
+    .filter((t) => Number.isFinite(Number(t.amount)) && Number(t.amount) > 0)
+    .slice(0, 1000)
+    .map((t) => {
+      const type = t.type === "income" ? "income" : "expense";
+      const provided =
+        typeof t.categoryId === "number" && catIds.has(t.categoryId)
+          ? userCats.find((c) => c.id === t.categoryId)
+          : undefined;
+      const categoryId =
+        provided && provided.type === type
+          ? provided.id
+          : (userCats.find((c) => c.type === type) ?? userCats[0]).id;
+
+      return {
+        userId: uid,
+        walletId: form.walletId,
+        categoryId,
+        type,
+        amount: Math.round(Number(t.amount)),
+        description: String(t.description || "Transaksi").trim().slice(0, 200),
+        date: new Date(t.date),
+      };
+    });
+
+  if (!rows.length) throw new Error("Tidak ada transaksi valid untuk diimpor");
+
+  const CHUNK_SIZE = 200;
+  for (let i = 0; i < rows.length; i += CHUNK_SIZE) {
+    await db.insert(transactions).values(rows.slice(i, i + CHUNK_SIZE));
+  }
+
+  revalidatePath("/");
+  return getFinanceData();
+}
+
 export async function updateTransaction(form: {
   id: number;
   walletId: number;

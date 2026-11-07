@@ -180,3 +180,17 @@
   scrollbar-width: none;
 }
 
+input[type='date'] {
+  cursor: pointer;
+}
+
+input[type='date']::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 150ms ease;
+}
+
+input[type='date']:hover::-webkit-calendar-picker-indicator {
+  opacity: 0.9;
+}
+
