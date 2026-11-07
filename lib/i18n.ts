@@ -284,7 +284,7 @@ export const dictionaries = {
     confirm_password_label: 'Konfirmasi Kata Sandi Baru',
     btn_update_password: 'Perbarui Kata Sandi',
     updating_password: 'Mengubah Kata Sandi...',
-    rest_api_title: 'Integrasi REST API Aplikasi Android (Tahap 1 & 2)',
+    rest_api_title: 'Integrasi REST API Aplikasi Anda sendiri',
     rest_api_desc: 'Backend REST API v1 siap digunakan untuk menghubungkan aplikasi Android / Flutter / Kotlin.',
     view_json_spec: 'Lihat Spesifikasi JSON',
     test_api_button: 'Test Request API (/api/v1/summary)',
