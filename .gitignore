@@ -3,6 +3,7 @@ node_modules/
 mobile/node_modules/
 .pnp
 .pnp.js
+.commandcode
 
 # Next.js build
 .next/
