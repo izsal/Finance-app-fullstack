@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo, useState, useTransition } from 'react'
+import React, { useEffect, useMemo, useState, useTransition, useRef } from 'react'
 import {
   addBudget,
   addCategory,
@@ -17,6 +17,7 @@ import {
   depositToGoal,
   getFinanceData,
   paySubscription,
+  resetSubscriptionPayment,
   seedDefaults,
   transferBetweenWallets,
   updateCategory,
@@ -25,8 +26,9 @@ import {
   updateTransaction,
   updateWallet,
   upsertBudget,
+  deleteAllTransactions,
 } from '@/app/actions/finance'
-import { signOut } from '@/lib/auth-client'
+import { authClient, signOut } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
 import {
   AlertCircle,
@@ -38,19 +40,30 @@ import {
   Bell,
   Calendar,
   CalendarDays,
+  Camera,
   Check,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   Clock,
   Code2,
   CreditCard,
+  Crown,
   Download,
   Edit3,
   ExternalLink,
+  Eye,
+  EyeOff,
+  Building2,
   FileSpreadsheet,
   Filter,
+  Globe,
+  KeyRound,
+  Languages,
   Layers,
   LayoutDashboard,
+  Loader2,
+  Lock,
   LogOut,
   Menu,
   Moon,
@@ -62,9 +75,11 @@ import {
   Receipt,
   RefreshCw,
   Repeat,
+  RotateCcw,
   Search,
   Settings2,
   Shield,
+  ShieldCheck,
   Smartphone,
   Sparkles,
   Sun,
@@ -79,20 +94,27 @@ import {
   WalletCards,
   X,
   Zap,
-} from 'lucide-react'
+} from '@/components/animated-icons'
+import { FileUp, Mic } from 'lucide-react'
 import type { Budget, Category, Goal, Subscription, Transaction, Wallet as WalletType } from '@/lib/schema'
 import { formatIndoDate, formatRupiah } from '@/lib/utils'
 import { RupiahInput } from '@/components/rupiah-input'
-import { CustomSelect, type OptionType } from '@/components/custom-select'
+import { CustomSelect, CustomCreatableSelect, type OptionType } from '@/components/custom-select'
 import { DatePickerInput } from '@/components/date-picker-input'
+import { PwaInstallPrompt } from '@/components/pwa-install-prompt'
+import { VoiceInputButton } from '@/components/voice-input-button'
+import { PdfImportModal } from '@/components/pdf-import-modal'
 import { exportFinanceToExcel } from '@/lib/excel-export'
+import { t, type Language } from '@/lib/i18n'
+import { OnboardingChecklist } from '@/components/onboarding-checklist'
 import {
   Area,
-  AreaChart,
   Bar,
   BarChart,
   Cell,
+  ComposedChart,
   Legend,
+  Line,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -100,6 +122,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { AnalisisCharts } from '@/components/analisis-charts'
 
 type Data = {
   wallets: WalletType[]
@@ -123,13 +146,24 @@ const COLOR_PALETTE = [
   '#64748b', // slate
 ]
 
+const truncateText = (text?: string, maxLen = 5) => {
+  if (!text) return ''
+  const trimmed = text.trim()
+  if (trimmed.length <= maxLen) return trimmed
+  return `${trimmed.slice(0, maxLen)}...`
+}
+
 export default function Dashboard({
   user,
   initialData,
 }: {
-  user: { name: string; email: string }
+  user: { name: string; email: string; image?: string | null; emailVerified?: boolean; plan?: string; proExpiresAt?: string | null }
   initialData: Data
 }) {
+  const [currentUser, setCurrentUser] = useState(user)
+  const isPro = currentUser.plan === 'pro'
+  const [showUpgradeModal, setShowUpgradeModal] = useState<{ featureName?: string; description?: string } | null>(null)
+  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<'yearly' | 'monthly'>('yearly')
   const [data, setData] = useState<Data>({
     ...initialData,
     goals: initialData.goals || [],
@@ -141,17 +175,44 @@ export default function Dashboard({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('light')
+  const [lang, setLang] = useState<Language>('en')
   const [apiTestResult, setApiTestResult] = useState<string | null>(null)
   const [apiTesting, setApiTesting] = useState(false)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
-  // Initialize and persist theme & sidebar state
+  // Profile update state
+  const [profileName, setProfileName] = useState(user.name)
+  const [isUpdatingName, setIsUpdatingName] = useState(false)
+  const [nameStatus, setNameStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
+  const [passwordStatus, setPasswordStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  // Delete all transactions state
+  const [isDeletingAllTx, setIsDeletingAllTx] = useState(false)
+  const [showDeleteTxConfirm, setShowDeleteTxConfirm] = useState(false)
+
+  // Resend email verification state
+  const [isResendingEmail, setIsResendingEmail] = useState(false)
+  const [emailStatus, setEmailStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [hideBalance, setHideBalance] = useState(false)
+
+  // Initialize and persist theme, language, sidebar & privacy state
   useEffect(() => {
-    const savedTheme = (localStorage.getItem('dompetku-theme') as 'light' | 'dark' | 'system') || 'light'
-    const savedSidebar = localStorage.getItem('dompetku-sidebar') === 'true'
+    const savedTheme = ((localStorage.getItem('qwarts-theme') || localStorage.getItem('dompetku-theme')) as 'light' | 'dark' | 'system') || 'light'
+    const savedSidebar = (localStorage.getItem('qwarts-sidebar') ?? localStorage.getItem('dompetku-sidebar')) === 'true'
+    const savedLang = ((localStorage.getItem('qwarts-lang') || localStorage.getItem('dompetku-lang')) as Language) || 'en'
+    const savedHideBalance = localStorage.getItem('qwarts-hide-balance') === 'true'
+
     setTheme(savedTheme)
     setSidebarCollapsed(savedSidebar)
+    setLang(savedLang)
+    setHideBalance(savedHideBalance)
 
     applyTheme(savedTheme)
   }, [])
@@ -168,15 +229,37 @@ export default function Dashboard({
 
   const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
     setTheme(newTheme)
-    localStorage.setItem('dompetku-theme', newTheme)
+    localStorage.setItem('qwarts-theme', newTheme)
     applyTheme(newTheme)
-    showToast(`Tema diganti ke mode ${newTheme === 'dark' ? 'Gelap' : newTheme === 'light' ? 'Terang' : 'Sistem'}`)
+    showToast(lang === 'en' ? `Theme switched to ${newTheme} mode` : `Tema diganti ke mode ${newTheme === 'dark' ? 'Gelap' : newTheme === 'light' ? 'Terang' : 'Sistem'}`)
+  }
+
+  const handleLanguageChange = (newLang: Language) => {
+    setLang(newLang)
+    localStorage.setItem('qwarts-lang', newLang)
+    showToast(newLang === 'en' ? 'Language switched to English (US)!' : 'Bahasa dialihkan ke Bahasa Indonesia!', 'success')
   }
 
   const toggleSidebar = () => {
     const next = !sidebarCollapsed
     setSidebarCollapsed(next)
-    localStorage.setItem('dompetku-sidebar', String(next))
+    localStorage.setItem('qwarts-sidebar', String(next))
+  }
+
+  const toggleHideBalance = () => {
+    const next = !hideBalance
+    setHideBalance(next)
+    localStorage.setItem('qwarts-hide-balance', String(next))
+    showToast(
+      next
+        ? (lang === 'en' ? 'Balances hidden for privacy' : 'Nominal saldo disembunyikan untuk privasi')
+        : (lang === 'en' ? 'Balances displayed' : 'Nominal saldo ditampilkan'),
+      'info'
+    )
+  }
+
+  const maskBalance = (amount: number) => {
+    return hideBalance ? '••••••••' : formatRupiah(amount)
   }
 
   // Keep state synced with server components
@@ -192,7 +275,8 @@ export default function Dashboard({
 
   // Modal states
   const [showModal, setShowModal] = useState<
-    | { type: 'transaction'; editData?: Transaction }
+    | { type: 'transaction'; editData?: Transaction | { type?: 'income' | 'expense' } }
+    | { type: 'importPdf' }
     | { type: 'transfer' }
     | { type: 'wallet'; editData?: WalletType }
     | { type: 'category'; editData?: Category }
@@ -230,14 +314,77 @@ export default function Dashboard({
             subscriptions: fresh.subscriptions || [],
           })
         )
-        .catch(() => {})
+        .catch(() => { })
     }
     startTransition(() => {
       router.refresh()
     })
   }
 
+  const [isPayingDuitku, setIsPayingDuitku] = useState(false)
+
+  const handlePayWithDuitku = async () => {
+    setIsPayingDuitku(true)
+    try {
+      const res = await fetch('/api/payment/duitku/create-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          billingCycle: selectedUpgradePlan,
+        }),
+      })
+      const result = await res.json()
+      if (result.success && result.data?.paymentUrl) {
+        window.location.href = result.data.paymentUrl
+      } else {
+        alert(
+          result.message ||
+          (lang === 'en'
+            ? 'Failed to create Duitku invoice. Please ensure DUITKU_MERCHANT_CODE is set in .env.local.'
+            : 'Gagal membuat invoice Duitku. Pastikan DUITKU_MERCHANT_CODE sudah diset di file .env.local.')
+        )
+      }
+    } catch (err: any) {
+      alert(err?.message || (lang === 'en' ? 'Failed to connect to Duitku payment server' : 'Gagal menghubungi server pembayaran Duitku'))
+    } finally {
+      setIsPayingDuitku(false)
+    }
+  }
+
+  // Detect return from Duitku payment gateway
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('payment') === 'finish') {
+      const orderId = params.get('orderId')
+      if (orderId) {
+        fetch(`/api/payment/duitku/check-status?orderId=${encodeURIComponent(orderId)}`)
+          .then((res) => res.json())
+          .then((res) => {
+            if (res.success && res.data?.isPro) {
+              setCurrentUser((prev) => ({ ...prev, plan: 'pro' }))
+              showToast(
+                lang === 'en'
+                  ? 'Payment confirmed! Welcome to Qwarts Finance PRO 👑'
+                  : 'Pembayaran Duitku berhasil! Selamat datang di Qwarts Finance PRO 👑',
+                'success'
+              )
+            }
+          })
+          .catch(() => { })
+      }
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+  }, [lang])
+
   const testMobileApi = async () => {
+    if (!isPro) {
+      setShowUpgradeModal({
+        featureName: 'Integrasi Mobile REST API Android',
+        description: 'Akses API v1 untuk menghubungkan aplikasi Android, Flutter, atau automasi finansial kustom adalah fitur eksklusif Qwarts Finance PRO.'
+      })
+      return
+    }
     setApiTesting(true)
     setApiTestResult(null)
     try {
@@ -255,12 +402,25 @@ export default function Dashboard({
     }
   }
 
-  // Transactions Filter States
+  // Transactions Filter & Pagination States (10 items per page)
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [walletFilter, setWalletFilter] = useState<string>('all')
-  const [dateFilter, setDateFilter] = useState<'all' | '7days' | '30days' | 'month'>('all')
+  const [dateFilter, setDateFilter] = useState<'all' | '7days' | '30days' | 'month' | 'lastmonth' | 'custom'>('all')
+  const [customStartDate, setCustomStartDate] = useState('')
+  const [customEndDate, setCustomEndDate] = useState('')
+  const [chartStartDate, setChartStartDate] = useState('')
+  const [chartEndDate, setChartEndDate] = useState('')
+  const [cashflowChartType, setCashflowChartType] = useState<'area' | 'bar' | 'combo'>('area')
+  const [selectedExpenseCategoryId, setSelectedExpenseCategoryId] = useState<number | null>(null)
+  const TX_ITEMS_PER_PAGE = 10
+  const [txPage, setTxPage] = useState(1)
+
+  // Reset pagination to page 1 whenever search or filter criteria change
+  useEffect(() => {
+    setTxPage(1)
+  }, [searchQuery, typeFilter, categoryFilter, walletFilter, dateFilter, customStartDate, customEndDate])
 
   // Selected Budget Month
   const currentMonthStr = useMemo(() => new Date().toISOString().slice(0, 7), [])
@@ -312,24 +472,59 @@ export default function Dashboard({
 
   // Subscriptions Metrics
   const subsList = data.subscriptions || []
-  const totalMonthlyBills = useMemo(() => {
-    return subsList
-      .filter((s) => s.isActive)
-      .reduce((sum, s) => {
-        if (s.billingCycle === 'yearly') return sum + Math.round(s.amount / 12)
-        if (s.billingCycle === 'weekly') return sum + s.amount * 4
-        return sum + s.amount
-      }, 0)
-  }, [subsList])
+  const today = new Date()
+  const todayDate = today.getDate()
+  const currentMonth = today.getMonth()
+  const currentYear = today.getFullYear()
 
-  const todayDate = new Date().getDate()
+  const isSubPaidThisMonth = (s: { lastPaidAt?: Date | string | null }) => {
+    if (!s.lastPaidAt) return false
+    const d = new Date(s.lastPaidAt)
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear
+  }
+
+  const activeSubs = useMemo(() => subsList.filter((s) => s.isActive), [subsList])
+
+  const totalMonthlyBills = useMemo(() => {
+    return activeSubs.reduce((sum, s) => {
+      if (s.billingCycle === 'yearly') return sum + Math.round(s.amount / 12)
+      if (s.billingCycle === 'weekly') return sum + s.amount * 4
+      return sum + s.amount
+    }, 0)
+  }, [activeSubs])
+
+  const paidSubsThisMonth = useMemo(() => {
+    return activeSubs.filter((s) => isSubPaidThisMonth(s))
+  }, [activeSubs, currentMonth, currentYear])
+
+  const unpaidActiveSubs = useMemo(() => {
+    return activeSubs.filter((s) => !isSubPaidThisMonth(s))
+  }, [activeSubs, currentMonth, currentYear])
+
+  const totalMonthlyPaid = useMemo(() => {
+    return paidSubsThisMonth.reduce((sum, s) => {
+      if (s.billingCycle === 'yearly') return sum + Math.round(s.amount / 12)
+      if (s.billingCycle === 'weekly') return sum + s.amount * 4
+      return sum + s.amount
+    }, 0)
+  }, [paidSubsThisMonth])
+
   const dueSoonSubs = useMemo(() => {
     return subsList.filter((s) => {
       if (!s.isActive) return false
+      if (isSubPaidThisMonth(s)) return false
       const daysUntilDue = s.dueDate >= todayDate ? s.dueDate - todayDate : 30 - (todayDate - s.dueDate)
       return daysUntilDue <= (s.reminderDaysBefore || 3)
     })
-  }, [subsList, todayDate])
+  }, [subsList, todayDate, currentMonth, currentYear])
+
+  const overdueSubs = useMemo(() => {
+    return subsList.filter((s) => {
+      if (!s.isActive) return false
+      if (isSubPaidThisMonth(s)) return false
+      return todayDate > s.dueDate
+    })
+  }, [subsList, todayDate, currentMonth, currentYear])
 
   // Filtered Transactions
   const filteredTransactions = useMemo(() => {
@@ -347,8 +542,10 @@ export default function Dashboard({
       }
 
       if (dateFilter !== 'all') {
-        const txDate = new Date(t.date)
         const now = new Date()
+        const txDate = new Date(t.date)
+        const txDay = txDate.toISOString().slice(0, 10)
+
         if (dateFilter === '7days') {
           const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
           if (txDate < sevenDaysAgo) return false
@@ -356,19 +553,57 @@ export default function Dashboard({
           const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
           if (txDate < thirtyDaysAgo) return false
         } else if (dateFilter === 'month') {
-          const currentYm = now.toISOString().slice(0, 7)
-          if (new Date(t.date).toISOString().slice(0, 7) !== currentYm) return false
+          if (txDay.slice(0, 7) !== now.toISOString().slice(0, 7)) return false
+        } else if (dateFilter === 'lastmonth') {
+          const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+          const lastMonthKey = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`
+          if (txDay.slice(0, 7) !== lastMonthKey) return false
+        } else if (dateFilter === 'custom') {
+          if (customStartDate && txDay < customStartDate) return false
+          if (customEndDate && txDay > customEndDate) return false
         }
       }
 
       return true
     })
-  }, [data.transactions, typeFilter, categoryFilter, walletFilter, searchQuery, dateFilter, categoryMap, walletMap])
+  }, [data.transactions, typeFilter, categoryFilter, walletFilter, searchQuery, dateFilter, customStartDate, customEndDate, categoryMap, walletMap])
+
+  // Transactions Pagination Computation
+  const totalTxPages = Math.max(1, Math.ceil(filteredTransactions.length / TX_ITEMS_PER_PAGE))
+  const currentTxPage = Math.min(Math.max(1, txPage), totalTxPages)
+  const startIndex = (currentTxPage - 1) * TX_ITEMS_PER_PAGE
+  const endIndex = startIndex + TX_ITEMS_PER_PAGE
+  const paginatedTransactions = useMemo(() => {
+    return filteredTransactions.slice(startIndex, endIndex)
+  }, [filteredTransactions, startIndex, endIndex])
+
+  const getPaginationPages = (current: number, total: number): (number | string)[] => {
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, i) => i + 1)
+    }
+    if (current <= 3) {
+      return [1, 2, 3, 4, '...', total]
+    }
+    if (current >= total - 2) {
+      return [1, '...', total - 3, total - 2, total - 1, total]
+    }
+    return [1, '...', current - 1, current, current + 1, '...', total]
+  }
 
   // Chart Data: Cashflow Trend
   const cashflowChartData = useMemo(() => {
     const map = new Map<string, { date: string; displayDate: string; income: number; expense: number }>()
-    const sorted = [...data.transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    const hasRange = Boolean(chartStartDate || chartEndDate)
+
+    const sorted = [...data.transactions]
+      .filter((t) => {
+        if (!hasRange) return true
+        const day = new Date(t.date).toISOString().slice(0, 10)
+        if (chartStartDate && day < chartStartDate) return false
+        if (chartEndDate && day > chartEndDate) return false
+        return true
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
     sorted.forEach((t) => {
       const key = new Date(t.date).toISOString().slice(0, 10)
@@ -385,8 +620,12 @@ export default function Dashboard({
       if (t.type === 'expense') entry.expense += t.amount
     })
 
-    return Array.from(map.values()).slice(-10)
-  }, [data.transactions])
+    const points = Array.from(map.values()).map((point) => ({
+      ...point,
+      net: point.income - point.expense,
+    }))
+    return hasRange ? points : points.slice(-10)
+  }, [data.transactions, chartStartDate, chartEndDate])
 
   // Chart Data: Expense Category Donut
   const categoryExpenseChartData = useMemo(() => {
@@ -410,6 +649,18 @@ export default function Dashboard({
       .filter((item) => item.value > 0)
       .sort((a, b) => b.value - a.value)
   }, [data.transactions, categoryMap])
+
+  const expensePieTotal = useMemo(
+    () => categoryExpenseChartData.reduce((sum, item) => sum + item.value, 0),
+    [categoryExpenseChartData]
+  )
+
+  const selectedExpenseCategory = useMemo(
+    () => categoryExpenseChartData.find((item) => item.id === selectedExpenseCategoryId) ?? null,
+    [categoryExpenseChartData, selectedExpenseCategoryId]
+  )
+
+  const expensePieData = selectedExpenseCategory ? [selectedExpenseCategory] : categoryExpenseChartData
 
   // Budgets for Selected Month
   const monthlyBudgets = useMemo(() => {
@@ -436,11 +687,78 @@ export default function Dashboard({
       })
   }, [data.budgets, data.transactions, selectedMonth, categoryMap])
 
+  // Overview Quick Metrics: Today's expense, recent transactions, greeting, and current month budget
+  const todayExpense = useMemo(() => {
+    const todayStr = new Date().toISOString().slice(0, 10)
+    return data.transactions
+      .filter((t) => t.type === 'expense' && new Date(t.date).toISOString().slice(0, 10) === todayStr)
+      .reduce((sum, t) => sum + t.amount, 0)
+  }, [data.transactions])
+
+  const recentTransactions = useMemo(() => {
+    return [...data.transactions]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 6)
+  }, [data.transactions])
+
+  const greetingText = useMemo(() => {
+    const hour = new Date().getHours()
+    if (hour >= 4 && hour < 11) return t('greeting_morning', lang)
+    if (hour >= 11 && hour < 15) return t('greeting_afternoon', lang)
+    if (hour >= 15 && hour < 18) return t('greeting_evening', lang)
+    return t('greeting_night', lang)
+  }, [lang])
+
+  const currentMonthBudgets = useMemo(() => {
+    return data.budgets
+      .filter((b) => b.month === currentMonthStr)
+      .map((b) => {
+        const cat = categoryMap.get(b.categoryId)
+        const spent = data.transactions
+          .filter((t) => {
+            const matchCat = t.categoryId === b.categoryId
+            const matchMonth = new Date(t.date).toISOString().slice(0, 7) === b.month
+            return matchCat && matchMonth && t.type === 'expense'
+          })
+          .reduce((sum, t) => sum + t.amount, 0)
+        const remaining = b.amount - spent
+        const percentage = b.amount > 0 ? Math.round((spent / b.amount) * 100) : 0
+        return {
+          ...b,
+          categoryName: cat?.name || `Kategori ${b.categoryId}`,
+          spent,
+          remaining,
+          percentage,
+        }
+      })
+  }, [data.budgets, data.transactions, currentMonthStr, categoryMap])
+
+  const totalCurrentBudgetAmount = useMemo(
+    () => currentMonthBudgets.reduce((sum, b) => sum + b.amount, 0),
+    [currentMonthBudgets]
+  )
+  const totalCurrentBudgetSpent = useMemo(
+    () => currentMonthBudgets.reduce((sum, b) => sum + b.spent, 0),
+    [currentMonthBudgets]
+  )
+  const totalCurrentBudgetRemaining = totalCurrentBudgetAmount - totalCurrentBudgetSpent
+  const overallCurrentBudgetPct =
+    totalCurrentBudgetAmount > 0
+      ? Math.round((totalCurrentBudgetSpent / totalCurrentBudgetAmount) * 100)
+      : 0
+
   // Export Handlers
   const handleExportExcel = () => {
+    if (!isPro) {
+      setShowUpgradeModal({
+        featureName: 'Ekspor Laporan Excel (.xlsx)',
+        description: 'Unduh seluruh catatan transaksi, buku kas, dan ringkasan anggaran Anda dalam format spreadsheet Excel (.xlsx) rapi dengan formula otomatis di Qwarts Finance PRO.'
+      })
+      return
+    }
     try {
       exportFinanceToExcel({
-        user,
+        user: currentUser,
         wallets: data.wallets,
         categories: data.categories,
         budgets: data.budgets,
@@ -468,28 +786,28 @@ export default function Dashboard({
     const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
-    link.download = `Transaksi_Dompetku_${new Date().toISOString().slice(0, 10)}.csv`
+    link.download = `Transaksi_Qwarts_Finance_${new Date().toISOString().slice(0, 10)}.csv`
     link.click()
     showToast('Berhasil mendownload file CSV!', 'success')
   }
 
   // Select Options definitions for react-select
   const typeFilterOptions: OptionType<string>[] = [
-    { value: 'all', label: 'Semua Tipe Transaksi' },
-    { value: 'income', label: 'Pemasukan (+)' },
-    { value: 'expense', label: 'Pengeluaran (-)' },
+    { value: 'all', label: t('all_types', lang) },
+    { value: 'income', label: t('type_income', lang) },
+    { value: 'expense', label: t('type_expense', lang) },
   ]
 
   const categoryFilterOptions: OptionType<string>[] = [
-    { value: 'all', label: 'Semua Kategori' },
+    { value: 'all', label: t('all_categories', lang) },
     ...data.categories.map((c) => ({
       value: String(c.id),
-      label: `${c.name} (${c.type === 'income' ? 'Masuk' : 'Keluar'})`,
+      label: `${c.name} (${c.type === 'income' ? (lang === 'en' ? 'Income' : 'Masuk') : (lang === 'en' ? 'Expense' : 'Keluar')})`,
     })),
   ]
 
   const walletFilterOptions: OptionType<string>[] = [
-    { value: 'all', label: 'Semua Dompet / Rekening' },
+    { value: 'all', label: t('all_wallets', lang) },
     ...data.wallets.map((w) => ({
       value: String(w.id),
       label: `${w.name} (${w.type})`,
@@ -497,15 +815,15 @@ export default function Dashboard({
   ]
 
   const navMenuItems = [
-    { key: 'Overview', label: 'Overview', icon: LayoutDashboard },
-    { key: 'Transaksi', label: 'Transaksi', icon: Receipt },
-    { key: 'Dompet', label: 'Dompet & Akun', icon: WalletCards },
-    { key: 'Budget', label: 'Budget Bulanan', icon: PiggyBank },
-    { key: 'Target Impian', label: 'Target Impian', icon: Target, badge: 'Tahap 2' },
-    { key: 'Tagihan Rutin', label: 'Tagihan Rutin', icon: CalendarDays, badge: dueSoonSubs.length > 0 ? `${dueSoonSubs.length}` : undefined },
-    { key: 'Kategori', label: 'Kategori', icon: Tag },
-    { key: 'Analisis', label: 'Laporan & Excel', icon: BarChart3 },
-    { key: 'Pengaturan', label: 'Pengaturan', icon: Settings2 },
+    { key: 'Overview', label: t('nav_overview', lang), icon: LayoutDashboard },
+    { key: 'Transaksi', label: t('nav_transactions', lang), icon: Receipt },
+    { key: 'Dompet', label: t('nav_wallets', lang), icon: WalletCards },
+    { key: 'Budget', label: t('nav_budget', lang), icon: PiggyBank, isProFeature: true, badge: !isPro ? '🔒 PRO' : undefined },
+    { key: 'Target Impian', label: t('nav_goals', lang), icon: Target, isProFeature: true, badge: !isPro ? '🔒 PRO' : lang === 'en' ? undefined : undefined },
+    { key: 'Tagihan Rutin', label: t('nav_subscriptions', lang), icon: CalendarDays, isProFeature: true, badge: !isPro ? '🔒 PRO' : dueSoonSubs.length > 0 ? `${dueSoonSubs.length}` : undefined },
+    { key: 'Kategori', label: t('nav_categories', lang), icon: Tag },
+    { key: 'Analisis', label: t('nav_reports', lang), icon: BarChart3, isProFeature: true, badge: !isPro ? '🔒 PRO' : undefined },
+    { key: 'Pengaturan', label: t('nav_settings', lang), icon: Settings2 },
   ]
 
   return (
@@ -523,9 +841,8 @@ export default function Dashboard({
 
       {/* Desktop Sidebar (Collapsible) */}
       <aside
-        className={`fixed inset-y-0 hidden border-r border-slate-200/80 bg-white/90 dark:bg-slate-900/90 dark:border-slate-800 backdrop-blur-md p-4 lg:flex lg:flex-col lg:justify-between z-30 shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-all duration-300 ${
-          sidebarCollapsed ? 'w-20' : 'w-64'
-        }`}
+        className={`fixed inset-y-0 hidden border-r border-slate-200/80 bg-white/90 dark:bg-slate-900/90 dark:border-slate-800 backdrop-blur-md p-4 lg:flex lg:flex-col lg:justify-between z-30 shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-all duration-300 ${sidebarCollapsed ? 'w-20' : 'w-64'
+          }`}
       >
         <div>
           {/* Brand Logo & Collapse Toggle */}
@@ -536,11 +853,8 @@ export default function Dashboard({
               </div>
               {!sidebarCollapsed && (
                 <div>
-                  <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
-                    Dompet<span className="text-emerald-600 dark:text-emerald-400">ku</span>
-                  </span>
-                  <span className="block text-[10px] font-semibold text-slate-400 tracking-wider uppercase">
-                    Finance Pro
+                  <span className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
+                    Qwarts <span className="text-emerald-600 dark:text-emerald-400">Finance</span>
                   </span>
                 </div>
               )}
@@ -549,7 +863,7 @@ export default function Dashboard({
             {!sidebarCollapsed && (
               <button
                 onClick={toggleSidebar}
-                title="Sembunyikan Sidebar"
+                title={t('sidebar_hide', lang)}
                 className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition"
               >
                 <PanelLeftClose className="h-4 w-4" />
@@ -561,7 +875,7 @@ export default function Dashboard({
             <div className="mt-4 flex justify-center">
               <button
                 onClick={toggleSidebar}
-                title="Tampilkan Sidebar Penuh"
+                title={t('sidebar_show', lang)}
                 className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition"
               >
                 <PanelLeftOpen className="h-4 w-4" />
@@ -571,21 +885,28 @@ export default function Dashboard({
 
           <div className="mt-6">
             {!sidebarCollapsed && (
-              <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">Menu Utama</p>
+              <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">{t('nav_main_menu', lang)}</p>
             )}
             <nav className="mt-2 space-y-1">
-              {navMenuItems.map(({ key, label, icon: Icon, badge }) => (
+              {navMenuItems.map(({ key, label, icon: Icon, badge, isProFeature }) => (
                 <button
                   key={key}
-                  onClick={() => setTab(key as any)}
+                  onClick={() => {
+                    if (isProFeature && !isPro) {
+                      setShowUpgradeModal({
+                        featureName: label,
+                        description: `Fitur ${label} adalah fitur eksklusif Qwarts Finance PRO. Buka akses tanpa batas untuk mengelola keuangan Anda lebih cerdas.`
+                      })
+                      return
+                    }
+                    setTab(key as any)
+                  }}
                   title={sidebarCollapsed ? label : undefined}
-                  className={`flex w-full items-center rounded-xl py-2.5 text-xs font-semibold transition-all ${
-                    sidebarCollapsed ? 'justify-center px-0' : 'justify-between px-3'
-                  } ${
-                    tab === key
+                  className={`flex w-full items-center rounded-xl py-2.5 text-xs font-semibold transition-all ${sidebarCollapsed ? 'justify-center px-0' : 'justify-between px-3'
+                    } ${tab === key
                       ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/25 font-bold'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <Icon className={`h-4 w-4 shrink-0 ${tab === key ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
@@ -593,13 +914,14 @@ export default function Dashboard({
                   </div>
                   {!sidebarCollapsed && badge && (
                     <span
-                      className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold ${
-                        tab === key
-                          ? 'bg-white/20 text-white'
+                      className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold ${tab === key
+                        ? 'bg-white/20 text-white'
+                        : badge.includes('PRO')
+                          ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
                           : badge === 'Tahap 2'
-                          ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
-                          : 'bg-rose-500 text-white'
-                      }`}
+                            ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300'
+                            : 'bg-rose-500 text-white'
+                        }`}
                     >
                       {badge}
                     </span>
@@ -613,13 +935,28 @@ export default function Dashboard({
         {/* User Card in Sidebar */}
         <div className={`rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 p-3 ${sidebarCollapsed ? 'text-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400 font-bold text-sm">
-              {user.name.charAt(0).toUpperCase()}
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400 font-bold text-sm overflow-hidden">
+              {currentUser.image ? (
+                <img src={currentUser.image} alt={currentUser.name} className="h-full w-full object-cover" />
+              ) : (
+                currentUser.name.charAt(0).toUpperCase()
+              )}
             </div>
             {!sidebarCollapsed && (
               <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-bold text-slate-800 dark:text-slate-200">{user.name}</p>
-                <p className="truncate text-[11px] text-slate-400">{user.email}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="truncate text-xs font-bold text-slate-800 dark:text-slate-200">{currentUser.name}</p>
+                  {isPro ? (
+                    <span className="shrink-0 rounded bg-gradient-to-r from-amber-500 to-amber-600 px-1.5 py-0.2 text-[8px] font-black text-white shadow-xs">
+                      PRO
+                    </span>
+                  ) : (
+                    <span className="shrink-0 rounded bg-slate-200 dark:bg-slate-700 px-1 py-0.2 text-[8px] font-semibold text-slate-500 dark:text-slate-400">
+                      FREE
+                    </span>
+                  )}
+                </div>
+                <p className="truncate text-[11px] text-slate-400">{currentUser.email}</p>
               </div>
             )}
             {!sidebarCollapsed && (
@@ -628,7 +965,7 @@ export default function Dashboard({
                   await signOut()
                   router.push('/sign-in')
                 }}
-                title="Keluar"
+                title={t('logout', lang)}
                 className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 transition"
               >
                 <LogOut className="h-4 w-4" />
@@ -640,60 +977,87 @@ export default function Dashboard({
 
       {/* Main Content Layout */}
       <div
-        className={`flex-1 flex flex-col transition-all duration-300 ${
-          sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        }`}
+        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+          }`}
       >
         {/* Top Header Navbar */}
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-6 py-4 lg:px-10">
-          <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-3.5 py-2.5 sm:px-6 sm:py-4 lg:px-8">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 mr-2">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="rounded-xl border border-slate-200 dark:border-slate-800 p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden"
+              className="shrink-0 rounded-xl border border-slate-200 dark:border-slate-800 p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden cursor-pointer"
             >
               <Menu className="h-5 w-5" />
             </button>
 
             <button
               onClick={toggleSidebar}
-              title={sidebarCollapsed ? 'Tampilkan Sidebar' : 'Sembunyikan Sidebar'}
-              className="hidden lg:flex rounded-xl border border-slate-200 dark:border-slate-800 p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              title={sidebarCollapsed ? t('sidebar_show', lang) : t('sidebar_hide', lang)}
+              className="hidden lg:flex shrink-0 rounded-xl border border-slate-200 dark:border-slate-800 p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
             >
               {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
             </button>
 
-            <div>
-              <p className="text-xs font-medium text-slate-400">Halo, selamat datang</p>
-              <h1 className="text-lg font-bold text-slate-900 dark:text-white lg:text-xl">{user.name}</h1>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] sm:text-xs font-medium text-slate-400 leading-tight truncate">{t('welcome_back', lang)}</p>
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <h1
+                  className="text-xs xs:text-sm sm:text-lg lg:text-xl font-bold text-slate-900 dark:text-white truncate max-w-[85px] xs:max-w-[125px] sm:max-w-[220px] lg:max-w-none whitespace-nowrap"
+                  title={currentUser.name}
+                >
+                  <span className="sm:hidden">
+                    {truncateText(currentUser.name, 5)}
+                  </span>
+                  <span className="hidden sm:inline">
+                    {currentUser.name}
+                  </span>
+                </h1>
+                {isPro ? (
+                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500/20 to-emerald-500/20 border border-amber-500/40 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-black text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                    <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-amber-500 fill-amber-500" />
+                    PRO
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setShowUpgradeModal({ featureName: 'Qwarts Finance PRO', description: 'Buka semua fitur canggih tanpa batasan.' })}
+                    className="shrink-0 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-1.5 sm:px-2.5 py-0.5 text-[9px] sm:text-[10px] font-black text-white hover:brightness-110 shadow-sm shadow-amber-500/30 transition cursor-pointer whitespace-nowrap"
+                  >
+                    <Sparkles className="h-2 w-2 sm:h-2.5 sm:w-2.5 fill-white" />
+                    <span className="hidden xs:inline">Upgrade </span>PRO
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            {/* Quick Language Switcher in Header */}
+            <button
+              onClick={() => handleLanguageChange(lang === 'en' ? 'id' : 'en')}
+              title={lang === 'en' ? 'Beralih ke Bahasa Indonesia' : 'Switch to English'}
+              className="flex items-center gap-1 sm:gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-sm cursor-pointer"
+            >
+              <Languages className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-[11px] sm:text-xs">{lang === 'en' ? 'EN' : 'ID'}</span>
+            </button>
+
             {/* Quick Dark Mode Switcher in Header */}
             <button
               onClick={() => handleThemeChange(theme === 'dark' ? 'light' : 'dark')}
-              title={`Beralih ke mode ${theme === 'dark' ? 'Terang' : 'Gelap'}`}
-              className="flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-sm"
+              title={theme === 'dark' ? t('switch_theme_light', lang) : t('switch_theme_dark', lang)}
+              className="flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 sm:p-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-sm cursor-pointer"
             >
-              {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-600" />}
+              {theme === 'dark' ? <Sun className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-400" /> : <Moon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-600" />}
             </button>
 
-            {/* Quick Export Button */}
+            {/* Quick Export Button (Hidden on mobile to keep header clean and un-cramped) */}
             <button
               onClick={handleExportExcel}
-              className="flex items-center gap-2 rounded-xl border border-emerald-600/30 bg-emerald-50/70 dark:bg-emerald-950/40 px-3.5 py-2.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-950 transition shadow-sm"
+              className="hidden sm:flex items-center gap-2 rounded-xl border border-emerald-600/30 bg-emerald-50/70 dark:bg-emerald-950/40 px-3.5 py-2.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-950 transition shadow-sm"
             >
               <FileSpreadsheet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              <span className="hidden sm:inline">Export Excel</span>
-            </button>
-
-            {/* Quick Add Transaction Button */}
-            <button
-              onClick={() => setShowModal({ type: 'transaction' })}
-              className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition active:scale-95"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Tambah Transaksi</span>
+              <span>{t('export_excel', lang)}</span>
+              {!isPro && <span className="rounded bg-amber-500/20 text-amber-700 dark:text-amber-400 text-[10px] px-1.5 py-0.5 font-black">PRO 🔒</span>}
             </button>
           </div>
         </header>
@@ -709,30 +1073,40 @@ export default function Dashboard({
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white font-bold">
                       <Wallet className="h-4 w-4" />
                     </div>
-                    <span className="font-bold text-lg dark:text-white">Dompetku</span>
+                    <span className="font-bold text-lg dark:text-white">Qwarts Finance</span>
                   </div>
                   <button onClick={() => setMobileMenuOpen(false)} className="p-1 text-slate-400">
                     <X className="h-5 w-5" />
                   </button>
                 </div>
                 <nav className="mt-4 space-y-1">
-                  {navMenuItems.map(({ key, label, icon: Icon, badge }) => (
+                  {navMenuItems.map(({ key, label, icon: Icon, badge, isProFeature }) => (
                     <button
                       key={key}
                       onClick={() => {
+                        if (isProFeature && !isPro) {
+                          setShowUpgradeModal({
+                            featureName: label,
+                            description: `Fitur ${label} adalah fitur eksklusif Qwarts Finance PRO. Buka akses tanpa batas untuk mengelola keuangan Anda lebih cerdas.`
+                          })
+                          setMobileMenuOpen(false)
+                          return
+                        }
                         setTab(key as any)
                         setMobileMenuOpen(false)
                       }}
-                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold ${
-                        tab === key ? 'bg-emerald-600 text-white font-bold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                      }`}
+                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold ${tab === key ? 'bg-emerald-600 text-white font-bold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         <Icon className="h-4 w-4" />
                         <span>{label}</span>
                       </div>
                       {badge && (
-                        <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 text-[9px] font-bold text-emerald-800 dark:text-emerald-300">
+                        <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${badge.includes('PRO')
+                          ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                          : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
+                          }`}>
                           {badge}
                         </span>
                       )}
@@ -743,15 +1117,41 @@ export default function Dashboard({
 
               <div className="pt-4 border-t dark:border-slate-800 space-y-2">
                 <button
+                  onClick={() => handleLanguageChange(lang === 'en' ? 'id' : 'en')}
+                  className="flex w-full items-center justify-between rounded-xl bg-slate-100 dark:bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                >
+                  <span className="flex items-center gap-2">
+                    <Languages className="h-4 w-4 text-emerald-500" />
+                    <span>Language ({lang === 'en' ? 'English 🇺🇸' : 'Indonesia 🇮🇩'})</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400">Switch</span>
+                </button>
+
+                <button
                   onClick={() => handleThemeChange(theme === 'dark' ? 'light' : 'dark')}
                   className="flex w-full items-center justify-between rounded-xl bg-slate-100 dark:bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300"
                 >
                   <span className="flex items-center gap-2">
                     {theme === 'dark' ? <Moon className="h-4 w-4 text-emerald-400" /> : <Sun className="h-4 w-4 text-amber-500" />}
-                    <span>Mode {theme === 'dark' ? 'Gelap' : 'Terang'}</span>
+                    <span>{lang === 'en' ? `Mode: ${theme === 'dark' ? 'Dark' : 'Light'}` : `Mode ${theme === 'dark' ? 'Gelap' : 'Terang'}`}</span>
                   </span>
-                  <span className="text-[10px] text-slate-400">Ubah</span>
+                  <span className="text-[10px] text-slate-400">{lang === 'en' ? 'Change' : 'Ubah'}</span>
                 </button>
+                <button
+                  onClick={() => {
+                    localStorage.removeItem('qwarts_pwa_dismissed')
+                    setMobileMenuOpen(false)
+                    window.dispatchEvent(new CustomEvent('qwarts-trigger-pwa-install'))
+                  }}
+                  className="flex w-full items-center justify-between rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-800 dark:text-emerald-300 cursor-pointer"
+                >
+                  <span className="flex items-center gap-2">
+                    <Download className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    <span>{lang === 'en' ? 'Install App (PWA)' : 'Pasang Aplikasi (PWA)'}</span>
+                  </span>
+                  <span className="text-[10px] bg-emerald-600 text-white rounded-md px-1.5 py-0.5 font-bold">App</span>
+                </button>
+
                 <button
                   onClick={async () => {
                     await signOut()
@@ -768,221 +1168,717 @@ export default function Dashboard({
         )}
 
         {/* Content Body */}
-        <main className="p-5 sm:p-8 lg:p-10 flex-1 max-w-7xl w-full mx-auto space-y-8">
+        <main className="px-3.5 py-4 sm:p-8 lg:p-10 flex-1 max-w-7xl w-full mx-auto space-y-5 sm:space-y-8 pb-24 sm:pb-8 lg:pb-10 min-w-0">
           {/* TAB 1: OVERVIEW */}
           {tab === 'Overview' && (
-            <div className="space-y-8">
+            <div className="space-y-5 sm:space-y-8">
               {/* Header Title & Quick Actions */}
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                    Ringkasan Keuangan
+                  <h2 className="text-xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                    {t('overview_title', lang)}
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                    Pantau arus kas, target tabungan, tagihan rutin, dan alokasi budget Anda secara real-time.
+                    {t('overview_subtitle', lang)}
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
-                    onClick={() => setShowModal({ type: 'transfer' })}
-                    className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                    onClick={toggleHideBalance}
+                    title={hideBalance ? t('show_balance', lang) : t('hide_balance', lang)}
+                    className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                  >
+                    {hideBalance ? <EyeOff className="h-4 w-4 text-slate-500" /> : <Eye className="h-4 w-4 text-slate-500" />}
+                    <span>{hideBalance ? t('show_balance', lang) : t('hide_balance', lang)}</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (data.wallets.length < 2) {
+                        alert(lang === 'en' ? 'You need at least 2 wallets to transfer balance between accounts.' : 'Anda membutuhkan minimal 2 dompet untuk melakukan transfer saldo.')
+                        return
+                      }
+                      setShowModal({ type: 'transfer' })
+                    }}
+                    className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                   >
                     <ArrowLeftRight className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>Transfer Saldo</span>
+                    <span>{t('transfer_balance', lang)}</span>
                   </button>
                   <button
-                    onClick={() => setShowModal({ type: 'goal' })}
-                    className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                    onClick={() => setShowModal({ type: 'transaction' })}
+                    className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-3.5 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:from-emerald-700 hover:to-teal-700 transition"
                   >
-                    <Target className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>Target Impian</span>
+                    <Plus className="h-4 w-4" />
+                    <span>{t('quick_action_add_tx', lang)}</span>
                   </button>
+                </div>
+              </div>
+
+              {/* Onboarding Checklist — only shows for new users who haven't dismissed it */}
+              <OnboardingChecklist
+                hasWallets={data.wallets.length > 0}
+                hasTransactions={data.transactions.length > 0}
+                hasCategories={data.categories.length > 0}
+                isPro={isPro}
+                lang={lang}
+                onNavigate={(tabName) => setTab(tabName as any)}
+              />
+
+              {/* Personalized Greeting & Daily Pulse Banner */}
+              <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-white/50 dark:to-slate-900/50 p-4 sm:p-6 backdrop-blur-sm shadow-sm">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                  <div className="flex items-center gap-3.5">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-black text-lg shadow-md shadow-emerald-500/25">
+                      {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg">
+                          {greetingText},{' '}
+                          <span className="sm:hidden">{truncateText(currentUser.name, 6) || 'Pengguna'}</span>
+                          <span className="hidden sm:inline">{currentUser.name || 'Pengguna'}</span> 👋
+                        </h3>
+                        {isPro ? (
+                          <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] font-black text-amber-600 dark:text-amber-400">
+                            PRO
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-slate-200/80 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                            FREE
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                        <span>{formatIndoDate(new Date())}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Fast Glance Pulse Badges & Inline Shortcut Buttons */}
+                  <div className="w-full lg:w-auto flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3">
+                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+                      <div className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 px-3 py-2 shadow-xs min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">{t('today_spending', lang)}</p>
+                        <p className="text-xs sm:text-sm font-black text-rose-600 dark:text-rose-400 mt-0.5 truncate">
+                          {maskBalance(todayExpense)}
+                        </p>
+                      </div>
+                      {totalCurrentBudgetAmount > 0 && (
+                        <div className="rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 px-3 py-2 shadow-xs min-w-0">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">{t('budget_remaining_label', lang)}</p>
+                          <p className={`text-xs sm:text-sm font-black mt-0.5 truncate ${totalCurrentBudgetRemaining < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                            {maskBalance(totalCurrentBudgetRemaining)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    {dueSoonSubs.length > 0 && (
+                      <div className="rounded-2xl border border-amber-200/70 dark:border-amber-900/40 bg-amber-50/90 dark:bg-amber-950/40 px-3 py-2 shadow-xs">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">{lang === 'en' ? 'Due Bills' : 'Tagihan Jatuh Tempo'}</p>
+                        <div className="text-xs sm:text-sm font-black text-amber-700 dark:text-amber-300 mt-0.5 flex items-center gap-1">
+                          <Bell className="h-3.5 w-3.5" /> {dueSoonSubs.length} {lang === 'en' ? 'Bills' : 'Tagihan'}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Direct Transaction Trigger Buttons */}
+                    <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
+                      <button
+                        onClick={() => setShowModal({ type: 'transaction', editData: { type: 'income' } as any })}
+                        className="flex items-center justify-center gap-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 px-2.5 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/80 transition cursor-pointer"
+                        title={lang === 'en' ? 'Record Income' : 'Catat Pemasukan'}
+                      >
+                        <ArrowDownRight className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span>{t('quick_action_income', lang)}</span>
+                      </button>
+                      <button
+                        onClick={() => setShowModal({ type: 'transaction', editData: { type: 'expense' } as any })}
+                        className="flex items-center justify-center gap-1 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/80 px-2.5 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/80 transition cursor-pointer"
+                        title={lang === 'en' ? 'Record Expense' : 'Catat Pengeluaran'}
+                      >
+                        <ArrowUpRight className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+                        <span>{t('quick_action_expense', lang)}</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Financial Metric Cards */}
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-900 dark:to-slate-950 p-6 text-white shadow-xl shadow-slate-900/10">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className="col-span-2 sm:col-span-1 lg:col-span-1 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-900 dark:to-slate-950 p-4 sm:p-6 text-white shadow-xl shadow-slate-900/10">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-300">Total Seluruh Saldo</span>
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 backdrop-blur-md">
-                      <WalletCards className="h-4 w-4 text-emerald-400" />
+                    <span className="text-xs font-semibold text-slate-300">{t('total_balance', lang)}</span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={toggleHideBalance}
+                        title={hideBalance ? t('show_balance', lang) : t('hide_balance', lang)}
+                        className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition cursor-pointer"
+                      >
+                        {hideBalance ? <EyeOff className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
+                      </button>
+                      <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-white/10 backdrop-blur-md">
+                        <WalletCards className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-400" />
+                      </div>
                     </div>
                   </div>
-                  <p className="mt-4 text-2xl font-black tracking-tight">{formatRupiah(totalBalance)}</p>
-                  <div className="mt-3 flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-white/10">
-                    <span>{calculatedWallets.length} Akun / Dompet</span>
-                    <span className="text-emerald-400 font-semibold">Terkonsolidasi</span>
+                  <p className="mt-3 sm:mt-4 text-xl sm:text-2xl font-black tracking-tight">{maskBalance(totalBalance)}</p>
+                  <div className="mt-2.5 sm:mt-3 flex items-center justify-between text-[11px] sm:text-xs text-slate-400 pt-2.5 sm:pt-3 border-t border-white/10">
+                    <span>{calculatedWallets.length} {t('accounts_consolidated', lang)}</span>
+                    <span className="text-emerald-400 font-semibold">{t('consolidated', lang)}</span>
                   </div>
                 </div>
 
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
+                <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Pemasukan</span>
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
-                      <ArrowDownRight className="h-4 w-4" />
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('total_income', lang)}</span>
+                    <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+                      <ArrowDownRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </div>
                   </div>
-                  <p className="mt-4 text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
-                    {formatRupiah(totalIncome)}
+                  <p className="mt-3 sm:mt-4 text-lg sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight truncate">
+                    {maskBalance(totalIncome)}
                   </p>
-                  <p className="mt-3 text-xs text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
-                    Akumulasi arus kas masuk
+                  <p className="mt-2.5 sm:mt-3 text-[11px] sm:text-xs text-slate-400 pt-2.5 sm:pt-3 border-t border-slate-100 dark:border-slate-800 truncate">
+                    {t('accumulated_income', lang)}
                   </p>
                 </div>
 
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
+                <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Pengeluaran</span>
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
-                      <ArrowUpRight className="h-4 w-4" />
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('total_expense', lang)}</span>
+                    <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
+                      <ArrowUpRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </div>
                   </div>
-                  <p className="mt-4 text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">
-                    {formatRupiah(totalExpense)}
+                  <p className="mt-3 sm:mt-4 text-lg sm:text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight truncate">
+                    {maskBalance(totalExpense)}
                   </p>
-                  <p className="mt-3 text-xs text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
-                    Akumulasi biaya tercatat
+                  <p className="mt-2.5 sm:mt-3 text-[11px] sm:text-xs text-slate-400 pt-2.5 sm:pt-3 border-t border-slate-100 dark:border-slate-800 truncate">
+                    {t('accumulated_expense', lang)}
                   </p>
                 </div>
 
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
+                <div className="col-span-2 sm:col-span-1 lg:col-span-1 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Net Tabungan</span>
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400 font-bold text-xs">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('net_savings', lang)}</span>
+                    <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400 font-bold text-xs">
                       {savingsRate}%
                     </div>
                   </div>
-                  <p className="mt-4 text-2xl font-black text-teal-700 dark:text-teal-400 tracking-tight">
-                    {formatRupiah(netSavings)}
+                  <p className="mt-3 sm:mt-4 text-lg sm:text-2xl font-black text-teal-700 dark:text-teal-400 tracking-tight">
+                    {maskBalance(netSavings)}
                   </p>
-                  <p className="mt-3 text-xs text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
-                    Rasio Tabungan: <span className="font-semibold text-teal-700 dark:text-teal-400">{savingsRate}%</span>
+                  <p className="mt-2.5 sm:mt-3 text-[11px] sm:text-xs text-slate-400 pt-2.5 sm:pt-3 border-t border-slate-100 dark:border-slate-800">
+                    {t('savings_rate', lang)}: <span className="font-semibold text-teal-700 dark:text-teal-400">{savingsRate}%</span>
                   </p>
                 </div>
               </div>
 
-              {/* Tahap 2 Quick Highlights: Goals & Bill Alerts */}
-              <div className="grid gap-6 lg:grid-cols-2">
-                {/* 1. Target Tabungan Mini Card */}
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
-                        <Target className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-slate-900 dark:text-white text-base">Target Tabungan Impian</h3>
-                        <p className="text-[11px] text-slate-400">Pencapaian: {overallGoalPercentage}% dari {formatRupiah(totalGoalTarget)}</p>
-                      </div>
+              {/* Quick Wallets & Accounts Strip */}
+              <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                        {t('quick_wallets_title', lang)}
+                      </h3>
+                      <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                        {calculatedWallets.length} {lang === 'en' ? 'Accounts' : 'Akun'}
+                      </span>
                     </div>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {t('quick_wallets_sub', lang)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setTab('Target Impian')}
+                      onClick={() => setShowModal({ type: 'wallet' })}
+                      className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    >
+                      <Plus className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>{t('add_wallet_short', lang)}</span>
+                    </button>
+                    <button
+                      onClick={() => setTab('Dompet')}
                       className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
                     >
-                      Buka Goals <ChevronRight className="h-3.5 w-3.5" />
+                      <span>{lang === 'en' ? 'Manage All' : 'Kelola Semua'}</span>
+                      <ChevronRight className="h-3.5 w-3.5" />
                     </button>
                   </div>
+                </div>
 
-                  {goalsList.length > 0 ? (
-                    <div className="space-y-3">
-                      {goalsList.slice(0, 2).map((g) => {
-                        const pct = g.targetAmount > 0 ? Math.min(100, Math.round((g.currentAmount / g.targetAmount) * 100)) : 0
-                        return (
-                          <div key={g.id} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-3.5">
-                            <div className="flex items-center justify-between text-xs mb-1.5">
-                              <span className="font-bold text-slate-900 dark:text-white">{g.name}</span>
-                              <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{pct}%</span>
+                {calculatedWallets.length > 0 ? (
+                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                    {calculatedWallets.map((w) => {
+                      const isBank = w.type?.toLowerCase().includes('bank')
+                      const isCash = w.type?.toLowerCase().includes('cash') || w.type?.toLowerCase().includes('tunai')
+
+                      return (
+                        <div
+                          key={w.id}
+                          onClick={() => setShowModal({ type: 'wallet', editData: w })}
+                          className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-4 transition-all hover:border-emerald-500/40 hover:bg-white dark:hover:bg-slate-800 hover:shadow-md"
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2.5">
+                              <div
+                                className={`flex h-8 w-8 items-center justify-center rounded-xl text-white ${isBank
+                                  ? 'bg-blue-600 shadow-sm shadow-blue-500/20'
+                                  : isCash
+                                    ? 'bg-amber-600 shadow-sm shadow-amber-500/20'
+                                    : 'bg-emerald-600 shadow-sm shadow-emerald-500/20'
+                                  }`}
+                              >
+                                {isBank ? <Building2 className="h-4 w-4" /> : isCash ? <Wallet className="h-4 w-4" /> : <Smartphone className="h-4 w-4" />}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-bold text-xs text-slate-900 dark:text-white truncate">{w.name}</p>
+                                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{w.type}</span>
+                              </div>
                             </div>
-                            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-                              <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
-                            </div>
-                            <div className="flex items-center justify-between text-[11px] text-slate-400 mt-2">
-                              <span>Terkumpul: {formatRupiah(g.currentAmount)}</span>
-                              <span>Target: {formatRupiah(g.targetAmount)}</span>
-                            </div>
+                            <Edit3 className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600 group-hover:text-emerald-500 transition opacity-0 group-hover:opacity-100" />
                           </div>
-                        )
-                      })}
+
+                          <div className="pt-2 border-t border-slate-200/50 dark:border-slate-700/50 flex items-baseline justify-between">
+                            <span className="text-[10px] font-medium text-slate-400">{lang === 'en' ? 'Balance' : 'Saldo'}</span>
+                            <span className="font-black text-xs sm:text-sm text-slate-900 dark:text-white">
+                              {maskBalance(w.currentBalance)}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="py-6 text-center text-xs text-slate-400">
+                    {lang === 'en' ? 'No wallets registered. Click "+ Add Wallet" to create one.' : 'Belum ada dompet tercatat. Klik "+ Tambah Dompet" untuk mulai.'}
+                  </div>
+                )}
+              </div>
+
+              {/* 3-Card Highlights: Goals, Bills, and Monthly Budget Progress */}
+              <div className="grid gap-6 lg:grid-cols-3">
+                {/* 1. Target Tabungan Mini Card */}
+                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+                          <Target className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-slate-900 dark:text-white text-base">{t('goals_tracker', lang)}</h3>
+                            {!isPro && (
+                              <span className="rounded-full bg-amber-100 dark:bg-amber-950/80 px-2 py-0.5 text-[9px] font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                🔒 PRO
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-400">{t('goals_progress', lang)}: {overallGoalPercentage}% / {formatRupiah(totalGoalTarget)}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (!isPro) {
+                            setShowUpgradeModal({
+                              featureName: 'Target Impian',
+                              description: 'Fitur Target Impian membantu Anda menabung untuk membeli rumah, kendaraan, atau dana darurat dengan indikator visual otomatis di Qwarts Finance PRO.'
+                            })
+                            return
+                          }
+                          setTab('Target Impian')
+                        }}
+                        className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                      >
+                        <span>{t('open_goals', lang)}</span>
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
                     </div>
-                  ) : (
-                    <div className="py-6 text-center text-xs text-slate-400">
-                      Belum ada target tabungan impian. Pasang target pertama Anda!
-                    </div>
-                  )}
+
+                    {!isPro ? (
+                      <div className="rounded-2xl border border-amber-200/80 dark:border-amber-900/60 bg-gradient-to-br from-amber-50/50 via-white to-amber-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20 p-5 text-center space-y-3 my-auto">
+                        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                          <Lock className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{t('goals_locked_title', lang)}</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                            {t('goals_locked_desc', lang)}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setShowUpgradeModal({
+                            featureName: 'Target Impian',
+                            description: 'Fitur Target Impian membantu Anda menabung untuk membeli rumah, kendaraan, atau dana darurat dengan indikator visual otomatis di Qwarts Finance PRO.'
+                          })}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-xs font-black text-white shadow hover:from-emerald-700 hover:to-teal-700 transition"
+                        >
+                          <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+                          <span>{t('open_pro_goals', lang)}</span>
+                        </button>
+                      </div>
+                    ) : goalsList.length > 0 ? (
+                      <div className="space-y-3">
+                        {goalsList.slice(0, 3).map((g) => {
+                          const pct = g.targetAmount > 0 ? Math.min(100, Math.round((g.currentAmount / g.targetAmount) * 100)) : 0
+                          return (
+                            <div key={g.id} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-3.5 space-y-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-bold text-slate-900 dark:text-white truncate">{g.name}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{pct}%</span>
+                                  <button
+                                    onClick={() => setShowModal({ type: 'goalDeposit', goal: g })}
+                                    className="flex items-center gap-1 rounded-lg bg-emerald-600/10 hover:bg-emerald-600 text-emerald-700 hover:text-white dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-600 dark:hover:text-white px-2 py-0.5 text-[10px] font-bold transition"
+                                    title={lang === 'en' ? 'Deposit funds' : 'Tambah tabungan'}
+                                  >
+                                    <Plus className="h-2.5 w-2.5" />
+                                    <span>{t('deposit_to_goal_short', lang)}</span>
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                                <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
+                              </div>
+                              <div className="flex items-center justify-between text-[11px] text-slate-400">
+                                <span>{t('collected', lang)}: {maskBalance(g.currentAmount)}</span>
+                                <span>{t('target', lang)}: {maskBalance(g.targetAmount)}</span>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <div className="py-6 text-center text-xs text-slate-400">
+                        {t('no_goals', lang)}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* 2. Tagihan Rutin & Pengingat Mini Card */}
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
-                        <CalendarDays className="h-5 w-5" />
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
+                          <CalendarDays className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-slate-900 dark:text-white text-base">{t('bills_tracker', lang)}</h3>
+                            {!isPro && (
+                              <span className="rounded-full bg-amber-100 dark:bg-amber-950/80 px-2 py-0.5 text-[9px] font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                🔒 PRO
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-400">{t('monthly_est', lang)}: {formatRupiah(totalMonthlyBills)}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-bold text-slate-900 dark:text-white text-base">Tagihan Rutin & Langganan</h3>
-                        <p className="text-[11px] text-slate-400">Estimasi bulanan: {formatRupiah(totalMonthlyBills)}</p>
-                      </div>
+                      <button
+                        onClick={() => {
+                          if (!isPro) {
+                            setShowUpgradeModal({
+                              featureName: 'Tagihan Rutin',
+                              description: 'Fitur Tagihan Rutin memantau pengeluaran berulang bulanan seperti langganan, listrik, WiFi, dan cicilan dengan pengingat jatuh tempo otomatis di Qwarts Finance PRO.'
+                            })
+                            return
+                          }
+                          setTab('Tagihan Rutin')
+                        }}
+                        className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                      >
+                        <span>{t('open_bills', lang)}</span>
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => setTab('Tagihan Rutin')}
-                      className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
-                    >
-                      Buka Tagihan <ChevronRight className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
 
-                  {subsList.length > 0 ? (
-                    <div className="space-y-2">
-                      {subsList.slice(0, 3).map((s) => {
-                        const daysLeft = s.dueDate >= todayDate ? s.dueDate - todayDate : 30 - (todayDate - s.dueDate)
-                        const isDueSoon = s.isActive && daysLeft <= (s.reminderDaysBefore || 3)
-                        return (
-                          <div key={s.id} className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-3">
-                            <div className="flex items-center gap-3">
-                              <div className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs font-black ${isDueSoon ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>
-                                {s.dueDate}
+                    {!isPro ? (
+                      <div className="rounded-2xl border border-amber-200/80 dark:border-amber-900/60 bg-gradient-to-br from-amber-50/50 via-white to-amber-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20 p-5 text-center space-y-3 my-auto">
+                        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                          <Lock className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{t('bills_locked_title', lang)}</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                            {t('bills_locked_desc', lang)}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setShowUpgradeModal({
+                            featureName: 'Tagihan Rutin',
+                            description: 'Fitur Tagihan Rutin memantau pengeluaran berulang bulanan seperti langganan, listrik, WiFi, dan cicilan dengan pengingat jatuh tempo otomatis di Qwarts Finance PRO.'
+                          })}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-xs font-black text-white shadow hover:from-emerald-700 hover:to-teal-700 transition"
+                        >
+                          <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+                          <span>{t('open_pro_bills', lang)}</span>
+                        </button>
+                      </div>
+                    ) : subsList.length > 0 ? (
+                      <div className="space-y-2.5">
+                        {subsList.slice(0, 3).map((s) => {
+                          const daysLeft = s.dueDate >= todayDate ? s.dueDate - todayDate : 30 - (todayDate - s.dueDate)
+                          const isDueSoon = s.isActive && daysLeft <= (s.reminderDaysBefore || 3)
+                          const isPaid = isSubPaidThisMonth(s)
+                          return (
+                            <div key={s.id} className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-3">
+                              <div className="flex items-center gap-3">
+                                <div className={`flex h-8 w-8 items-center justify-center rounded-xl text-xs font-black ${isPaid ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' : isDueSoon ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>
+                                  {s.dueDate}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-xs text-slate-900 dark:text-white">{s.name}</p>
+                                  <p className="text-[10px] text-slate-400">
+                                    {isPaid ? (
+                                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{t('paid_status', lang)}</span>
+                                    ) : (
+                                      <>{t('due_date_on', lang)} {s.dueDate} ({daysLeft === 0 ? t('today', lang) : `${daysLeft} ${t('days_left', lang)}`})</>
+                                    )}
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="font-bold text-xs text-slate-900 dark:text-white">{s.name}</p>
-                                <p className="text-[10px] text-slate-400">Jatuh tempo tgl {s.dueDate} ({daysLeft === 0 ? 'Hari ini' : `${daysLeft} hari lagi`})</p>
+                              <div className="flex items-center gap-2">
+                                <span className="font-black text-xs text-slate-900 dark:text-white">{maskBalance(s.amount)}</span>
+                                {!isPaid && (
+                                  <button
+                                    onClick={() => setShowModal({ type: 'paySubscription', subscription: s })}
+                                    className="flex items-center gap-1 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 px-2 py-1 text-[10px] font-bold shadow-sm transition"
+                                    title={lang === 'en' ? 'Pay Bill' : 'Bayar Tagihan'}
+                                  >
+                                    <Check className="h-3 w-3" />
+                                    <span>{t('pay_bill_short', lang)}</span>
+                                  </button>
+                                )}
                               </div>
                             </div>
-                            <span className="font-black text-xs text-slate-900 dark:text-white">{formatRupiah(s.amount)}</span>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <div className="py-6 text-center text-xs text-slate-400">
+                        {t('no_bills', lang)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 3. Monthly Budget Health Status Mini Card */}
+                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-teal-600 dark:bg-teal-950/60 dark:text-teal-400">
+                          <PiggyBank className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-slate-900 dark:text-white text-base">{t('this_month_budget', lang)}</h3>
+                            {!isPro && (
+                              <span className="rounded-full bg-amber-100 dark:bg-amber-950/80 px-2 py-0.5 text-[9px] font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                🔒 PRO
+                              </span>
+                            )}
                           </div>
-                        )
-                      })}
+                          <p className="text-[11px] text-slate-400">
+                            {totalCurrentBudgetAmount > 0
+                              ? `${overallCurrentBudgetPct}% ${t('budget_used', lang)} / ${formatRupiah(totalCurrentBudgetAmount)}`
+                              : t('no_budgets_overview', lang)}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (!isPro) {
+                            setShowUpgradeModal({
+                              featureName: 'Budget Bulanan',
+                              description: 'Kendalikan pengeluaran dengan batas anggaran bulanan per kategori dan notifikasi over-budget otomatis di Qwarts Finance PRO.'
+                            })
+                            return
+                          }
+                          setTab('Budget')
+                        }}
+                        className="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1"
+                      >
+                        <span>{t('manage_budget_short', lang)}</span>
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
                     </div>
-                  ) : (
-                    <div className="py-6 text-center text-xs text-slate-400">
-                      Belum ada catatan langganan / tagihan rutin.
-                    </div>
-                  )}
+
+                    {!isPro ? (
+                      <div className="rounded-2xl border border-amber-200/80 dark:border-amber-900/60 bg-gradient-to-br from-amber-50/50 via-white to-amber-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20 p-5 text-center space-y-3 my-auto">
+                        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                          <Lock className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{lang === 'en' ? 'Monthly Budget Locked' : 'Budget Bulanan Terkunci'}</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                            {lang === 'en' ? 'Track category spending caps and prevent overspending automatically.' : 'Pasang batas pengeluaran per kategori agar tidak boros setiap bulannya.'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setShowUpgradeModal({
+                            featureName: 'Budget Bulanan',
+                            description: 'Kendalikan pengeluaran dengan batas anggaran bulanan per kategori dan notifikasi over-budget otomatis di Qwarts Finance PRO.'
+                          })}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 px-4 py-2 text-xs font-black text-white shadow hover:from-teal-700 hover:to-emerald-700 transition"
+                        >
+                          <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+                          <span>{t('upgrade_pro', lang)}</span>
+                        </button>
+                      </div>
+                    ) : currentMonthBudgets.length > 0 ? (
+                      <div className="space-y-3">
+                        {/* Overall Progress Bar */}
+                        <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 p-3.5 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-slate-900 dark:text-white">
+                              {overallCurrentBudgetPct > 100 ? t('budget_status_over', lang) : overallCurrentBudgetPct >= 80 ? t('budget_status_warning', lang) : t('budget_status_safe', lang)}
+                            </span>
+                            <span className={`font-extrabold ${overallCurrentBudgetPct > 100 ? 'text-rose-600' : overallCurrentBudgetPct >= 80 ? 'text-amber-500' : 'text-teal-600 dark:text-teal-400'}`}>
+                              {overallCurrentBudgetPct}%
+                            </span>
+                          </div>
+                          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                            <div
+                              className={`h-full rounded-full transition-all ${overallCurrentBudgetPct > 100
+                                ? 'bg-rose-500'
+                                : overallCurrentBudgetPct >= 80
+                                  ? 'bg-amber-500'
+                                  : 'bg-teal-500'
+                                }`}
+                              style={{ width: `${Math.min(100, overallCurrentBudgetPct)}%` }}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-slate-400">
+                            <span>{t('budget_used', lang)}: {maskBalance(totalCurrentBudgetSpent)}</span>
+                            <span>{t('budget_left', lang)}: {maskBalance(totalCurrentBudgetRemaining)}</span>
+                          </div>
+                        </div>
+
+                        {/* Top 2 Categories */}
+                        <div className="space-y-1.5 pt-1">
+                          {currentMonthBudgets.slice(0, 2).map((b) => (
+                            <div key={b.id} className="flex items-center justify-between text-xs px-1">
+                              <span className="text-slate-600 dark:text-slate-300 truncate max-w-[140px]">{b.categoryName}</span>
+                              <span className={`font-bold ${b.percentage > 100 ? 'text-rose-600' : 'text-slate-900 dark:text-white'}`}>
+                                {maskBalance(b.spent)} / {maskBalance(b.amount)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="py-6 text-center text-xs text-slate-400 space-y-2">
+                        <p>{t('no_budgets_overview', lang)}</p>
+                        <button
+                          onClick={() => setShowModal({ type: 'budget' })}
+                          className="inline-flex items-center gap-1 rounded-xl bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 px-3 py-1.5 text-xs font-bold text-teal-700 dark:text-teal-300 hover:bg-teal-100 transition"
+                        >
+                          <Plus className="h-3 w-3" />
+                          <span>{t('set_monthly_budget_btn', lang)}</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Charts Section */}
               <div className="grid gap-6 lg:grid-cols-3">
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm lg:col-span-2">
-                  <div className="flex items-center justify-between mb-6">
+                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm lg:col-span-2 min-w-0 overflow-hidden">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
                     <div>
-                      <h3 className="font-bold text-slate-900 dark:text-white text-lg">Tren Arus Kas Transaksi</h3>
-                      <p className="text-xs text-slate-400">Pemasukan vs Pengeluaran berdasarkan tanggal</p>
+                      <h3 className="font-bold text-slate-900 dark:text-white text-lg">{t('cashflow_chart', lang)}</h3>
+                      <p className="text-xs text-slate-400">{t('cashflow_sub', lang)}</p>
                     </div>
-                    <div className="flex items-center gap-3 text-xs font-semibold">
-                      <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> Masuk
-                      </span>
-                      <span className="flex items-center gap-1.5 text-rose-500 dark:text-rose-400">
-                        <span className="h-2.5 w-2.5 rounded-full bg-rose-500" /> Keluar
-                      </span>
+                    <div className="flex flex-col items-start gap-2 sm:items-end">
+                      <div className="flex items-center gap-3 text-xs font-semibold">
+                        <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> {t('cashflow_in', lang)}
+                        </span>
+                        <span className="flex items-center gap-1.5 text-rose-500 dark:text-rose-400">
+                          <span className="h-2.5 w-2.5 rounded-full bg-rose-500" /> {t('cashflow_out', lang)}
+                        </span>
+                        {cashflowChartType === 'combo' && (
+                          <span className="flex items-center gap-1.5 text-violet-500 dark:text-violet-400">
+                            <span className="h-0.5 w-4 rounded-full bg-violet-500" /> {lang === 'en' ? 'Net' : 'Selisih'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="inline-flex rounded-lg bg-slate-100 dark:bg-slate-800 p-0.5 text-[10px] font-bold">
+                        {([
+                          { id: 'area', label: 'Area' },
+                          { id: 'bar', label: lang === 'en' ? 'Bar' : 'Batang' },
+                          { id: 'combo', label: lang === 'en' ? 'Combo' : 'Kombinasi' },
+                        ] as const).map((option) => (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => setCashflowChartType(option.id)}
+                            className={`rounded-md px-2 py-1 transition ${cashflowChartType === option.id
+                              ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                              }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
+                  </div>
+
+                  <div className="mb-5 flex flex-wrap items-center gap-2 text-[11px]">
+                    <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 transition-colors hover:border-emerald-400/60 dark:border-slate-700/80 dark:bg-slate-950/40 dark:hover:border-emerald-500/40">
+                      <span className="font-semibold text-slate-500 dark:text-slate-400">{t('date_from', lang)}</span>
+                      <input
+                        type="date"
+                        value={chartStartDate}
+                        max={chartEndDate || undefined}
+                        onChange={(e) => setChartStartDate(e.target.value)}
+                        className="min-w-0 rounded-md bg-transparent px-1 py-0.5 text-[11px] font-semibold text-slate-700 [color-scheme:light] focus:outline-none focus-visible:text-emerald-600 dark:text-slate-200 dark:[color-scheme:dark] dark:focus-visible:text-emerald-400"
+                      />
+                      <span className="text-slate-400 dark:text-slate-500">–</span>
+                      <span className="font-semibold text-slate-500 dark:text-slate-400">{t('date_to', lang)}</span>
+                      <input
+                        type="date"
+                        value={chartEndDate}
+                        min={chartStartDate || undefined}
+                        onChange={(e) => setChartEndDate(e.target.value)}
+                        className="min-w-0 rounded-md bg-transparent px-1 py-0.5 text-[11px] font-semibold text-slate-700 [color-scheme:light] focus:outline-none focus-visible:text-emerald-600 dark:text-slate-200 dark:[color-scheme:dark] dark:focus-visible:text-emerald-400"
+                      />
+                      {(chartStartDate || chartEndDate) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setChartStartDate('')
+                            setChartEndDate('')
+                          }}
+                          className="rounded p-0.5 text-slate-400 transition-colors hover:text-rose-500 dark:text-slate-500 dark:hover:text-rose-400"
+                          title={lang === 'en' ? 'Clear chart range' : 'Hapus rentang chart'}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                    <span className="text-slate-400 font-medium">
+                      {chartStartDate || chartEndDate
+                        ? `${cashflowChartData.length} ${lang === 'en' ? 'active days in range' : 'hari aktif dalam rentang'}`
+                        : lang === 'en'
+                          ? 'Last 10 active days'
+                          : '10 hari terakhir yang ada transaksi'}
+                    </span>
                   </div>
 
                   <div className="h-72 w-full">
                     {cashflowChartData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={cashflowChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <ComposedChart data={cashflowChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                           <defs>
                             <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
@@ -1012,89 +1908,298 @@ export default function Dashboard({
                               fontWeight: 600,
                             }}
                           />
-                          <Area
-                            type="monotone"
-                            dataKey="income"
-                            name="Pemasukan"
-                            stroke="#10b981"
-                            strokeWidth={2.5}
-                            fillOpacity={1}
-                            fill="url(#incomeGrad)"
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="expense"
-                            name="Pengeluaran"
-                            stroke="#f43f5e"
-                            strokeWidth={2.5}
-                            fillOpacity={1}
-                            fill="url(#expenseGrad)"
-                          />
-                        </AreaChart>
+                          {cashflowChartType === 'area' && (
+                            <>
+                              <Area
+                                type="monotone"
+                                dataKey="income"
+                                name={t('cashflow_in', lang)}
+                                stroke="#10b981"
+                                strokeWidth={2.5}
+                                fillOpacity={1}
+                                fill="url(#incomeGrad)"
+                              />
+                              <Area
+                                type="monotone"
+                                dataKey="expense"
+                                name={t('cashflow_out', lang)}
+                                stroke="#f43f5e"
+                                strokeWidth={2.5}
+                                fillOpacity={1}
+                                fill="url(#expenseGrad)"
+                              />
+                            </>
+                          )}
+
+                          {cashflowChartType === 'bar' && (
+                            <>
+                              <Bar
+                                dataKey="income"
+                                name={t('cashflow_in', lang)}
+                                fill="#10b981"
+                                radius={[5, 5, 0, 0]}
+                                maxBarSize={26}
+                              />
+                              <Bar
+                                dataKey="expense"
+                                name={t('cashflow_out', lang)}
+                                fill="#f43f5e"
+                                radius={[5, 5, 0, 0]}
+                                maxBarSize={26}
+                              />
+                            </>
+                          )}
+
+                          {cashflowChartType === 'combo' && (
+                            <>
+                              <Bar
+                                dataKey="income"
+                                name={t('cashflow_in', lang)}
+                                fill="#10b981"
+                                radius={[5, 5, 0, 0]}
+                                maxBarSize={22}
+                                fillOpacity={0.85}
+                              />
+                              <Bar
+                                dataKey="expense"
+                                name={t('cashflow_out', lang)}
+                                fill="#f43f5e"
+                                radius={[5, 5, 0, 0]}
+                                maxBarSize={22}
+                                fillOpacity={0.85}
+                              />
+                              <Line
+                                type="monotone"
+                                dataKey="net"
+                                name={lang === 'en' ? 'Net cash flow' : 'Selisih arus kas'}
+                                stroke="#8b5cf6"
+                                strokeWidth={2.5}
+                                strokeDasharray="5 3"
+                                dot={false}
+                                activeDot={{ r: 4 }}
+                              />
+                            </>
+                          )}
+                        </ComposedChart>
                       </ResponsiveContainer>
                     ) : (
                       <div className="flex h-full items-center justify-center text-xs text-slate-400">
-                        Belum ada data visualisasi arus kas.
+                        {t('cashflow_empty', lang)}
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between">
+                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between min-w-0 overflow-hidden">
                   <div>
-                    <h3 className="font-bold text-slate-900 dark:text-white text-lg">Alokasi Pengeluaran</h3>
-                    <p className="text-xs text-slate-400">Distribusi biaya per kategori</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h3 className="font-bold text-slate-900 dark:text-white text-lg">{t('expense_category_chart', lang)}</h3>
+                        <p className="text-xs text-slate-400">{t('expense_category_sub', lang)}</p>
+                      </div>
+                      {selectedExpenseCategory && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedExpenseCategoryId(null)}
+                          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 transition hover:bg-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-400 dark:hover:bg-emerald-950"
+                          title={lang === 'en' ? 'Show all categories' : 'Tampilkan semua kategori'}
+                        >
+                          <span className="max-w-[90px] truncate">{selectedExpenseCategory.name}</span>
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="h-52 w-full my-2">
+                  <div className="relative h-52 w-full my-2">
                     {categoryExpenseChartData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={categoryExpenseChartData}
-                            dataKey="value"
-                            nameKey="name"
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={50}
-                            outerRadius={75}
-                            paddingAngle={3}
-                          >
-                            {categoryExpenseChartData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            formatter={(val: any) => [formatRupiah(Number(val)), 'Total']}
-                            contentStyle={{
-                              backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff',
-                              color: theme === 'dark' ? '#f8fafc' : '#0f172a',
-                              borderRadius: '0.75rem',
-                              border: theme === 'dark' ? '1px solid #334155' : '1px solid #e2e8f0',
-                              fontSize: '12px',
-                            }}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
+                      <>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={expensePieData}
+                              dataKey="value"
+                              nameKey="name"
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={50}
+                              outerRadius={75}
+                              paddingAngle={selectedExpenseCategory ? 0 : 3}
+                              className="cursor-pointer"
+                              onClick={(entry: any) => {
+                                const id = entry?.id ?? entry?.payload?.id
+                                if (typeof id !== 'number') return
+                                setSelectedExpenseCategoryId((previous) => (previous === id ? null : id))
+                              }}
+                            >
+                              {expensePieData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              formatter={(val: any) => [formatRupiah(Number(val)), 'Total']}
+                              contentStyle={{
+                                backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff',
+                                color: theme === 'dark' ? '#f8fafc' : '#0f172a',
+                                borderRadius: '0.75rem',
+                                border: theme === 'dark' ? '1px solid #334155' : '1px solid #e2e8f0',
+                                fontSize: '12px',
+                              }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+
+                        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="text-[9px] font-bold uppercase tracking-wide text-slate-400">
+                            {selectedExpenseCategory
+                              ? (lang === 'en' ? 'Selected' : 'Dipilih')
+                              : 'Total'}
+                          </span>
+                          <span className="max-w-[100px] truncate text-[11px] font-bold text-slate-700 dark:text-slate-200">
+                            {selectedExpenseCategory
+                              ? selectedExpenseCategory.name
+                              : (lang === 'en' ? 'All categories' : 'Semua kategori')}
+                          </span>
+                          <span className="text-sm font-black text-slate-900 dark:text-white">
+                            {maskBalance(selectedExpenseCategory ? selectedExpenseCategory.value : expensePieTotal)}
+                          </span>
+                        </div>
+                      </>
                     ) : (
                       <div className="flex h-full items-center justify-center text-xs text-slate-400">
-                        Belum ada transaksi pengeluaran.
+                        {t('expense_empty', lang)}
                       </div>
                     )}
                   </div>
 
                   <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800 max-h-36 overflow-y-auto">
-                    {categoryExpenseChartData.slice(0, 4).map((c) => (
-                      <div key={c.id} className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c.color }} />
-                          <span className="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[120px]">{c.name}</span>
-                        </div>
-                        <span className="font-bold text-slate-900 dark:text-white">{formatRupiah(c.value)}</span>
-                      </div>
-                    ))}
+                    {categoryExpenseChartData.map((c) => {
+                      const isSelected = selectedExpenseCategoryId === c.id
+                      const percent = expensePieTotal > 0 ? Math.round((c.value / expensePieTotal) * 100) : 0
+
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() =>
+                            setSelectedExpenseCategoryId((previous) => (previous === c.id ? null : c.id))
+                          }
+                          className={`flex w-full items-center justify-between rounded-lg px-1.5 py-1 text-xs transition ${isSelected
+                            ? 'bg-emerald-50 ring-1 ring-emerald-500/40 dark:bg-emerald-950/40'
+                            : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                            }`}
+                        >
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: c.color }} />
+                            <span className={`truncate max-w-[120px] ${isSelected
+                              ? 'font-bold text-emerald-700 dark:text-emerald-300'
+                              : 'font-medium text-slate-700 dark:text-slate-300'
+                              }`}>
+                              {c.name}
+                            </span>
+                            <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                              {percent}%
+                            </span>
+                          </div>
+                          <span className="font-bold text-slate-900 dark:text-white">{maskBalance(c.value)}</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
+              </div>
+
+              {/* Transaksi Terkini (Recent Transactions Feed Widget) */}
+              <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <h3 className="font-bold text-slate-900 dark:text-white text-lg">
+                      {t('recent_transactions', lang)}
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      {t('recent_transactions_sub', lang)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setShowModal({ type: 'transaction' })}
+                      className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    >
+                      <Plus className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>{t('add_transaction', lang)}</span>
+                    </button>
+                    <button
+                      onClick={() => setTab('Transaksi')}
+                      className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                    >
+                      <span>{t('view_all', lang)}</span>
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {recentTransactions.length > 0 ? (
+                  <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                    {recentTransactions.map((tx) => {
+                      const cat = categoryMap.get(tx.categoryId)
+                      const wal = walletMap.get(tx.walletId)
+                      const isIncome = tx.type === 'income'
+
+                      return (
+                        <div
+                          key={tx.id}
+                          onClick={() => setShowModal({ type: 'transaction', editData: tx })}
+                          className="group flex items-center justify-between py-3.5 px-2 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition cursor-pointer"
+                        >
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <div
+                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-white font-bold text-xs shadow-xs"
+                              style={{ backgroundColor: cat?.color || '#10b981' }}
+                            >
+                              {cat?.name ? cat.name.charAt(0).toUpperCase() : <Tag className="h-4 w-4" />}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate">
+                                  {tx.description || cat?.name || (isIncome ? 'Pemasukan' : 'Pengeluaran')}
+                                </p>
+                                <span className="hidden sm:inline-flex rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+                                  {wal?.name || 'Dompet'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
+                                <span>{formatIndoDate(new Date(tx.date))}</span>
+                                <span>•</span>
+                                <span className="font-medium text-slate-500 dark:text-slate-400">{cat?.name || 'Umum'}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 shrink-0 ml-3">
+                            <span
+                              className={`text-xs sm:text-sm font-extrabold tracking-tight ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                                }`}
+                            >
+                              {isIncome ? '+' : '-'} {maskBalance(tx.amount)}
+                            </span>
+                            <Edit3 className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600 group-hover:text-emerald-500 transition opacity-0 group-hover:opacity-100 hidden sm:block" />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center text-xs text-slate-400 space-y-3">
+                    <p>{t('no_recent_tx', lang)}</p>
+                    <button
+                      onClick={() => setShowModal({ type: 'transaction' })}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>{t('record_first_tx', lang)}</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1104,30 +2209,42 @@ export default function Dashboard({
             <div className="space-y-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Riwayat & Daftar Transaksi</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Kelola dan telusuri seluruh transaksi Anda dengan filter lengkap.</p>
+                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                    {t('tx_title', lang)}
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {t('tx_subtitle', lang)}
+                  </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setShowModal({ type: 'importPdf' })}
+                    className="flex items-center gap-2 rounded-xl border border-violet-500/40 bg-violet-50 dark:bg-violet-950/40 px-3.5 py-2.5 text-xs font-bold text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-950 transition shadow-sm"
+                  >
+                    <FileUp className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                    <span>{lang === 'en' ? 'Import PDF' : 'Import PDF'}</span>
+                  </button>
                   <button
                     onClick={handleExportExcel}
                     className="flex items-center gap-2 rounded-xl border border-emerald-600/30 bg-emerald-50 dark:bg-emerald-950/40 px-3.5 py-2.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-950 transition shadow-sm"
                   >
                     <FileSpreadsheet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>Download Excel (.xlsx)</span>
+                    <span>{t('download_excel', lang)}</span>
+                    {!isPro && <span className="rounded bg-amber-500/20 text-amber-700 dark:text-amber-400 text-[10px] px-1.5 py-0.5 font-black">PRO 🔒</span>}
                   </button>
                   <button
                     onClick={handleExportCSV}
                     className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                   >
                     <Download className="h-4 w-4 text-slate-500" />
-                    <span>Export CSV</span>
+                    <span>{t('export_csv', lang)}</span>
                   </button>
                   <button
                     onClick={() => setShowModal({ type: 'transaction' })}
                     className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
                   >
                     <Plus className="h-4 w-4" />
-                    <span>Tambah Transaksi</span>
+                    <span>{t('add_transaction', lang)}</span>
                   </button>
                 </div>
               </div>
@@ -1141,7 +2258,7 @@ export default function Dashboard({
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Cari deskripsi, kategori, dompet..."
+                      placeholder={t('tx_search_placeholder', lang)}
                       className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2.5 pl-10 pr-4 text-xs font-medium text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 min-h-[42px]"
                     />
                   </div>
@@ -1158,7 +2275,7 @@ export default function Dashboard({
                     onChange={(option) => setCategoryFilter(option?.value || 'all')}
                     options={categoryFilterOptions}
                     isSearchable
-                    placeholder="Semua Kategori"
+                    placeholder={t('all_categories', lang)}
                   />
 
                   <CustomSelect
@@ -1166,114 +2283,296 @@ export default function Dashboard({
                     onChange={(option) => setWalletFilter(option?.value || 'all')}
                     options={walletFilterOptions}
                     isSearchable
-                    placeholder="Semua Dompet"
+                    placeholder={t('all_wallets', lang)}
                   />
                 </div>
 
-                {/* Date presets */}
+                {/* Date presets + custom range */}
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-semibold text-slate-400 mr-1">Periode:</span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="font-semibold text-slate-400 mr-1">{t('period', lang)}</span>
                     {[
-                      { id: 'all', label: 'Semua Waktu' },
-                      { id: '7days', label: '7 Hari Terakhir' },
-                      { id: '30days', label: '30 Hari Terakhir' },
-                      { id: 'month', label: 'Bulan Ini' },
+                      { id: 'all', label: t('period_all', lang) },
+                      { id: '7days', label: t('period_7days', lang) },
+                      { id: '30days', label: t('period_30days', lang) },
+                      { id: 'month', label: t('period_month', lang) },
+                      { id: 'lastmonth', label: t('period_lastmonth', lang) },
                     ].map((p) => (
                       <button
                         key={p.id}
                         onClick={() => setDateFilter(p.id as any)}
-                        className={`rounded-lg px-2.5 py-1 font-semibold transition ${
-                          dateFilter === p.id
-                            ? 'bg-emerald-600 text-white font-bold'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-                        }`}
+                        className={`rounded-lg px-2.5 py-1 font-semibold transition ${dateFilter === p.id
+                          ? 'bg-emerald-600 text-white font-bold'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                          }`}
                       >
                         {p.label}
                       </button>
                     ))}
+
+                    <div className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 transition-colors ${dateFilter === 'custom'
+                      ? 'border-emerald-500/60 bg-emerald-50 dark:border-emerald-500/50 dark:bg-emerald-950/40'
+                      : 'border-slate-200 bg-slate-50/60 hover:border-emerald-400/60 dark:border-slate-700/80 dark:bg-slate-950/40 dark:hover:border-emerald-500/40'
+                      }`}>
+                      <span className="font-semibold text-slate-500 dark:text-slate-400">{t('date_from', lang)}</span>
+                      <input
+                        type="date"
+                        value={customStartDate}
+                        max={customEndDate || undefined}
+                        onChange={(e) => {
+                          setCustomStartDate(e.target.value)
+                          setDateFilter('custom')
+                        }}
+                        className="min-w-0 rounded-md bg-transparent px-1 py-0.5 text-[11px] font-semibold text-slate-700 [color-scheme:light] focus:outline-none focus-visible:text-emerald-600 dark:text-slate-200 dark:[color-scheme:dark] dark:focus-visible:text-emerald-400"
+                      />
+                      <span className="text-slate-400 dark:text-slate-500">–</span>
+                      <span className="font-semibold text-slate-500 dark:text-slate-400">{t('date_to', lang)}</span>
+                      <input
+                        type="date"
+                        value={customEndDate}
+                        min={customStartDate || undefined}
+                        onChange={(e) => {
+                          setCustomEndDate(e.target.value)
+                          setDateFilter('custom')
+                        }}
+                        className="min-w-0 rounded-md bg-transparent px-1 py-0.5 text-[11px] font-semibold text-slate-700 [color-scheme:light] focus:outline-none focus-visible:text-emerald-600 dark:text-slate-200 dark:[color-scheme:dark] dark:focus-visible:text-emerald-400"
+                      />
+                      {(customStartDate || customEndDate) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCustomStartDate('')
+                            setCustomEndDate('')
+                            setDateFilter('all')
+                          }}
+                          className="rounded p-0.5 text-slate-400 transition-colors hover:text-rose-500 dark:text-slate-500 dark:hover:text-rose-400"
+                          title={lang === 'en' ? 'Clear date range' : 'Hapus rentang tanggal'}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <span className="text-slate-400 font-medium">
-                    Menampilkan <b className="text-slate-800 dark:text-slate-200">{filteredTransactions.length}</b> transaksi
+                    {t('showing_tx', lang)}{' '}
+                    <b className="text-slate-800 dark:text-slate-200">
+                      {filteredTransactions.length > 0
+                        ? `${startIndex + 1}–${Math.min(endIndex, filteredTransactions.length)}`
+                        : 0}
+                    </b>{' '}
+                    {lang === 'en' ? 'of' : 'dari'}{' '}
+                    <b className="text-slate-800 dark:text-slate-200">{filteredTransactions.length}</b>{' '}
+                    {t('transactions_count', lang)}
                   </span>
                 </div>
               </div>
 
-              {/* Transactions Table */}
-              <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm overflow-hidden">
+              {/* Transactions Table / Mobile Card List */}
+              <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-sm overflow-hidden">
                 {filteredTransactions.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
-                          <th className="pb-3 pl-2">Tanggal & Waktu</th>
-                          <th className="pb-3">Deskripsi</th>
-                          <th className="pb-3">Kategori</th>
-                          <th className="pb-3">Dompet</th>
-                          <th className="pb-3 text-right">Nominal</th>
-                          <th className="pb-3 pr-2 text-right">Aksi</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                        {filteredTransactions.map((t) => {
-                          const cat = categoryMap.get(t.categoryId)
-                          const wal = walletMap.get(t.walletId)
-                          const isInc = t.type === 'income'
-                          return (
-                            <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
-                              <td className="py-3.5 pl-2 text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                                <p className="font-semibold text-slate-800 dark:text-slate-200">{formatIndoDate(t.date)}</p>
-                                <p className="text-[10px] text-slate-400">
-                                  {new Date(t.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                  <>
+                    {/* Mobile Card List View (sm:hidden) */}
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800/60 sm:hidden">
+                      {paginatedTransactions.map((tRow) => {
+                        const cat = categoryMap.get(tRow.categoryId)
+                        const wal = walletMap.get(tRow.walletId)
+                        const isInc = tRow.type === 'income'
+                        return (
+                          <div key={tRow.id} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div
+                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white font-bold text-xs shadow-xs"
+                                style={{ backgroundColor: cat?.color || (isInc ? '#10b981' : '#f43f5e') }}
+                              >
+                                {cat?.name ? cat.name.charAt(0).toUpperCase() : <Tag className="h-4 w-4" />}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-bold text-xs text-slate-900 dark:text-white truncate">
+                                  {tRow.description || cat?.name || (isInc ? 'Pemasukan' : 'Pengeluaran')}
                                 </p>
-                              </td>
-                              <td className="py-3.5 font-bold text-slate-900 dark:text-white max-w-xs">{t.description}</td>
-                              <td className="py-3.5 whitespace-nowrap">
-                                <span className="inline-flex items-center rounded-lg bg-slate-100 dark:bg-slate-800 px-2.5 py-1 font-semibold text-slate-700 dark:text-slate-300">
-                                  {cat?.name || 'Kategori'}
-                                </span>
-                              </td>
-                              <td className="py-3.5 text-slate-600 dark:text-slate-400 whitespace-nowrap">{wal?.name || 'Dompet'}</td>
-                              <td className="py-3.5 text-right whitespace-nowrap">
-                                <span className={`font-black text-sm ${isInc ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                                  {isInc ? '+' : '-'} {formatRupiah(t.amount)}
-                                </span>
-                              </td>
-                              <td className="py-3.5 pr-2 text-right whitespace-nowrap">
-                                <div className="flex items-center justify-end gap-1.5">
-                                  <button
-                                    onClick={() => setShowModal({ type: 'transaction', editData: t })}
-                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200"
-                                    title="Edit"
-                                  >
-                                    <Edit3 className="h-3.5 w-3.5" />
-                                  </button>
-                                  <button
-                                    onClick={async () => {
-                                      if (confirm('Hapus transaksi ini?')) {
-                                        const fresh = await deleteTransaction(t.id)
-                                        handleSuccess('Transaksi dihapus', fresh)
-                                      }
-                                    }}
-                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400"
-                                    title="Hapus"
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </button>
+                                <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-0.5">
+                                  <span>{formatIndoDate(tRow.date, false, lang)}</span>
+                                  <span>•</span>
+                                  <span className="font-medium text-slate-500 dark:text-slate-400 truncate max-w-[85px]">{wal?.name || 'Dompet'}</span>
                                 </div>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col items-end shrink-0 gap-1">
+                              <span className={`font-black text-xs tracking-tight ${isInc ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                {isInc ? '+' : '-'} {formatRupiah(tRow.amount)}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => setShowModal({ type: 'transaction', editData: tRow })}
+                                  className="rounded-lg p-1 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
+                                  title={t('edit', lang)}
+                                >
+                                  <Edit3 className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    if (confirm(t('confirm_delete_tx', lang))) {
+                                      const fresh = await deleteTransaction(tRow.id)
+                                      handleSuccess(lang === 'en' ? 'Transaction deleted' : 'Transaksi dihapus', fresh)
+                                    }
+                                  }}
+                                  className="rounded-lg p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer"
+                                  title={t('delete', lang)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {/* Desktop / Tablet Table View (hidden sm:block) */}
+                    <div className="hidden sm:block overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
+                            <th className="pb-3 pl-2">{t('col_date', lang)}</th>
+                            <th className="pb-3">{t('col_desc', lang)}</th>
+                            <th className="pb-3">{t('col_category', lang)}</th>
+                            <th className="pb-3">{t('col_wallet', lang)}</th>
+                            <th className="pb-3 text-right">{t('col_amount', lang)}</th>
+                            <th className="pb-3 pr-2 text-right">{t('col_actions', lang)}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                          {paginatedTransactions.map((tRow) => {
+                            const cat = categoryMap.get(tRow.categoryId)
+                            const wal = walletMap.get(tRow.walletId)
+                            const isInc = tRow.type === 'income'
+                            return (
+                              <tr key={tRow.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                                <td className="py-3.5 pl-2 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                  <p className="font-semibold text-slate-800 dark:text-slate-200">{formatIndoDate(tRow.date, false, lang)}</p>
+                                  <p className="text-[10px] text-slate-400">
+                                    {new Date(tRow.date).toLocaleTimeString(lang === 'en' ? 'en-US' : 'id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                  </p>
+                                </td>
+                                <td className="py-3.5 font-bold text-slate-900 dark:text-white max-w-xs">{tRow.description}</td>
+                                <td className="py-3.5 whitespace-nowrap">
+                                  <span className="inline-flex items-center rounded-lg bg-slate-100 dark:bg-slate-800 px-2.5 py-1 font-semibold text-slate-700 dark:text-slate-300">
+                                    {cat?.name || t('col_category', lang)}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 text-slate-600 dark:text-slate-400 whitespace-nowrap">{wal?.name || t('col_wallet', lang)}</td>
+                                <td className="py-3.5 text-right whitespace-nowrap">
+                                  <span className={`font-black text-sm ${isInc ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                    {isInc ? '+' : '-'} {formatRupiah(tRow.amount)}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 pr-2 text-right whitespace-nowrap">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <button
+                                      onClick={() => setShowModal({ type: 'transaction', editData: tRow })}
+                                      className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200 transition"
+                                      title={t('edit', lang)}
+                                    >
+                                      <Edit3 className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={async () => {
+                                        if (confirm(t('confirm_delete_tx', lang))) {
+                                          const fresh = await deleteTransaction(tRow.id)
+                                          handleSuccess(lang === 'en' ? 'Transaction deleted' : 'Transaksi dihapus', fresh)
+                                        }
+                                      }}
+                                      className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400 transition"
+                                      title={t('delete', lang)}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination Bar */}
+                    <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-slate-100 dark:border-slate-800 pt-4">
+                      <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                        {lang === 'en' ? 'Showing' : 'Menampilkan'}{' '}
+                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                          {startIndex + 1}–{Math.min(endIndex, filteredTransactions.length)}
+                        </span>{' '}
+                        {lang === 'en' ? 'of' : 'dari'}{' '}
+                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                          {filteredTransactions.length}
+                        </span>{' '}
+                        {t('transactions_count', lang)}
+                        <span className="hidden sm:inline text-slate-400 ml-1.5">
+                          ({lang === 'en' ? `Page ${currentTxPage} of ${totalTxPages}` : `Halaman ${currentTxPage} dari ${totalTxPages}`})
+                        </span>
+                      </div>
+
+                      {totalTxPages > 1 && (
+                        <div className="flex items-center gap-1.5 self-center sm:self-auto">
+                          {/* Previous Button */}
+                          <button
+                            onClick={() => setTxPage((p) => Math.max(1, p - 1))}
+                            disabled={currentTxPage <= 1}
+                            className="flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm"
+                            aria-label={lang === 'en' ? 'Previous page' : 'Halaman sebelumnya'}
+                          >
+                            <ChevronLeft className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">{lang === 'en' ? 'Prev' : 'Sebelumnya'}</span>
+                          </button>
+
+                          {/* Page Number Buttons */}
+                          <div className="flex items-center gap-1">
+                            {getPaginationPages(currentTxPage, totalTxPages).map((p, idx) => {
+                              if (p === '...') {
+                                return (
+                                  <span key={`ellipsis-${idx}`} className="px-1.5 text-xs font-bold text-slate-400 select-none">
+                                    ...
+                                  </span>
+                                )
+                              }
+                              const isCurrent = p === currentTxPage
+                              return (
+                                <button
+                                  key={`page-${p}`}
+                                  onClick={() => setTxPage(p as number)}
+                                  className={`h-8 min-w-[32px] px-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center ${isCurrent
+                                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 ring-2 ring-emerald-600/20'
+                                    : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                                    }`}
+                                >
+                                  {p}
+                                </button>
+                              )
+                            })}
+                          </div>
+
+                          {/* Next Button */}
+                          <button
+                            onClick={() => setTxPage((p) => Math.min(totalTxPages, p + 1))}
+                            disabled={currentTxPage >= totalTxPages}
+                            className="flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm"
+                            aria-label={lang === 'en' ? 'Next page' : 'Halaman berikutnya'}
+                          >
+                            <span className="hidden sm:inline">{lang === 'en' ? 'Next' : 'Berikutnya'}</span>
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </>
                 ) : (
                   <div className="py-16 text-center">
                     <Receipt className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-700" />
-                    <p className="mt-3 font-bold text-slate-700 dark:text-slate-300">Tidak ada transaksi ditemukan</p>
-                    <p className="text-xs text-slate-400 mt-1">Coba ubah kata kunci pencarian atau filter Anda.</p>
+                    <p className="mt-3 font-bold text-slate-700 dark:text-slate-300">{t('no_tx_found', lang)}</p>
+                    <p className="text-xs text-slate-400 mt-1">{t('no_tx_found_sub', lang)}</p>
                   </div>
                 )}
               </div>
@@ -1282,333 +2581,666 @@ export default function Dashboard({
 
           {/* TAB: TARGET IMPIAN (FINANCIAL GOALS - TAHAP 2) */}
           {tab === 'Target Impian' && (
-            <div className="space-y-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Target Tabungan Impian</h2>
-                    <span className="rounded-xl bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                      Tahap 2
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Wujudkan impian masa depan Anda seperti Beli Rumah, Dana Darurat, Liburan, atau Kendaraan.
+            !isPro ? (
+              <div className="rounded-3xl border border-amber-200/80 dark:border-amber-900/60 bg-gradient-to-br from-amber-50/60 via-white to-amber-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/30 p-8 sm:p-12 text-center shadow-sm max-w-3xl mx-auto space-y-6">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                  <Lock className="h-8 w-8" />
+                </div>
+                <div className="space-y-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/80 px-3 py-1 text-xs font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                    <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                    FITUR EKSKLUSIF QWARTS FINANCE PRO
+                  </span>
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+                    Target Tabungan Impian (Financial Goals)
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
+                    Wujudkan target finansial Anda seperti membeli rumah, kendaraan, liburan, atau dana darurat dengan visual tracker progres otomatis, fitur setor tabungan 1-klik, dan estimasi tanggal tercapai.
                   </p>
                 </div>
-                <button
-                  onClick={() => setShowModal({ type: 'goal' })}
-                  className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Buat Target Baru</span>
-                </button>
-              </div>
 
-              {/* Goals Summary Stats */}
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                  <p className="text-xs text-slate-400 font-semibold">Total Nilai Target</p>
-                  <p className="text-xl font-black text-slate-900 dark:text-white mt-1">{formatRupiah(totalGoalTarget)}</p>
-                  <p className="text-[11px] text-slate-400 mt-2">{goalsList.length} Target aktif terdaftar</p>
+                <div className="grid gap-3 sm:grid-cols-2 text-left max-w-lg mx-auto pt-2">
+                  {[
+                    'Target Tabungan Tanpa Batas',
+                    'Indikator Visual Progres Persentase',
+                    'Setor Tabungan 1-Klik dari Saldo Dompet',
+                    'Perhitungan Estimasi Sisa Hari & Target Tercapai',
+                    'Integrasi Mutasi Transaksi Otomatis',
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
                 </div>
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                  <p className="text-xs text-slate-400 font-semibold">Total Terkumpul Saat Ini</p>
-                  <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{formatRupiah(totalGoalSaved)}</p>
-                  <p className="text-[11px] text-slate-400 mt-2">Sisa target: {formatRupiah(Math.max(0, totalGoalTarget - totalGoalSaved))}</p>
-                </div>
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                  <p className="text-xs text-slate-400 font-semibold">Rata-Rata Pencapaian</p>
-                  <p className="text-xl font-black text-teal-700 dark:text-teal-400 mt-1">{overallGoalPercentage}%</p>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 mt-2">
-                    <div className="h-full rounded-full bg-teal-500 transition-all" style={{ width: `${overallGoalPercentage}%` }} />
-                  </div>
-                </div>
-              </div>
 
-              {/* Goals Grid */}
-              {goalsList.length > 0 ? (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {goalsList.map((g) => {
-                    const pct = g.targetAmount > 0 ? Math.min(100, Math.round((g.currentAmount / g.targetAmount) * 100)) : 0
-                    const remaining = Math.max(0, g.targetAmount - g.currentAmount)
-                    const isDone = g.isAchieved || pct >= 100
-
-                    return (
-                      <div
-                        key={g.id}
-                        className={`rounded-3xl border bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between transition hover:shadow-md ${
-                          isDone ? 'border-emerald-300 dark:border-emerald-800 bg-gradient-to-b from-emerald-50/30 to-white dark:from-emerald-950/20 dark:to-slate-900' : 'border-slate-200/80 dark:border-slate-800'
-                        }`}
-                      >
-                        <div>
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-2.5">
-                              <div
-                                className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
-                                  isDone ? 'bg-emerald-500 text-white' : 'bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400'
-                                }`}
-                              >
-                                {isDone ? <Award className="h-5 w-5" /> : <Target className="h-5 w-5" />}
-                              </div>
-                              <div>
-                                <h3 className="font-bold text-base text-slate-900 dark:text-white">{g.name}</h3>
-                                {g.targetDate && (
-                                  <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
-                                    <Clock className="h-3 w-3" />
-                                    <span>Target: {new Date(g.targetDate).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}</span>
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => setShowModal({ type: 'goal', editData: g })}
-                                className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-                                title="Edit"
-                              >
-                                <Edit3 className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  if (confirm(`Hapus target "${g.name}"?`)) {
-                                    const fresh = await deleteGoal(g.id)
-                                    handleSuccess('Target impian dihapus', fresh)
-                                  }
-                                }}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                                title="Hapus"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="mt-5 space-y-2">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="font-semibold text-slate-500 dark:text-slate-400">Pencapaian:</span>
-                              <span className={`font-black text-sm ${isDone ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
-                                {pct}% {isDone && '🎉 Tercapai!'}
-                              </span>
-                            </div>
-
-                            <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                              <div
-                                className={`h-full rounded-full transition-all duration-700 ${
-                                  isDone ? 'bg-emerald-500' : 'bg-gradient-to-r from-teal-500 to-emerald-500'
-                                }`}
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-
-                            <div className="flex items-center justify-between text-xs pt-1">
-                              <span className="font-bold text-slate-900 dark:text-white">{formatRupiah(g.currentAmount)}</span>
-                              <span className="text-slate-400">Target: {formatRupiah(g.targetAmount)}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
-                          <span className="text-[11px] text-slate-400">
-                            {isDone ? 'Impian telah tercapai!' : `Kurang: ${formatRupiah(remaining)}`}
-                          </span>
-
-                          {!isDone && (
-                            <button
-                              onClick={() => setShowModal({ type: 'goalDeposit', goal: g })}
-                              className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                              <span>+ Setor Tabungan</span>
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center">
-                  <Target className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />
-                  <p className="mt-3 font-bold text-slate-800 dark:text-slate-200 text-base">Belum ada target tabungan impian</p>
-                  <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                    Pasang target impian Anda (misal: Beli Mobil, Rumah, Dana Darurat, Liburan) untuk memotivasi menabung.
-                  </p>
+                <div className="pt-4">
                   <button
-                    onClick={() => setShowModal({ type: 'goal' })}
-                    className="mt-5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700"
+                    onClick={() => setShowUpgradeModal({
+                      featureName: 'Target Impian',
+                      description: 'Fitur Target Impian membantu Anda menabung untuk membeli rumah, kendaraan, atau dana darurat dengan indikator visual otomatis di Qwarts Finance PRO.'
+                    })}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 py-3.5 text-xs font-black text-white shadow-xl shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700 transition active:scale-95"
                   >
-                    + Buat Target Tabungan Sekarang
+                    <Sparkles className="h-4 w-4 text-amber-300" />
+                    <span>Buka Akses Target Impian (Upgrade PRO)</span>
                   </button>
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                        {t('goals_tab_title', lang)}
+                      </h2>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      {t('goals_tab_subtitle', lang)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowModal({ type: 'goal' })}
+                    className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>{t('create_goal', lang)}</span>
+                  </button>
+                </div>
+
+                {/* Goals Summary Stats */}
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+                    <p className="text-xs text-slate-400 font-semibold">{t('total_goal_target', lang)}</p>
+                    <p className="text-xl font-black text-slate-900 dark:text-white mt-1">{formatRupiah(totalGoalTarget)}</p>
+                    <p className="text-[11px] text-slate-400 mt-2">{goalsList.length} {t('active_goals_count', lang)}</p>
+                  </div>
+                  <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+                    <p className="text-xs text-slate-400 font-semibold">{t('total_goal_saved', lang)}</p>
+                    <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{formatRupiah(totalGoalSaved)}</p>
+                    <p className="text-[11px] text-slate-400 mt-2">{t('goal_remaining', lang)} {formatRupiah(Math.max(0, totalGoalTarget - totalGoalSaved))}</p>
+                  </div>
+                  <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+                    <p className="text-xs text-slate-400 font-semibold">{t('goal_average_progress', lang)}</p>
+                    <p className="text-xl font-black text-teal-700 dark:text-teal-400 mt-1">{overallGoalPercentage}%</p>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 mt-2">
+                      <div className="h-full rounded-full bg-teal-500 transition-all" style={{ width: `${overallGoalPercentage}%` }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Goals Grid */}
+                {goalsList.length > 0 ? (
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {goalsList.map((g) => {
+                      const pct = g.targetAmount > 0 ? Math.min(100, Math.round((g.currentAmount / g.targetAmount) * 100)) : 0
+                      const remaining = Math.max(0, g.targetAmount - g.currentAmount)
+                      const isDone = g.isAchieved || pct >= 100
+
+                      return (
+                        <div
+                          key={g.id}
+                          className={`rounded-3xl border bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between transition hover:shadow-md ${isDone ? 'border-emerald-300 dark:border-emerald-800 bg-gradient-to-b from-emerald-50/30 to-white dark:from-emerald-950/20 dark:to-slate-900' : 'border-slate-200/80 dark:border-slate-800'
+                            }`}
+                        >
+                          <div>
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center gap-2.5">
+                                <div
+                                  className={`flex h-10 w-10 items-center justify-center rounded-2xl ${isDone ? 'bg-emerald-500 text-white' : 'bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400'
+                                    }`}
+                                >
+                                  {isDone ? <Award className="h-5 w-5" /> : <Target className="h-5 w-5" />}
+                                </div>
+                                <div>
+                                  <h3 className="font-bold text-base text-slate-900 dark:text-white">{g.name}</h3>
+                                  {g.targetDate && (
+                                    <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                                      <Clock className="h-3 w-3" />
+                                      <span>Target: {new Date(g.targetDate).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { month: 'short', year: 'numeric' })}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setShowModal({ type: 'goal', editData: g })}
+                                  className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                                  title={t('edit', lang)}
+                                >
+                                  <Edit3 className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    if (confirm(t('confirm_delete_goal', lang))) {
+                                      const fresh = await deleteGoal(g.id)
+                                      handleSuccess(lang === 'en' ? 'Financial goal deleted' : 'Target impian dihapus', fresh)
+                                    }
+                                  }}
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                                  title={t('delete', lang)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="mt-5 space-y-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-semibold text-slate-500 dark:text-slate-400">{t('goal_progress', lang)}</span>
+                                <span className={`font-black text-sm ${isDone ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
+                                  {pct}% {isDone && `🎉 ${t('goal_achieved', lang)}`}
+                                </span>
+                              </div>
+
+                              <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-700 ${isDone ? 'bg-emerald-500' : 'bg-gradient-to-r from-teal-500 to-emerald-500'
+                                    }`}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+
+                              <div className="flex items-center justify-between text-xs pt-1">
+                                <span className="font-bold text-slate-900 dark:text-white">{formatRupiah(g.currentAmount)}</span>
+                                <span className="text-slate-400">Target: {formatRupiah(g.targetAmount)}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                            <span className="text-[11px] text-slate-400">
+                              {isDone ? t('goal_all_done', lang) : `${t('goal_remaining_short', lang)} ${formatRupiah(remaining)}`}
+                            </span>
+
+                            {!isDone && (
+                              <button
+                                onClick={() => setShowModal({ type: 'goalDeposit', goal: g })}
+                                className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                                <span>+ {t('deposit_savings', lang)}</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center">
+                    <Target className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />
+                    <p className="mt-3 font-bold text-slate-800 dark:text-slate-200 text-base">{t('goal_empty_title', lang)}</p>
+                    <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                      {t('goal_empty_desc', lang)}
+                    </p>
+                    <button
+                      onClick={() => setShowModal({ type: 'goal' })}
+                      className="mt-5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700"
+                    >
+                      {t('goal_empty_btn', lang)}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
           )}
 
           {/* TAB: TAGIHAN RUTIN & LANGGANAN (SUBSCRIPTIONS - TAHAP 2) */}
           {tab === 'Tagihan Rutin' && (
-            <div className="space-y-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Manajemen Tagihan & Langganan Rutin</h2>
-                    <span className="rounded-xl bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                      Tahap 2
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Pantau biaya berulang seperti Netflix, Spotify, BPJS, Listrik PLN, WiFi, dan cicilan bulanan.
+            !isPro ? (
+              <div className="rounded-3xl border border-amber-200/80 dark:border-amber-900/60 bg-gradient-to-br from-amber-50/60 via-white to-amber-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/30 p-8 sm:p-12 text-center shadow-sm max-w-3xl mx-auto space-y-6">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                  <Lock className="h-8 w-8" />
+                </div>
+                <div className="space-y-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/80 px-3 py-1 text-xs font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                    <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                    FITUR EKSKLUSIF QWARTS FINANCE PRO
+                  </span>
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+                    Manajemen Tagihan & Langganan Rutin
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
+                    Kelola seluruh pengeluaran berulang bulanan seperti langganan digital (Netflix, Spotify), utilitas rumah tangga (PLN, WiFi), asuransi BPJS, dan cicilan berkala dengan sistem peringatan jatuh tempo otomatis.
                   </p>
                 </div>
-                <button
-                  onClick={() => setShowModal({ type: 'subscription' })}
-                  className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Tambah Tagihan Baru</span>
-                </button>
-              </div>
 
-              {/* Subscriptions Metrics */}
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                  <p className="text-xs text-slate-400 font-semibold">Total Beban Tagihan Bulanan</p>
-                  <p className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1">{formatRupiah(totalMonthlyBills)}</p>
-                  <p className="text-[11px] text-slate-400 mt-2">{subsList.filter((s) => s.isActive).length} Langganan aktif</p>
+                <div className="grid gap-3 sm:grid-cols-2 text-left max-w-lg mx-auto pt-2">
+                  {[
+                    'Pengingat Jatuh Tempo Tagihan H-3 Otomatis',
+                    'Fitur Bayar Tagihan 1-Klik Otomatis Catat Transaksi',
+                    'Kalkulasi Total Beban Tagihan Bulanan Real-Time',
+                    'Daftar Langganan Aktif & Nonaktif Fleksibel',
+                    'Pilihan Pembayaran Berulang Per Bulan / Per Tahun',
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
                 </div>
 
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                  <p className="text-xs text-slate-400 font-semibold">Mendekati Jatuh Tempo (H-3)</p>
-                  <p className="text-xl font-black text-amber-500 mt-1">{dueSoonSubs.length} Tagihan</p>
-                  <p className="text-[11px] text-slate-400 mt-2">Periksa saldo sebelum dipotong</p>
-                </div>
-
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                  <p className="text-xs text-slate-400 font-semibold">Sinkronisasi Android Push Notif</p>
-                  <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
-                    <Zap className="h-4 w-4" /> Siap Terintegrasi API
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-2">Endpoint: /api/v1/subscriptions</p>
-                </div>
-              </div>
-
-              {/* Subscriptions List */}
-              {subsList.length > 0 ? (
-                <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
-                          <th className="pb-3 pl-2">Tanggal Jatuh Tempo</th>
-                          <th className="pb-3">Nama Layanan / Tagihan</th>
-                          <th className="pb-3">Siklus Pembayaran</th>
-                          <th className="pb-3">Status</th>
-                          <th className="pb-3 text-right">Biaya</th>
-                          <th className="pb-3 pr-2 text-right">Aksi & Bayar</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                        {subsList.map((s) => {
-                          const daysLeft = s.dueDate >= todayDate ? s.dueDate - todayDate : 30 - (todayDate - s.dueDate)
-                          const isDueSoon = s.isActive && daysLeft <= (s.reminderDaysBefore || 3)
-
-                          return (
-                            <tr key={s.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
-                              <td className="py-4 pl-2 whitespace-nowrap">
-                                <div className="flex items-center gap-2.5">
-                                  <div
-                                    className={`flex h-9 w-9 items-center justify-center rounded-xl font-black text-xs ${
-                                      isDueSoon
-                                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 ring-2 ring-rose-500/20'
-                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
-                                    }`}
-                                  >
-                                    {s.dueDate}
-                                  </div>
-                                  <div>
-                                    <p className="font-bold text-slate-800 dark:text-slate-200">Tgl {s.dueDate} tiap bulan</p>
-                                    <p className={`text-[10px] ${isDueSoon ? 'text-rose-500 font-bold' : 'text-slate-400'}`}>
-                                      {daysLeft === 0 ? 'Hari Ini Jatuh Tempo!' : `${daysLeft} hari lagi`}
-                                    </p>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="py-4 font-bold text-slate-900 dark:text-white text-sm">{s.name}</td>
-                              <td className="py-4 whitespace-nowrap">
-                                <span className="inline-block rounded-lg bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                                  {s.billingCycle === 'monthly' ? 'Bulanan' : s.billingCycle === 'yearly' ? 'Tahunan' : 'Mingguan'}
-                                </span>
-                              </td>
-                              <td className="py-4 whitespace-nowrap">
-                                <span
-                                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-                                    s.isActive
-                                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400'
-                                      : 'bg-slate-100 text-slate-500 dark:bg-slate-800'
-                                  }`}
-                                >
-                                  <span className={`h-1.5 w-1.5 rounded-full ${s.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-                                  {s.isActive ? 'Aktif' : 'Nonaktif'}
-                                </span>
-                              </td>
-                              <td className="py-4 text-right font-black text-slate-900 dark:text-white text-sm whitespace-nowrap">
-                                {formatRupiah(s.amount)}
-                              </td>
-                              <td className="py-4 pr-2 text-right whitespace-nowrap">
-                                <div className="flex items-center justify-end gap-2">
-                                  <button
-                                    onClick={() => setShowModal({ type: 'paySubscription', subscription: s })}
-                                    className="flex items-center gap-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 transition"
-                                    title="Catat Pembayaran Tagihan Ini"
-                                  >
-                                    <Zap className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                                    <span>Bayar</span>
-                                  </button>
-
-                                  <button
-                                    onClick={() => setShowModal({ type: 'subscription', editData: s })}
-                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200"
-                                    title="Edit"
-                                  >
-                                    <Edit3 className="h-3.5 w-3.5" />
-                                  </button>
-                                  <button
-                                    onClick={async () => {
-                                      if (confirm(`Hapus tagihan "${s.name}"?`)) {
-                                        const fresh = await deleteSubscription(s.id)
-                                        handleSuccess('Tagihan dihapus', fresh)
-                                      }
-                                    }}
-                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400"
-                                    title="Hapus"
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center">
-                  <CalendarDays className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />
-                  <p className="mt-3 font-bold text-slate-800 dark:text-slate-200 text-base">Belum ada tagihan atau langganan rutin</p>
-                  <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                    Catat langganan seperti Netflix, Spotify, WiFi, BPJS agar tidak terlewat dan selalu ingat tanggal jatuh tempo.
-                  </p>
+                <div className="pt-4">
                   <button
-                    onClick={() => setShowModal({ type: 'subscription' })}
-                    className="mt-5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700"
+                    onClick={() => setShowUpgradeModal({
+                      featureName: 'Tagihan Rutin',
+                      description: 'Fitur Tagihan Rutin memantau pengeluaran berulang bulanan seperti langganan, listrik, WiFi, dan cicilan dengan pengingat jatuh tempo otomatis di Qwarts Finance PRO.'
+                    })}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 py-3.5 text-xs font-black text-white shadow-xl shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700 transition active:scale-95"
                   >
-                    + Tambah Tagihan Baru
+                    <Sparkles className="h-4 w-4 text-amber-300" />
+                    <span>Buka Akses Tagihan Rutin (Upgrade PRO)</span>
                   </button>
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                        {t('bills_tab_title', lang)}
+                      </h2>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      {t('bills_tab_subtitle', lang)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowModal({ type: 'subscription' })}
+                    className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>{t('add_bill', lang)}</span>
+                  </button>
+                </div>
+
+                {/* Subscriptions Metrics */}
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+                    <p className="text-xs text-slate-400 font-semibold">{t('total_monthly_bills', lang)}</p>
+                    <p className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1">{formatRupiah(totalMonthlyBills)}</p>
+                    <p className="text-[11px] text-slate-400 mt-2">
+                      {lang === 'en' ? 'Paid: ' : 'Terbayar: '}
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatRupiah(totalMonthlyPaid)}</span>
+                    </p>
+                  </div>
+
+                  <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-slate-400 font-semibold">{t('sub_progress_title', lang)}</p>
+                      <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
+                        {activeSubs.length > 0 ? Math.round((paidSubsThisMonth.length / activeSubs.length) * 100) : 0}%
+                      </span>
+                    </div>
+                    <p className="text-xl font-black text-slate-900 dark:text-white mt-1">
+                      {paidSubsThisMonth.length} / {activeSubs.length} <span className="text-xs font-semibold text-slate-400">{t('sub_progress_desc', lang)}</span>
+                    </p>
+                    <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden mt-2.5">
+                      <div
+                        className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                        style={{ width: `${activeSubs.length > 0 ? Math.min(100, Math.round((paidSubsThisMonth.length / activeSubs.length) * 100)) : 0}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+                    <p className="text-xs text-slate-400 font-semibold">{t('due_soon_alert', lang)}</p>
+                    {overdueSubs.length > 0 ? (
+                      <>
+                        <div className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1 flex items-center gap-1.5">
+                          <AlertCircle className="h-5 w-5" /> {overdueSubs.length} {lang === 'en' ? 'Overdue' : 'Lewat Tempo'}
+                        </div>
+                        <p className="text-[11px] text-rose-500 dark:text-rose-400 font-medium mt-2">
+                          {lang === 'en' ? 'Immediate payment required' : 'Perlu segera dilunasi'}
+                        </p>
+                      </>
+                    ) : dueSoonSubs.length > 0 ? (
+                      <>
+                        <p className="text-xl font-black text-amber-500 mt-1">
+                          {dueSoonSubs.length} {lang === 'en' ? 'Bills Due Soon' : 'Tagihan'}
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-2">{t('due_soon_sub', lang)}</p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
+                          <CheckCircle2 className="h-5 w-5" /> {lang === 'en' ? 'All Clear' : 'Semua Aman'}
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-2">
+                          {lang === 'en' ? 'No urgent bills pending' : 'Tidak ada tagihan mendesak'}
+                        </p>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+                    <p className="text-xs text-slate-400 font-semibold">{t('api_sync_title', lang)}</p>
+                    <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
+                      <Zap className="h-4 w-4" /> {t('api_sync_desc', lang)}
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-2">Endpoint: /api/v1/subscriptions</p>
+                  </div>
+                </div>
+
+                {/* Subscriptions List */}
+                {subsList.length > 0 ? (
+                  <div>
+                    {/* Mobile Card List (sm:hidden) */}
+                    <div className="space-y-3 sm:hidden">
+                      {subsList.map((s) => {
+                        const isPaid = isSubPaidThisMonth(s)
+                        const daysLeft = s.dueDate >= todayDate ? s.dueDate - todayDate : 30 - (todayDate - s.dueDate)
+                        const isDueSoon = s.isActive && !isPaid && daysLeft <= (s.reminderDaysBefore || 3)
+                        const isOverdue = s.isActive && !isPaid && todayDate > s.dueDate
+
+                        return (
+                          <div
+                            key={s.id}
+                            className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-2.5">
+                                <div
+                                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-black text-xs ${isPaid
+                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400'
+                                    : isOverdue
+                                      ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 ring-2 ring-rose-500/30'
+                                      : isDueSoon
+                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400 ring-2 ring-amber-500/30'
+                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
+                                    }`}
+                                >
+                                  {s.dueDate}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-slate-900 dark:text-white text-sm leading-tight">{s.name}</p>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span className="text-[10px] text-slate-400">
+                                      {lang === 'en' ? `${s.dueDate}th each month` : `Tgl ${s.dueDate} tiap bulan`}
+                                    </span>
+                                    <span className="text-slate-300 dark:text-slate-700">•</span>
+                                    <span className="text-[10px] text-slate-400">
+                                      {s.billingCycle === 'monthly' ? t('sub_cycle_monthly', lang) : s.billingCycle === 'yearly' ? t('sub_cycle_yearly', lang) : t('sub_cycle_weekly', lang)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              <p className="font-black text-slate-900 dark:text-white text-sm shrink-0">
+                                {formatRupiah(s.amount)}
+                              </p>
+                            </div>
+
+                            {/* Status badge & action buttons row */}
+                            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
+                              <div>
+                                {isPaid ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
+                                    <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                                    <span>{t('sub_status_paid', lang)}</span>
+                                  </span>
+                                ) : isOverdue ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60">
+                                    <AlertCircle className="h-3 w-3 text-rose-600 dark:text-rose-400" />
+                                    <span>{lang === 'en' ? `Overdue ${todayDate - s.dueDate}d` : `Lewat ${todayDate - s.dueDate}hr`}</span>
+                                  </span>
+                                ) : isDueSoon ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400 border border-amber-200 dark:border-amber-900/60">
+                                    <Clock className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                                    <span>{daysLeft === 0 ? t('sub_due_today', lang) : `${daysLeft} ${t('days_left', lang)}`}</span>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                                    <span>{daysLeft} {t('days_left', lang)}</span>
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-1.5">
+                                {isPaid ? (
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => setShowModal({ type: 'paySubscription', subscription: s })}
+                                      className="rounded-lg p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition"
+                                      title={lang === 'en' ? 'Record another payment' : 'Catat pembayaran lagi'}
+                                    >
+                                      <Zap className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={async () => {
+                                        if (confirm(t('sub_mark_unpaid_confirm', lang))) {
+                                          const fresh = await resetSubscriptionPayment(s.id)
+                                          handleSuccess(lang === 'en' ? 'Payment status reset' : 'Status pembayaran direset', fresh)
+                                        }
+                                      }}
+                                      className="rounded-lg p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition"
+                                      title={t('sub_mark_unpaid', lang)}
+                                    >
+                                      <RotateCcw className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => setShowModal({ type: 'paySubscription', subscription: s })}
+                                    className="flex items-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs px-2.5 py-1 text-[11px] font-bold transition cursor-pointer"
+                                  >
+                                    <Zap className="h-3 w-3 text-white" />
+                                    <span>{t('pay_bill', lang)}</span>
+                                  </button>
+                                )}
+
+                                <button
+                                  onClick={() => setShowModal({ type: 'subscription', editData: s })}
+                                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
+                                  title={t('edit', lang)}
+                                >
+                                  <Edit3 className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    if (confirm(t('confirm_delete_sub', lang))) {
+                                      const fresh = await deleteSubscription(s.id)
+                                      handleSuccess(lang === 'en' ? 'Recurring bill deleted' : 'Tagihan dihapus', fresh)
+                                    }
+                                  }}
+                                  className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer"
+                                  title={t('delete', lang)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {/* Desktop Table View (hidden sm:block) */}
+                    <div className="hidden sm:block rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
+                              <th className="pb-3 pl-2">{t('sub_col_date', lang)}</th>
+                              <th className="pb-3">{t('sub_col_name', lang)}</th>
+                              <th className="pb-3">{t('sub_col_cycle', lang)}</th>
+                              <th className="pb-3">{t('sub_col_payment_status', lang)}</th>
+                              <th className="pb-3 text-right">{t('sub_col_cost', lang)}</th>
+                              <th className="pb-3 pr-2 text-right">{t('sub_col_action', lang)}</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                            {subsList.map((s) => {
+                              const isPaid = isSubPaidThisMonth(s)
+                              const daysLeft = s.dueDate >= todayDate ? s.dueDate - todayDate : 30 - (todayDate - s.dueDate)
+                              const isDueSoon = s.isActive && !isPaid && daysLeft <= (s.reminderDaysBefore || 3)
+                              const isOverdue = s.isActive && !isPaid && todayDate > s.dueDate
+
+                              return (
+                                <tr key={s.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                                  <td className="py-4 pl-2 whitespace-nowrap">
+                                    <div className="flex items-center gap-2.5">
+                                      <div
+                                        className={`flex h-9 w-9 items-center justify-center rounded-xl font-black text-xs ${isPaid
+                                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-400'
+                                          : isOverdue
+                                            ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 ring-2 ring-rose-500/30'
+                                            : isDueSoon
+                                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400 ring-2 ring-amber-500/30'
+                                              : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200'
+                                          }`}
+                                      >
+                                        {s.dueDate}
+                                      </div>
+                                      <div>
+                                        <p className="font-bold text-slate-800 dark:text-slate-200">{lang === 'en' ? `${s.dueDate}th each month` : `Tgl ${s.dueDate} tiap bulan`}</p>
+                                        <p className={`text-[10px] ${isPaid
+                                          ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                                          : isOverdue
+                                            ? 'text-rose-500 font-bold'
+                                            : isDueSoon
+                                              ? 'text-amber-600 dark:text-amber-400 font-bold'
+                                              : 'text-slate-400'
+                                          }`}>
+                                          {isPaid
+                                            ? (s.lastPaidAt ? `${t('sub_paid_on', lang)} ${new Date(s.lastPaidAt).toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short' })}` : t('sub_status_paid', lang))
+                                            : daysLeft === 0
+                                              ? t('sub_due_today', lang)
+                                              : isOverdue
+                                                ? (lang === 'en' ? `Overdue by ${todayDate - s.dueDate} days` : `Lewat ${todayDate - s.dueDate} hari`)
+                                                : `${daysLeft} ${t('days_left', lang)}`}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-4">
+                                    <p className="font-bold text-slate-900 dark:text-white text-sm">{s.name}</p>
+                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                      <span className={`h-1.5 w-1.5 rounded-full ${s.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                                      <span className="text-[11px] font-medium text-slate-400">
+                                        {s.isActive ? t('sub_status_active', lang) : t('sub_status_inactive', lang)}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="py-4 whitespace-nowrap">
+                                    <span className="inline-block rounded-lg bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                                      {s.billingCycle === 'monthly' ? t('sub_cycle_monthly', lang) : s.billingCycle === 'yearly' ? t('sub_cycle_yearly', lang) : t('sub_cycle_weekly', lang)}
+                                    </span>
+                                  </td>
+                                  <td className="py-4 whitespace-nowrap">
+                                    {isPaid ? (
+                                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
+                                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                                        <span>{t('sub_status_paid', lang)}</span>
+                                      </span>
+                                    ) : isOverdue ? (
+                                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60">
+                                        <AlertCircle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+                                        <span>{t('sub_status_overdue', lang)}</span>
+                                      </span>
+                                    ) : isDueSoon ? (
+                                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400 border border-amber-200 dark:border-amber-900/60">
+                                        <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                                        <span>{t('sub_status_due_soon', lang)}</span>
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                                        <span>{t('sub_status_unpaid', lang)}</span>
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="py-4 text-right font-black text-slate-900 dark:text-white text-sm whitespace-nowrap">
+                                    {formatRupiah(s.amount)}
+                                  </td>
+                                  <td className="py-4 pr-2 text-right whitespace-nowrap">
+                                    <div className="flex items-center justify-end gap-1.5">
+                                      {isPaid ? (
+                                        <div className="flex items-center gap-1">
+                                          <span className="inline-flex items-center gap-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                                            <Check className="h-3.5 w-3.5" />
+                                            <span>{t('sub_paid_badge', lang)}</span>
+                                          </span>
+                                          <button
+                                            onClick={() => setShowModal({ type: 'paySubscription', subscription: s })}
+                                            className="rounded-lg p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition"
+                                            title={lang === 'en' ? 'Record another payment' : 'Catat pembayaran lagi'}
+                                          >
+                                            <Zap className="h-3.5 w-3.5" />
+                                          </button>
+                                          <button
+                                            onClick={async () => {
+                                              if (confirm(t('sub_mark_unpaid_confirm', lang))) {
+                                                const fresh = await resetSubscriptionPayment(s.id)
+                                                handleSuccess(lang === 'en' ? 'Payment status reset' : 'Status pembayaran direset', fresh)
+                                              }
+                                            }}
+                                            className="rounded-lg p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition"
+                                            title={t('sub_mark_unpaid', lang)}
+                                          >
+                                            <RotateCcw className="h-3.5 w-3.5" />
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <button
+                                          onClick={() => setShowModal({ type: 'paySubscription', subscription: s })}
+                                          className="flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow px-3 py-1.5 text-xs font-bold transition"
+                                          title={lang === 'en' ? 'Record Payment' : 'Catat Pembayaran Tagihan Ini'}
+                                        >
+                                          <Zap className="h-3.5 w-3.5 text-white" />
+                                          <span>{t('pay_bill', lang)}</span>
+                                        </button>
+                                      )}
+
+                                      <button
+                                        onClick={() => setShowModal({ type: 'subscription', editData: s })}
+                                        className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200"
+                                        title={t('edit', lang)}
+                                      >
+                                        <Edit3 className="h-3.5 w-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={async () => {
+                                          if (confirm(t('confirm_delete_sub', lang))) {
+                                            const fresh = await deleteSubscription(s.id)
+                                            handleSuccess(lang === 'en' ? 'Recurring bill deleted' : 'Tagihan dihapus', fresh)
+                                          }
+                                        }}
+                                        className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400"
+                                        title={t('delete', lang)}
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center">
+                    <CalendarDays className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />
+                    <p className="mt-3 font-bold text-slate-800 dark:text-slate-200 text-base">{t('sub_empty_title', lang)}</p>
+                    <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                      {t('sub_empty_desc', lang)}
+                    </p>
+                    <button
+                      onClick={() => setShowModal({ type: 'subscription' })}
+                      className="mt-5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700"
+                    >
+                      {t('sub_empty_btn', lang)}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
           )}
 
           {/* TAB 3: DOMPET & AKUN */}
@@ -1616,214 +3248,308 @@ export default function Dashboard({
             <div className="space-y-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Kelola Dompet & Rekening</h2>
+                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                    {t('wallets_title', lang)}
+                  </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Atur rekening bank, e-wallet, uang tunai, dan lakukan transfer antar saldo.
+                    {t('wallets_subtitle', lang)}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button
-                    onClick={() => setShowModal({ type: 'transfer' })}
+                    onClick={() => {
+                      if (data.wallets.length < 2) {
+                        alert(lang === 'en' ? 'You need at least 2 wallets to transfer balance between accounts.' : 'Anda membutuhkan minimal 2 dompet untuk melakukan transfer saldo.')
+                        return
+                      }
+                      setShowModal({ type: 'transfer' })
+                    }}
                     className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                   >
                     <ArrowLeftRight className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>Transfer Antar Dompet</span>
+                    <span>{t('transfer_between_wallets', lang)}</span>
                   </button>
                   <button
-                    onClick={() => setShowModal({ type: 'wallet' })}
+                    onClick={() => {
+                      if (!isPro && data.wallets.length >= 2) {
+                        setShowUpgradeModal({
+                          featureName: lang === 'en' ? 'Unlimited Wallets (> 2 Accounts)' : 'Multi-Dompet (> 2 Rekening)',
+                          description: lang === 'en'
+                            ? 'Free plan is limited to 2 wallets. Upgrade to PRO to add unlimited bank accounts, e-wallets, and cash registers.'
+                            : 'Paket Free dibatasi maksimal 2 dompet. Upgrade ke PRO untuk mengelola rekening bank, e-wallet, dan dompet tanpa batas.'
+                        })
+                        return
+                      }
+                      setShowModal({ type: 'wallet' })
+                    }}
                     className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
                   >
                     <Plus className="h-4 w-4" />
-                    <span>Tambah Dompet Baru</span>
+                    <span>{t('add_wallet', lang)}</span>
+                    {!isPro && data.wallets.length >= 2 && <span className="rounded bg-amber-500/20 text-amber-200 text-[10px] px-1.5 py-0.5 font-black">PRO 🔒</span>}
                   </button>
                 </div>
               </div>
 
               {/* Wallets Cards List */}
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {calculatedWallets.map((w) => (
-                  <div
-                    key={w.id}
-                    className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between">
-                        <span className="rounded-xl bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-400">
-                          {w.type}
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => setShowModal({ type: 'wallet', editData: w })}
-                            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200"
-                            title="Edit Dompet"
-                          >
-                            <Edit3 className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={async () => {
-                              if (confirm(`Hapus dompet "${w.name}"?`)) {
-                                const fresh = await deleteWallet(w.id)
-                                handleSuccess('Dompet dihapus', fresh)
-                              }
-                            }}
-                            className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400"
-                            title="Hapus Dompet"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+              {calculatedWallets.length > 0 ? (
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {calculatedWallets.map((w) => (
+                    <div
+                      key={w.id}
+                      className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-start justify-between">
+                          <span className="rounded-xl bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                            {w.type}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => setShowModal({ type: 'wallet', editData: w })}
+                              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200"
+                              title={lang === 'en' ? 'Edit Wallet' : 'Edit Dompet'}
+                            >
+                              <Edit3 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (confirm(lang === 'en' ? `Delete wallet "${w.name}"?` : `Hapus dompet "${w.name}"?`)) {
+                                  const fresh = await deleteWallet(w.id)
+                                  handleSuccess(lang === 'en' ? 'Wallet deleted' : 'Dompet dihapus', fresh)
+                                }
+                              }}
+                              className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400"
+                              title={lang === 'en' ? 'Delete Wallet' : 'Hapus Dompet'}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
+
+                        <h3 className="mt-4 text-lg font-bold text-slate-900 dark:text-white">{w.name}</h3>
+                        <p className="mt-2 text-2xl font-black text-slate-900 dark:text-white">{formatRupiah(w.currentBalance)}</p>
                       </div>
 
-                      <h3 className="mt-4 text-lg font-bold text-slate-900 dark:text-white">{w.name}</h3>
-                      <p className="mt-2 text-2xl font-black text-slate-900 dark:text-white">{formatRupiah(w.currentBalance)}</p>
-                    </div>
-
-                    <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-1.5 text-xs text-slate-500 dark:text-slate-400">
-                      <div className="flex justify-between">
-                        <span>Pemasukan Masuk:</span>
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400">+{formatRupiah(w.totalIncome)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Pengeluaran Keluar:</span>
-                        <span className="font-bold text-rose-600 dark:text-rose-400">-{formatRupiah(w.totalExpense)}</span>
-                      </div>
-                      {w.balance > 0 && (
-                        <div className="flex justify-between text-[11px] text-slate-400">
-                          <span>Saldo Awal:</span>
-                          <span>{formatRupiah(w.balance)}</span>
+                      <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-1.5 text-xs text-slate-500 dark:text-slate-400">
+                        <div className="flex justify-between">
+                          <span>{t('wallet_income_in', lang)}</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">+{formatRupiah(w.totalIncome)}</span>
                         </div>
-                      )}
+                        <div className="flex justify-between">
+                          <span>{t('wallet_expense_out', lang)}</span>
+                          <span className="font-bold text-rose-600 dark:text-rose-400">-{formatRupiah(w.totalExpense)}</span>
+                        </div>
+                        {w.balance > 0 && (
+                          <div className="flex justify-between text-[11px] text-slate-400">
+                            <span>{t('initial_balance', lang)}:</span>
+                            <span>{formatRupiah(w.balance)}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 p-12 text-center space-y-4">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+                    <WalletCards className="h-7 w-7" />
                   </div>
-                ))}
-              </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                      {lang === 'en' ? 'No Wallets Yet' : 'Belum Ada Dompet / Rekening'}
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                      {lang === 'en'
+                        ? 'Start by creating your first cash wallet or bank account (max 2 on Free plan).'
+                        : 'Mulai dengan menambahkan dompet tunai atau rekening bank pertama Anda (maksimal 2 pada paket Free).'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowModal({ type: 'wallet' })}
+                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>{t('add_wallet', lang)}</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
           {/* TAB 4: BUDGET BULANAN */}
           {tab === 'Budget' && (
-            <div className="space-y-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Budgeting & Batas Belanja</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Alokasikan batas pengeluaran per kategori agar keuangan Anda selalu terkontrol.
+            !isPro ? (
+              <div className="rounded-3xl border border-amber-200/80 dark:border-amber-900/60 bg-gradient-to-br from-amber-50/60 via-white to-amber-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/30 p-8 sm:p-12 text-center shadow-sm max-w-3xl mx-auto space-y-6">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                  <Lock className="h-8 w-8" />
+                </div>
+                <div className="space-y-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/80 px-3 py-1 text-xs font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                    <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                    {t('pro_exclusive', lang)}
+                  </span>
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+                    {t('budget_tab_title', lang)}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
+                    {t('budget_tab_subtitle', lang)}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-52">
-                    <DatePickerInput
-                      type="month"
-                      value={selectedMonth}
-                      onChange={setSelectedMonth}
-                    />
-                  </div>
 
+                <div className="grid gap-3 sm:grid-cols-2 text-left max-w-lg mx-auto pt-2">
+                  {[
+                    lang === 'en' ? 'Unlimited Category Spending Caps' : 'Batas Anggaran Per Kategori Tanpa Batas',
+                    lang === 'en' ? 'Real-Time Budget Tracking Visuals' : 'Visual Tracking Realisasi Budget Real-Time',
+                    lang === 'en' ? 'Automatic Warning When Approaching / Over Budget' : 'Peringatan Otomatis Saat Budget Mendekati / Melebihi Batas',
+                    lang === 'en' ? 'Historical Budget Usage Across Months' : 'Histori Pemakaian Budget Antar Bulan',
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-4">
                   <button
-                    onClick={() => setShowModal({ type: 'budget' })}
-                    className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
+                    onClick={() => setShowUpgradeModal({
+                      featureName: lang === 'en' ? 'Monthly Budget' : 'Budget Bulanan',
+                      description: lang === 'en'
+                        ? 'Control spending with category monthly limits and automatic overbudget alerts in Qwarts Finance PRO.'
+                        : 'Kendalikan pengeluaran dengan batas anggaran bulanan per kategori dan notifikasi over-budget otomatis di Qwarts Finance PRO.'
+                    })}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 py-3.5 text-xs font-black text-white shadow-xl shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700 transition active:scale-95"
                   >
-                    <Plus className="h-4 w-4" />
-                    <span>Set Budget Kategori</span>
+                    <Sparkles className="h-4 w-4 text-amber-300" />
+                    <span>{lang === 'en' ? 'Unlock Monthly Budget (Upgrade PRO)' : 'Buka Akses Budget Bulanan (Upgrade PRO)'}</span>
                   </button>
                 </div>
               </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                      {t('budget_tab_title', lang)}
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {t('budget_tab_subtitle', lang)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-52">
+                      <DatePickerInput
+                        type="month"
+                        value={selectedMonth}
+                        onChange={setSelectedMonth}
+                        lang={lang}
+                      />
+                    </div>
 
-              {/* Budgets Grid */}
-              {monthlyBudgets.length > 0 ? (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {monthlyBudgets.map((b) => {
-                    const isOver = b.percentage > 100
-                    const isWarning = b.percentage >= 80 && !isOver
-                    return (
-                      <div
-                        key={b.id}
-                        className={`rounded-3xl border p-6 bg-white dark:bg-slate-900 shadow-sm flex flex-col justify-between ${
-                          isOver ? 'border-rose-200 dark:border-rose-900/60' : isWarning ? 'border-amber-200 dark:border-amber-900/60' : 'border-slate-200/80 dark:border-slate-800'
-                        }`}
-                      >
-                        <div>
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <span
-                                className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${
-                                  isOver
+                    <button
+                      onClick={() => setShowModal({ type: 'budget' })}
+                      className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>{t('set_budget', lang)}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Budgets Grid */}
+                {monthlyBudgets.length > 0 ? (
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {monthlyBudgets.map((b) => {
+                      const isOver = b.percentage > 100
+                      const isWarning = b.percentage >= 80 && !isOver
+                      return (
+                        <div
+                          key={b.id}
+                          className={`rounded-3xl border p-6 bg-white dark:bg-slate-900 shadow-sm flex flex-col justify-between ${isOver ? 'border-rose-200 dark:border-rose-900/60' : isWarning ? 'border-amber-200 dark:border-amber-900/60' : 'border-slate-200/80 dark:border-slate-800'
+                            }`}
+                        >
+                          <div>
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <span
+                                  className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${isOver
                                     ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
                                     : isWarning
-                                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
-                                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                                }`}
-                              >
-                                {isOver ? 'Overbudget' : isWarning ? 'Waspada' : 'Aman'} ({b.percentage}%)
-                              </span>
-                              <h3 className="mt-3 text-lg font-bold text-slate-900 dark:text-white">{b.categoryName}</h3>
+                                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                                      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                    }`}
+                                >
+                                  {isOver ? t('budget_overbudget', lang) : isWarning ? t('budget_warning', lang) : t('budget_safe', lang)} ({b.percentage}%)
+                                </span>
+                                <h3 className="mt-3 text-lg font-bold text-slate-900 dark:text-white">{b.categoryName}</h3>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setShowModal({ type: 'budget', editData: b })}
+                                  className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                                  title={t('edit', lang)}
+                                >
+                                  <Edit3 className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    if (confirm(t('confirm_delete_budget', lang))) {
+                                      const fresh = await deleteBudget(b.id)
+                                      handleSuccess(lang === 'en' ? 'Budget deleted' : 'Budget dihapus', fresh)
+                                    }
+                                  }}
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                                  title={t('delete', lang)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => setShowModal({ type: 'budget', editData: b })}
-                                className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-                                title="Edit"
-                              >
-                                <Edit3 className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  if (confirm('Hapus budget ini?')) {
-                                    const fresh = await deleteBudget(b.id)
-                                    handleSuccess('Budget dihapus', fresh)
-                                  }
-                                }}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                                title="Hapus"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
+
+                            <div className="mt-4">
+                              <div className="flex justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                <span>{t('budget_spent', lang)} {formatRupiah(b.spent)}</span>
+                                <span>{t('budget_limit', lang)} {formatRupiah(b.amount)}</span>
+                              </div>
+
+                              <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${isOver ? 'bg-rose-500' : isWarning ? 'bg-amber-500' : 'bg-emerald-500'
+                                    }`}
+                                  style={{ width: `${Math.min(100, b.percentage)}%` }}
+                                />
+                              </div>
                             </div>
                           </div>
 
-                          <div className="mt-4">
-                            <div className="flex justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-                              <span>Terpakai: {formatRupiah(b.spent)}</span>
-                              <span>Limit: {formatRupiah(b.amount)}</span>
-                            </div>
-
-                            <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                              <div
-                                className={`h-full rounded-full transition-all duration-500 ${
-                                  isOver ? 'bg-rose-500' : isWarning ? 'bg-amber-500' : 'bg-emerald-500'
-                                }`}
-                                style={{ width: `${Math.min(100, b.percentage)}%` }}
-                              />
-                            </div>
+                          <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                            <span className="text-slate-400">{t('budget_remaining', lang)}</span>
+                            <span className={`font-black ${isOver ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}`}>
+                              {b.remaining >= 0 ? formatRupiah(b.remaining) : `- ${formatRupiah(Math.abs(b.remaining))}`}
+                            </span>
                           </div>
                         </div>
-
-                        <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                          <span className="text-slate-400">Sisa Kuota:</span>
-                          <span className={`font-black ${isOver ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}`}>
-                            {b.remaining >= 0 ? formatRupiah(b.remaining) : `- ${formatRupiah(Math.abs(b.remaining))}`}
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center">
-                  <PiggyBank className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />
-                  <p className="mt-3 font-bold text-slate-800 dark:text-slate-200 text-base">Belum ada budget untuk bulan ini</p>
-                  <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                    Buat budget untuk membatasi belanja makanan, tagihan, atau kebutuhan bulanan Anda.
-                  </p>
-                  <button
-                    onClick={() => setShowModal({ type: 'budget' })}
-                    className="mt-5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700"
-                  >
-                    + Buat Budget Sekarang
-                  </button>
-                </div>
-              )}
-            </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center">
+                    <PiggyBank className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />
+                    <p className="mt-3 font-bold text-slate-800 dark:text-slate-200 text-base">{t('budget_empty', lang)}</p>
+                    <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                      {t('budget_empty_sub', lang)}
+                    </p>
+                    <button
+                      onClick={() => setShowModal({ type: 'budget' })}
+                      className="mt-5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700"
+                    >
+                      {t('create_budget_now', lang)}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
           )}
 
           {/* TAB 5: KATEGORI */}
@@ -1831,9 +3557,11 @@ export default function Dashboard({
             <div className="space-y-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Kelola Kategori Transaksi</h2>
+                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                    {t('categories_tab_title', lang)}
+                  </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Kustomisasi kategori pemasukan dan pengeluaran sesuai preferensi pribadi Anda.
+                    {t('categories_tab_subtitle', lang)}
                   </p>
                 </div>
                 <button
@@ -1841,7 +3569,7 @@ export default function Dashboard({
                   className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
                 >
                   <Plus className="h-4 w-4" />
-                  <span>Tambah Kategori</span>
+                  <span>{t('add_category', lang)}</span>
                 </button>
               </div>
 
@@ -1849,88 +3577,100 @@ export default function Dashboard({
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-4">
                   <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
                     <span className="h-3 w-3 rounded-full bg-rose-500" />
-                    <span>Kategori Pengeluaran</span>
+                    <span>{t('cat_expense', lang)}</span>
                   </h3>
 
                   <div className="space-y-2">
-                    {data.categories
-                      .filter((c) => c.type === 'expense')
-                      .map((c) => (
-                        <div
-                          key={c.id}
-                          className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Tag className="h-4 w-4 text-slate-400" />
-                            <span className="font-bold text-xs text-slate-800 dark:text-slate-200">{c.name}</span>
+                    {data.categories.filter((c) => c.type === 'expense').length > 0 ? (
+                      data.categories
+                        .filter((c) => c.type === 'expense')
+                        .map((c) => (
+                          <div
+                            key={c.id}
+                            className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Tag className="h-4 w-4 text-slate-400" />
+                              <span className="font-bold text-xs text-slate-800 dark:text-slate-200">{c.name}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setShowModal({ type: 'category', editData: c })}
+                                className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-white dark:hover:bg-slate-700"
+                                title={t('edit', lang)}
+                              >
+                                <Edit3 className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (confirm(lang === 'en' ? `Delete category "${c.name}"?` : `Hapus kategori "${c.name}"?`)) {
+                                    const fresh = await deleteCategory(c.id)
+                                    handleSuccess(lang === 'en' ? 'Category deleted' : 'Kategori dihapus', fresh)
+                                  }
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-white dark:hover:bg-slate-700"
+                                title={t('delete', lang)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => setShowModal({ type: 'category', editData: c })}
-                              className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-white dark:hover:bg-slate-700"
-                              title="Edit"
-                            >
-                              <Edit3 className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              onClick={async () => {
-                                if (confirm(`Hapus kategori "${c.name}"?`)) {
-                                  const fresh = await deleteCategory(c.id)
-                                  handleSuccess('Kategori dihapus', fresh)
-                                }
-                              }}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-white dark:hover:bg-slate-700"
-                              title="Hapus"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                        ))
+                    ) : (
+                      <div className="py-8 text-center text-xs text-slate-400">
+                        {lang === 'en' ? 'No expense categories yet. Click "+ Add Category" to create one.' : 'Belum ada kategori pengeluaran. Klik "+ Tambah Kategori" untuk membuat.'}
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm space-y-4">
                   <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
                     <span className="h-3 w-3 rounded-full bg-emerald-500" />
-                    <span>Kategori Pemasukan</span>
+                    <span>{t('cat_income', lang)}</span>
                   </h3>
 
                   <div className="space-y-2">
-                    {data.categories
-                      .filter((c) => c.type === 'income')
-                      .map((c) => (
-                        <div
-                          key={c.id}
-                          className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Tag className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                            <span className="font-bold text-xs text-slate-800 dark:text-slate-200">{c.name}</span>
+                    {data.categories.filter((c) => c.type === 'income').length > 0 ? (
+                      data.categories
+                        .filter((c) => c.type === 'income')
+                        .map((c) => (
+                          <div
+                            key={c.id}
+                            className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Tag className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                              <span className="font-bold text-xs text-slate-800 dark:text-slate-200">{c.name}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setShowModal({ type: 'category', editData: c })}
+                                className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-white dark:hover:bg-slate-700"
+                                title={t('edit', lang)}
+                              >
+                                <Edit3 className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (confirm(lang === 'en' ? `Delete category "${c.name}"?` : `Hapus kategori "${c.name}"?`)) {
+                                    const fresh = await deleteCategory(c.id)
+                                    handleSuccess(lang === 'en' ? 'Category deleted' : 'Kategori dihapus', fresh)
+                                  }
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-white dark:hover:bg-slate-700"
+                                title={t('delete', lang)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => setShowModal({ type: 'category', editData: c })}
-                              className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-white dark:hover:bg-slate-700"
-                              title="Edit"
-                            >
-                              <Edit3 className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              onClick={async () => {
-                                if (confirm(`Hapus kategori "${c.name}"?`)) {
-                                  const fresh = await deleteCategory(c.id)
-                                  handleSuccess('Kategori dihapus', fresh)
-                                }
-                              }}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-white dark:hover:bg-slate-700"
-                              title="Hapus"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                        ))
+                    ) : (
+                      <div className="py-8 text-center text-xs text-slate-400">
+                        {lang === 'en' ? 'No income categories yet. Click "+ Add Category" to create one.' : 'Belum ada kategori pemasukan. Klik "+ Tambah Kategori" untuk membuat.'}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1939,104 +3679,211 @@ export default function Dashboard({
 
           {/* TAB 6: ANALISIS & LAPORAN EXCEL */}
           {tab === 'Analisis' && (
-            <div className="space-y-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Laporan & Ekspor Finansial</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Unduh file spreadsheet Excel (.xlsx) komprehensif berisi ringkasan, riwayat, dompet, dan budget.
+            !isPro ? (
+              <div className="rounded-3xl border border-amber-200/80 dark:border-amber-900/60 bg-gradient-to-br from-amber-50/60 via-white to-amber-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/30 p-8 sm:p-12 text-center shadow-sm max-w-3xl mx-auto space-y-6">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                  <Lock className="h-8 w-8" />
+                </div>
+                <div className="space-y-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/80 px-3 py-1 text-xs font-black text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                    <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                    {t('pro_exclusive', lang)}
+                  </span>
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+                    {lang === 'en' ? 'Full Reports & Multi-Sheet Excel (.xlsx) Export' : 'Laporan Lengkap & Ekspor Excel (.xlsx) Multi-Sheet'}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
+                    {lang === 'en'
+                      ? 'Download a comprehensive 5-sheet Excel workbook (Summary, Transactions, Budget, Wallets, and Categories) with clean formatting and balance formulas ready for Microsoft Excel & Google Sheets.'
+                      : 'Unduh file spreadsheet Excel komprehensif 5 Sheet terpisah (Ringkasan, Transaksi, Budget, Rekening, dan Kategori) dengan format rapi dan formula saldo siap pakai untuk Microsoft Excel & Google Sheets.'}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+
+                <div className="grid gap-3 sm:grid-cols-2 text-left max-w-lg mx-auto pt-2">
+                  {[
+                    lang === 'en' ? 'Sheet 1: Financial Summary & Net Savings' : 'Sheet 1: Ringkasan Finansial & Net Savings',
+                    lang === 'en' ? 'Sheet 2: Complete Transaction History' : 'Sheet 2: Riwayat Lengkap Seluruh Transaksi',
+                    lang === 'en' ? 'Sheet 3: Monthly Budget Realization Analysis' : 'Sheet 3: Analisis Realisasi Budget Bulanan',
+                    lang === 'en' ? 'Sheet 4: Balances & Transfers Across All Wallets' : 'Sheet 4: Saldo & Mutasi Seluruh Dompet / Akun',
+                    lang === 'en' ? 'Sheet 5: Expense Recapitulation by Category' : 'Sheet 5: Rekapitulasi Nominal Per Kategori',
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-4">
                   <button
-                    onClick={handleExportExcel}
-                    className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700 transition active:scale-95"
+                    onClick={() => setShowUpgradeModal({
+                      featureName: lang === 'en' ? 'Reports & Excel (.xlsx) Export' : 'Laporan & Ekspor Excel (.xlsx)',
+                      description: lang === 'en'
+                        ? 'Download all your transactions, cashbooks, and budget summaries in formatted Excel (.xlsx) sheets with automated formulas in Qwarts Finance PRO.'
+                        : 'Unduh seluruh catatan transaksi, buku kas, dan ringkasan anggaran Anda dalam format spreadsheet Excel (.xlsx) rapi dengan formula otomatis di Qwarts Finance PRO.'
+                    })}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 py-3.5 text-xs font-black text-white shadow-xl shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700 transition active:scale-95"
                   >
-                    <FileSpreadsheet className="h-4 w-4" />
-                    <span>Download Excel Komprehensif (.xlsx)</span>
+                    <Sparkles className="h-4 w-4 text-amber-300" />
+                    <span>{lang === 'en' ? 'Unlock Reports & Excel (Upgrade PRO)' : 'Buka Akses Laporan & Excel (Upgrade PRO)'}</span>
                   </button>
                 </div>
               </div>
-
-              <div className="rounded-3xl border border-emerald-200/80 dark:border-emerald-900/60 bg-gradient-to-br from-emerald-50/70 via-white to-teal-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-emerald-950/30 p-8 shadow-sm">
-                <div className="max-w-2xl space-y-3">
-                  <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                    <Sparkles className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                    Fitur Ekspor Excel Multi-Sheet
-                  </span>
-                  <h3 className="text-xl font-black text-slate-900 dark:text-white">
-                    Laporan Lengkap Siap Pakai untuk Pembukuan & Akuntansi
-                  </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                    Format Excel yang di-generate sudah otomatis terbagi ke dalam 5 Sheet terpisah dengan kolom rapi,
-                    perhitungan formula saldo, dan format angka Rupiah Indonesia yang siap diprint atau dianalisis
-                    lebih lanjut di Microsoft Excel, Google Sheets, atau Apple Numbers.
-                  </p>
-
-                  <div className="grid gap-3 pt-4 sm:grid-cols-2">
-                    {[
-                      'Sheet 1: Ringkasan Finansial & Net Savings',
-                      'Sheet 2: Riwayat Lengkap Seluruh Transaksi',
-                      'Sheet 3: Analisis Realisasi Budget Bulanan',
-                      'Sheet 4: Saldo & Mutasi Seluruh Dompet / Akun',
-                      'Sheet 5: Rekapitulasi Nominal Per Kategori',
-                    ].map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                        <span>{item}</span>
-                      </div>
-                    ))}
+            ) : (
+              <div className="space-y-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                      {t('reports_tab_title', lang)}
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {t('reports_tab_subtitle', lang)}
+                    </p>
                   </div>
-
-                  <div className="pt-6">
+                  <div className="flex items-center gap-3">
                     <button
                       onClick={handleExportExcel}
-                      className="rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
+                      className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-700 hover:to-teal-700 transition active:scale-95"
                     >
-                      Klik Di Sini Untuk Download (.xlsx)
+                      <FileSpreadsheet className="h-4 w-4" />
+                      <span>{t('download_comprehensive_excel', lang)}</span>
                     </button>
                   </div>
                 </div>
+
+                {/* Visual Analytics Charts */}
+                <AnalisisCharts
+                  transactions={data.transactions}
+                  categories={data.categories}
+                  wallets={data.wallets}
+                  budgets={data.budgets}
+                  goals={data.goals}
+                  subscriptions={data.subscriptions}
+                  lang={lang}
+                  theme={theme}
+                  hideBalance={hideBalance}
+                />
+
+                {/* Excel Export Info Card */}
+                <div className="rounded-3xl border border-emerald-200/80 dark:border-emerald-900/60 bg-gradient-to-br from-emerald-50/70 via-white to-teal-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-emerald-950/30 p-8 shadow-sm">
+                  <div className="max-w-2xl space-y-3">
+                    <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                      <Sparkles className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                      {t('excel_feature_badge', lang)}
+                    </span>
+                    <h3 className="text-xl font-black text-slate-900 dark:text-white">
+                      {t('excel_feature_title', lang)}
+                    </h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                      {t('excel_feature_desc', lang)}
+                    </p>
+
+                    <div className="grid gap-3 pt-4 sm:grid-cols-2">
+                      {[
+                        lang === 'en' ? 'Sheet 1: Financial Summary & Net Savings' : 'Sheet 1: Ringkasan Finansial & Net Savings',
+                        lang === 'en' ? 'Sheet 2: Complete Transaction History' : 'Sheet 2: Riwayat Lengkap Seluruh Transaksi',
+                        lang === 'en' ? 'Sheet 3: Monthly Budget Realization Analysis' : 'Sheet 3: Analisis Realisasi Budget Bulanan',
+                        lang === 'en' ? 'Sheet 4: Balances & Transfers Across All Wallets' : 'Sheet 4: Saldo & Mutasi Seluruh Dompet / Akun',
+                        lang === 'en' ? 'Sheet 5: Expense Recapitulation by Category' : 'Sheet 5: Rekapitulasi Nominal Per Kategori',
+                      ].map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="pt-6">
+                      <button
+                        onClick={handleExportExcel}
+                        className="rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition"
+                      >
+                        {lang === 'en' ? 'Click Here to Download (.xlsx)' : 'Klik Di Sini Untuk Download (.xlsx)'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            )
           )}
 
           {/* TAB 7: PENGATURAN (SETTINGS) */}
           {tab === 'Pengaturan' && (
             <div className="space-y-6 max-w-4xl">
               <div>
-                <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Pengaturan & Preferensi</h2>
+                <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                  {t('settings_title', lang)}
+                </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Sesuaikan tema tampilan, tata letak sidebar, dan kelola preferensi akun Anda.
+                  {t('settings_subtitle', lang)}
                 </p>
               </div>
 
-              {/* 1. Theme Settings Card */}
+              {/* 1. Language Settings Card */}
+              <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-6">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Globe className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                    <span>{t('language_card_title', lang)}</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {t('language_card_desc', lang)}
+                  </p>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {[
+                    { id: 'en' as const, title: 'English (US)', desc: 'Active default language with clean global UI terminology', flag: '🇺🇸' },
+                    { id: 'id' as const, title: 'Bahasa Indonesia', desc: 'Tampilan antarmuka berbahasa Indonesia asli', flag: '🇮🇩' },
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleLanguageChange(item.id)}
+                      className={`relative flex flex-col items-start rounded-2xl border p-4 text-left transition-all ${lang === item.id
+                        ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
+                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+                        }`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span className="text-2xl">{item.flag}</span>
+                        {lang === item.id && (
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-white">
+                            <Check className="h-3 w-3" />
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-3 font-bold text-xs text-slate-900 dark:text-white">{item.title}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">{item.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. Theme Settings Card */}
               <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-6">
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Sun className="h-5 w-5 text-amber-500" />
-                    <span>Mode Tampilan & Tema (Dark Mode)</span>
+                    <span>{t('theme_card_title', lang)}</span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
-                    Pilih tampilan tema terang atau gelap sesuai kenyamanan mata Anda.
+                    {t('theme_card_desc', lang)}
                   </p>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-3">
                   {[
-                    { id: 'light', title: 'Mode Terang', desc: 'Tampilan bersih & cerah', icon: Sun },
-                    { id: 'dark', title: 'Mode Gelap (Dark)', desc: 'Tampilan nyaman di malam hari', icon: Moon },
-                    { id: 'system', title: 'Otomatis Sistem', desc: 'Mengikuti pengaturan OS Anda', icon: Sparkles },
+                    { id: 'light', title: t('theme_light', lang), desc: lang === 'en' ? 'Clean & bright appearance' : 'Tampilan bersih & cerah', icon: Sun },
+                    { id: 'dark', title: t('theme_dark', lang), desc: lang === 'en' ? 'Comfortable for low light' : 'Tampilan nyaman di malam hari', icon: Moon },
+                    { id: 'system', title: t('theme_system', lang), desc: lang === 'en' ? 'Follow your OS preference' : 'Mengikuti pengaturan OS Anda', icon: Sparkles },
                   ].map((t) => (
                     <button
                       key={t.id}
                       onClick={() => handleThemeChange(t.id as any)}
-                      className={`relative flex flex-col items-start rounded-2xl border p-4 text-left transition-all ${
-                        theme === t.id
-                          ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
-                          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
-                      }`}
+                      className={`relative flex flex-col items-start rounded-2xl border p-4 text-left transition-all ${theme === t.id
+                        ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
+                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+                        }`}
                     >
                       <div className="flex items-center justify-between w-full">
                         <t.icon className={`h-5 w-5 ${theme === t.id ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`} />
@@ -2058,10 +3905,10 @@ export default function Dashboard({
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <PanelLeftClose className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    <span>Tata Letak Sidebar Desktop</span>
+                    <span>{t('sidebar_layout_title', lang)}</span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
-                    Atur apakah sidebar utama ingin disembunyikan (collapsed mode) untuk ruang kerja yang lebih luas.
+                    {t('sidebar_layout_desc', lang)}
                   </p>
                 </div>
 
@@ -2072,60 +3919,116 @@ export default function Dashboard({
                     </div>
                     <div>
                       <p className="font-bold text-xs text-slate-900 dark:text-white">
-                        {sidebarCollapsed ? 'Sidebar Tertutup (Collapsed Icon Mode)' : 'Sidebar Terbuka Penuh (Expanded Mode)'}
+                        {sidebarCollapsed ? t('sidebar_collapsed_mode', lang) : t('sidebar_expanded_mode', lang)}
                       </p>
                       <p className="text-[11px] text-slate-400">
-                        {sidebarCollapsed ? 'Hanya menampilkan icon menu' : 'Menampilkan teks dan logo lengkap'}
+                        {sidebarCollapsed ? t('sidebar_collapsed_sub', lang) : t('sidebar_expanded_sub', lang)}
                       </p>
                     </div>
                   </div>
 
                   <button
                     onClick={toggleSidebar}
-                    className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
-                      sidebarCollapsed
-                        ? 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-300'
-                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                    }`}
+                    className={`rounded-xl px-4 py-2 text-xs font-bold transition ${sidebarCollapsed
+                      ? 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-300'
+                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                      }`}
                   >
-                    {sidebarCollapsed ? 'Tampilkan Penuh' : 'Sembunyikan'}
+                    {sidebarCollapsed ? t('btn_show_full', lang) : t('btn_collapse', lang)}
                   </button>
                 </div>
               </div>
 
               {/* 3. Mobile REST API & Android Integration Card (Tahap 1 & Tahap 2) */}
-              <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-6">
-                <div className="flex items-start justify-between">
+              <div className={`rounded-3xl border ${!isPro ? 'border-amber-200/80 dark:border-amber-900/60 bg-gradient-to-br from-amber-50/40 via-white to-slate-50 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20' : 'border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900'} p-6 sm:p-8 shadow-sm space-y-6 relative`}>
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                      <Smartphone className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                      <span>Integrasi REST API Aplikasi Android (Tahap 1 & 2)</span>
-                    </h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <Smartphone className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                        <span>{t('rest_api_title', lang)}</span>
+                      </h3>
+                      {isPro ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 text-[10px] font-black tracking-wider text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                          PRO ACTIVE ⭐
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950/80 px-2.5 py-0.5 text-[10px] font-black tracking-wider text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                          🔒 PRO EXCLUSIVE
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-slate-400 mt-1">
-                      Backend REST API v1 siap digunakan untuk menghubungkan aplikasi Android / Flutter / Kotlin.
+                      {t('rest_api_desc', lang)}
                     </p>
                   </div>
-                  <a
-                    href="/api/v1"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100"
-                  >
-                    <Code2 className="h-4 w-4 text-emerald-600" />
-                    <span>Lihat Spesifikasi JSON</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
+                  {isPro ? (
+                    <a
+                      href="/api/v1"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 transition self-start"
+                    >
+                      <Code2 className="h-4 w-4 text-emerald-600" />
+                      <span>{t('view_json_spec', lang)}</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  ) : (
+                    <button
+                      onClick={() => setShowUpgradeModal({
+                        featureName: lang === 'en' ? 'Android Mobile REST API Integration' : 'Integrasi Mobile REST API Android',
+                        description: lang === 'en'
+                          ? 'Access REST API v1 endpoints and specifications exclusively for Qwarts Finance PRO members.'
+                          : 'Akses spesifikasi dan endpoint REST API v1 eksklusif untuk pengguna Qwarts Finance PRO.'
+                      })}
+                      className="flex items-center gap-1.5 rounded-xl border border-amber-200 dark:border-amber-800/80 bg-amber-50 dark:bg-amber-950/50 px-3 py-1.5 text-xs font-bold text-amber-700 dark:text-amber-300 hover:bg-amber-100 transition self-start"
+                    >
+                      <Lock className="h-3.5 w-3.5 text-amber-600" />
+                      <span>{lang === 'en' ? 'PRO Specs 🔒' : 'Spesifikasi PRO 🔒'}</span>
+                    </button>
+                  )}
                 </div>
+
+                {!isPro && (
+                  <div className="rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-500/10 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400">
+                        <Lock className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                          {lang === 'en' ? 'Android REST API Access Locked' : 'Akses REST API Android Terkunci'}
+                        </p>
+                        <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                          {lang === 'en'
+                            ? 'Upgrade to Qwarts Finance PRO to unlock Bearer token authentication & full REST API v1 endpoints.'
+                            : 'Upgrade ke Qwarts Finance PRO untuk membuka Bearer token autentikasi & seluruh endpoint REST API v1.'}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowUpgradeModal({
+                        featureName: lang === 'en' ? 'Android Mobile REST API Integration' : 'Integrasi Mobile REST API Android',
+                        description: lang === 'en'
+                          ? 'API v1 access to connect Android, iOS, or custom financial automation apps is an exclusive Qwarts Finance PRO feature.'
+                          : 'Akses API v1 untuk menghubungkan aplikasi Android, iOS, atau automasi finansial kustom adalah fitur eksklusif Qwarts Finance PRO.'
+                      })}
+                      className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 px-4 py-2 text-xs font-black text-white shadow-md shadow-amber-500/20 transition shrink-0"
+                    >
+                      {lang === 'en' ? 'Upgrade to PRO' : 'Upgrade ke PRO'}
+                    </button>
+                  </div>
+                )}
 
                 <div className="space-y-3">
                   <div className="grid gap-2.5 sm:grid-cols-2">
                     {[
-                      { method: 'GET', path: '/api/v1/summary', desc: 'Ringkasan finansial utama untuk home Android' },
-                      { method: 'GET / POST', path: '/api/v1/transactions', desc: 'Daftar transaksi, pagination, filter & catat baru' },
-                      { method: 'GET / POST', path: '/api/v1/goals', desc: 'Tahap 2: Target tabungan impian & setor saldo' },
-                      { method: 'GET / POST', path: '/api/v1/subscriptions', desc: 'Tahap 2: Manajemen tagihan rutin & bayar 1-click' },
-                      { method: 'GET / POST', path: '/api/v1/wallets', desc: 'Kelola dompet & mutasi saldo real-time' },
-                      { method: 'POST', path: '/api/v1/wallets/transfer', desc: 'Transfer saldo antar dompet / rekening' },
+                      { method: 'GET', path: '/api/v1/summary', desc: lang === 'en' ? 'Core financial summary for Android home' : 'Ringkasan finansial utama untuk home Android' },
+                      { method: 'GET / POST', path: '/api/v1/transactions', desc: lang === 'en' ? 'Transaction records, pagination, filters & creation' : 'Daftar transaksi, pagination, filter & catat baru' },
+                      { method: 'GET / POST', path: '/api/v1/goals', desc: lang === 'en' ? 'Financial dream goals & deposits' : 'Target tabungan impian & setor saldo' },
+                      { method: 'GET / POST', path: '/api/v1/subscriptions', desc: lang === 'en' ? 'Recurring bills & 1-click payment' : 'Manajemen tagihan rutin & bayar 1-click' },
+                      { method: 'GET / POST', path: '/api/v1/wallets', desc: lang === 'en' ? 'Manage wallets & real-time balance mutation' : 'Kelola dompet & mutasi saldo real-time' },
+                      { method: 'POST', path: '/api/v1/wallets/transfer', desc: lang === 'en' ? 'Transfer balance between wallets / accounts' : 'Transfer saldo antar dompet / rekening' },
                     ].map((ep, idx) => (
                       <div key={idx} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-3 flex flex-col justify-between">
                         <div className="flex items-center justify-between">
@@ -2146,8 +4049,18 @@ export default function Dashboard({
                       disabled={apiTesting}
                       className="flex items-center gap-2 rounded-xl bg-slate-900 dark:bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow hover:bg-slate-800 dark:hover:bg-emerald-700 transition disabled:opacity-50"
                     >
-                      <Terminal className="h-4 w-4 text-emerald-400 dark:text-white" />
-                      <span>{apiTesting ? 'Menguji API...' : 'Test Request API (/api/v1/summary)'}</span>
+                      {isPro ? (
+                        <Terminal className="h-4 w-4 text-emerald-400 dark:text-white" />
+                      ) : (
+                        <Lock className="h-4 w-4 text-amber-400" />
+                      )}
+                      <span>
+                        {apiTesting
+                          ? (lang === 'en' ? 'Testing API...' : 'Menguji API...')
+                          : !isPro
+                            ? (lang === 'en' ? 'Test API Request (Requires PRO 🔒)' : 'Test Request API (Perlu PRO 🔒)')
+                            : t('test_api_button', lang)}
+                      </span>
                     </button>
 
                     {apiTestResult && (
@@ -2164,24 +4077,64 @@ export default function Dashboard({
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <User className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    <span>Profil Pengguna & Keamanan</span>
+                    <span>{t('profile_card_title', lang)}</span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
-                    Informasi akun yang sedang aktif masuk.
+                    {t('profile_card_desc', lang)}
                   </p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 p-4">
                   <div className="flex items-center gap-3.5">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-600 text-white font-black text-lg">
-                      {user.name.charAt(0).toUpperCase()}
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white font-black text-xl overflow-hidden shadow-sm shadow-emerald-600/20">
+                      {currentUser.image ? (
+                        <img src={currentUser.image} alt={currentUser.name} className="h-full w-full object-cover" />
+                      ) : (
+                        currentUser.name.charAt(0).toUpperCase()
+                      )}
                     </div>
                     <div>
-                      <p className="font-bold text-sm text-slate-900 dark:text-white">{user.name}</p>
-                      <p className="text-xs text-slate-400">{user.email}</p>
-                      <span className="inline-block mt-1 rounded bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
-                        Akun Terverifikasi
-                      </span>
+                      <p className="font-bold text-sm text-slate-900 dark:text-white">{currentUser.name}</p>
+                      <p className="text-xs text-slate-400">{currentUser.email}</p>
+                      {currentUser.emailVerified ? (
+                        <span className="inline-flex items-center gap-1 mt-1 rounded-md bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
+                          <CheckCircle2 className="h-3 w-3" />
+                          {t('account_verified', lang)}
+                        </span>
+                      ) : (
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 dark:bg-amber-950 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-400">
+                            <AlertCircle className="h-3 w-3" />
+                            {t('email_unverified', lang)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setIsResendingEmail(true)
+                              setEmailStatus(null)
+                              try {
+                                const res = await authClient.sendVerificationEmail({
+                                  email: currentUser.email,
+                                  callbackURL: window.location.origin + '/?verified=true',
+                                })
+                                if (res.error) {
+                                  setEmailStatus({ type: 'error', message: res.error.message || (lang === 'en' ? 'Failed to send verification email' : 'Gagal mengirim email verifikasi') })
+                                } else {
+                                  setEmailStatus({ type: 'success', message: lang === 'en' ? 'New verification email successfully sent! Please check your inbox.' : 'Email verifikasi baru berhasil dikirim! Silakan periksa inbox Anda.' })
+                                }
+                              } catch (err: any) {
+                                setEmailStatus({ type: 'error', message: err.message || (lang === 'en' ? 'Failed to send email' : 'Gagal mengirim email') })
+                              } finally {
+                                setIsResendingEmail(false)
+                              }
+                            }}
+                            disabled={isResendingEmail}
+                            className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline disabled:opacity-50"
+                          >
+                            {isResendingEmail ? t('sending_verification', lang) : t('resend_verification', lang)}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -2190,12 +4143,299 @@ export default function Dashboard({
                       await signOut()
                       router.push('/sign-in')
                     }}
-                    className="flex items-center gap-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 px-4 py-2.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition"
+                    className="flex items-center justify-center gap-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 px-4 py-2.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition self-start sm:self-center"
                   >
                     <LogOut className="h-4 w-4" />
-                    <span>Keluar dari Akun</span>
+                    <span>{t('btn_sign_out', lang)}</span>
                   </button>
                 </div>
+
+                {emailStatus && (
+                  <div className={`rounded-xl p-3 text-xs flex items-center gap-2 ${emailStatus.type === 'success'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                    : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                    }`}>
+                    {emailStatus.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+                    <span>{emailStatus.message}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* 5. Membership Plan Card */}
+              <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-5">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-amber-500" />
+                    <span>{t('plan_status_title', lang)}</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {t('plan_status_desc', lang)}
+                  </p>
+                </div>
+
+                <div className={`rounded-2xl border p-5 transition-all ${isPro
+                  ? 'border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-emerald-500/5 to-transparent'
+                  : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40'
+                  }`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-slate-900 dark:text-white">{t('current_plan_label', lang)}</span>
+                        {isPro ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-3 py-0.5 text-xs font-black text-white shadow-sm shadow-amber-500/30">
+                            <Sparkles className="h-3.5 w-3.5" />
+                            {t('pro_member_badge', lang)}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-slate-200 dark:bg-slate-700 px-2.5 py-0.5 text-xs font-bold text-slate-700 dark:text-slate-200">
+                            {t('plan_starter_free', lang)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                        {isPro ? t('pro_active_text', lang) : t('free_active_text', lang)}
+                      </p>
+                      {/* PRO expiry info */}
+                      {isPro && currentUser.proExpiresAt && (() => {
+                        const expiresDate = new Date(currentUser.proExpiresAt)
+                        const daysLeft = Math.ceil((expiresDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                        const isExpiringSoon = daysLeft <= 7
+                        return (
+                          <p className={`text-xs mt-1 font-medium ${isExpiringSoon ? 'text-amber-500 dark:text-amber-400' : 'text-slate-400'}`}>
+                            {isExpiringSoon ? '⚠️ ' : '📅 '}
+                            {lang === 'id'
+                              ? `Aktif hingga ${expiresDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })} (${daysLeft} hari lagi)`
+                              : `Active until ${expiresDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })} (${daysLeft} days left)`}
+                          </p>
+                        )
+                      })()}
+                    </div>
+
+                    {!isPro ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowUpgradeModal({ featureName: 'Qwarts Finance PRO', description: lang === 'en' ? 'Unlock all exclusive financial planning features without limitations.' : 'Buka semua fitur perencanaan finansial eksklusif tanpa batasan.' })}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-5 py-2.5 text-xs font-bold text-white hover:brightness-110 shadow-md shadow-amber-500/25 transition shrink-0 cursor-pointer"
+                      >
+                        <Sparkles className="h-4 w-4 fill-white" />
+                        <span>{t('btn_upgrade_now', lang)}</span>
+                      </button>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800 shrink-0">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span>{t('pro_access_active', lang)}</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. Change Profile Name Card */}
+              <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-5">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <User className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                    <span>{t('edit_profile_name_title', lang)}</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {t('edit_profile_name_desc', lang)}
+                  </p>
+                </div>
+
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    if (!profileName.trim()) {
+                      setNameStatus({ type: 'error', message: lang === 'en' ? 'Name cannot be empty' : 'Nama tidak boleh kosong' })
+                      return
+                    }
+                    setIsUpdatingName(true)
+                    setNameStatus(null)
+                    try {
+                      const res = await authClient.updateUser({
+                        name: profileName.trim(),
+                      })
+                      if (res.error) {
+                        setNameStatus({ type: 'error', message: res.error.message || (lang === 'en' ? 'Failed to update name' : 'Gagal memperbarui nama') })
+                      } else {
+                        setCurrentUser((prev) => ({ ...prev, name: profileName.trim() }))
+                        setNameStatus({ type: 'success', message: lang === 'en' ? 'Profile name successfully updated!' : 'Nama profil berhasil diperbarui!' })
+                        showToast(lang === 'en' ? 'Profile name successfully saved!' : 'Nama profil berhasil disimpan!', 'success')
+                        setTimeout(() => setNameStatus(null), 4000)
+                      }
+                    } catch (err: any) {
+                      setNameStatus({ type: 'error', message: err.message || (lang === 'en' ? 'An error occurred while updating name' : 'Terjadi kesalahan saat memperbarui nama') })
+                    } finally {
+                      setIsUpdatingName(false)
+                    }
+                  }}
+                  className="space-y-4 max-w-lg"
+                >
+                  {nameStatus && (
+                    <div className={`rounded-xl p-3 text-xs flex items-center gap-2 ${nameStatus.type === 'success'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                      : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                      }`}>
+                      {nameStatus.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+                      <span>{nameStatus.message}</span>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+                      {t('full_name_label', lang)}
+                    </label>
+                    <input
+                      type="text"
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
+                      placeholder={lang === 'en' ? 'Enter your full name' : 'Masukkan nama lengkap Anda'}
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/60 px-3.5 py-2.5 text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isUpdatingName || profileName.trim() === currentUser.name || !profileName.trim()}
+                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:hover:bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-emerald-600/20 transition cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    {isUpdatingName ? (
+                      <>
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                        <span>{t('saving_name', lang)}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-3.5 w-3.5" />
+                        <span>{t('btn_save_profile_name', lang)}</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+
+              {/* 6. Change Password Card */}
+              <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-5">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <KeyRound className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                    <span>{t('security_card_title', lang)}</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {t('security_card_desc', lang)}
+                  </p>
+                </div>
+
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    setPasswordStatus(null)
+
+                    if (!currentPassword) {
+                      setPasswordStatus({ type: 'error', message: lang === 'en' ? 'Current password is required' : 'Kata sandi saat ini wajib diisi' })
+                      return
+                    }
+                    if (newPassword.length < 8) {
+                      setPasswordStatus({ type: 'error', message: lang === 'en' ? 'New password must be at least 8 characters' : 'Kata sandi baru minimal 8 karakter' })
+                      return
+                    }
+                    if (newPassword !== confirmPassword) {
+                      setPasswordStatus({ type: 'error', message: lang === 'en' ? 'New password confirmation does not match' : 'Konfirmasi kata sandi baru tidak cocok' })
+                      return
+                    }
+
+                    setIsUpdatingPassword(true)
+                    try {
+                      const res = await authClient.changePassword({
+                        currentPassword,
+                        newPassword,
+                        revokeOtherSessions: false,
+                      })
+                      if (res.error) {
+                        setPasswordStatus({ type: 'error', message: res.error.message || (lang === 'en' ? 'Failed to change password. Make sure current password is correct.' : 'Gagal mengubah kata sandi. Pastikan kata sandi saat ini benar.') })
+                      } else {
+                        setPasswordStatus({ type: 'success', message: lang === 'en' ? 'Password changed successfully!' : 'Kata sandi berhasil diubah!' })
+                        showToast(lang === 'en' ? 'Password updated successfully!' : 'Kata sandi berhasil diperbarui!', 'success')
+                        setCurrentPassword('')
+                        setNewPassword('')
+                        setConfirmPassword('')
+                        setTimeout(() => setPasswordStatus(null), 5000)
+                      }
+                    } catch (err: any) {
+                      setPasswordStatus({ type: 'error', message: err.message || (lang === 'en' ? 'An error occurred while changing password' : 'Terjadi kesalahan saat mengubah kata sandi') })
+                    } finally {
+                      setIsUpdatingPassword(false)
+                    }
+                  }}
+                  className="space-y-4 max-w-lg"
+                >
+                  {passwordStatus && (
+                    <div className={`rounded-xl p-3 text-xs flex items-center gap-2 ${passwordStatus.type === 'success'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                      : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                      }`}>
+                      {passwordStatus.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+                      <span>{passwordStatus.message}</span>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+                      {t('current_password_label', lang)}
+                    </label>
+                    <input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/60 px-3.5 py-2.5 text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+                      {t('new_password_label', lang)}
+                    </label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/60 px-3.5 py-2.5 text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+                      {t('confirm_password_label', lang)}
+                    </label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/60 px-3.5 py-2.5 text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isUpdatingPassword || !currentPassword || !newPassword || !confirmPassword}
+                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:hover:bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-emerald-600/20 transition cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    {isUpdatingPassword ? (
+                      <>
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                        <span>{t('updating_password', lang)}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="h-3.5 w-3.5" />
+                        <span>{t('btn_update_password', lang)}</span>
+                      </>
+                    )}
+                  </button>
+                </form>
               </div>
 
               {/* 5. Data Management */}
@@ -2203,26 +4443,139 @@ export default function Dashboard({
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <RefreshCw className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    <span>Inisialisasi Data Default</span>
+                    <span>{lang === 'en' ? 'Initialize Default Data' : 'Inisialisasi Data Default'}</span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
-                    Jika Anda membutuhkan data awal (dompet & kategori default), klik tombol di bawah.
+                    {lang === 'en'
+                      ? 'If you need initial starter sample data (default wallets & categories), click the button below.'
+                      : 'Jika Anda membutuhkan data awal (dompet & kategori default), klik tombol di bawah.'}
                   </p>
                 </div>
 
                 <div className="flex items-center justify-between pt-2">
                   <button
                     onClick={async () => {
-                      if (confirm('Tambahkan dompet dan kategori default jika belum ada?')) {
+                      if (confirm(lang === 'en' ? 'Add default wallets and categories if not present?' : 'Tambahkan dompet dan kategori default jika belum ada?')) {
                         const fresh = await seedDefaults()
-                        handleSuccess('Data default berhasil dicek/ditambahkan!', fresh)
+                        handleSuccess(lang === 'en' ? 'Default data verified/added!' : 'Data default berhasil dicek/ditambahkan!', fresh)
                       }
                     }}
                     className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
                   >
                     <RefreshCw className="h-4 w-4 text-emerald-600" />
-                    <span>Seed / Tambah Kategori Default</span>
+                    <span>{lang === 'en' ? 'Seed / Add Default Categories' : 'Seed / Tambah Kategori Default'}</span>
                   </button>
+                </div>
+
+                {/* Danger Zone divider */}
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-5 mt-2">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Trash2 className="h-4 w-4 text-rose-500" />
+                    <span className="text-xs font-bold text-rose-500 uppercase tracking-wider">
+                      {lang === 'en' ? 'Danger Zone' : 'Zona Berbahaya'}
+                    </span>
+                  </div>
+
+                  <div className="rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/20 p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-rose-700 dark:text-rose-300">
+                        {lang === 'en' ? 'Reset All Transactions' : 'Hapus Semua Transaksi'}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                        {lang === 'en'
+                          ? 'Permanently delete all transaction records. Wallet balances and categories are kept. This cannot be undone.'
+                          : 'Hapus permanen seluruh riwayat transaksi. Dompet dan kategori tetap tersimpan. Tindakan ini tidak bisa dibatalkan.'}
+                      </p>
+                    </div>
+
+                    {!showDeleteTxConfirm ? (
+                      <button
+                        onClick={() => setShowDeleteTxConfirm(true)}
+                        className="shrink-0 flex items-center gap-2 rounded-xl border border-rose-300 dark:border-rose-800 bg-white dark:bg-rose-950/40 px-4 py-2.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/70 transition"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span>{lang === 'en' ? 'Reset Transactions' : 'Hapus Semua Transaksi'}</span>
+                      </button>
+                    ) : (
+                      <div className="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                        <p className="text-xs font-semibold text-rose-600 dark:text-rose-400 text-center sm:text-left">
+                          {lang === 'en' ? 'Sure? This is permanent.' : 'Yakin? Tidak bisa dibatalkan.'}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setShowDeleteTxConfirm(false)}
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                            <span>{lang === 'en' ? 'Cancel' : 'Batal'}</span>
+                          </button>
+                          <button
+                            disabled={isDeletingAllTx}
+                            onClick={async () => {
+                              setIsDeletingAllTx(true)
+                              try {
+                                const fresh = await deleteAllTransactions()
+                                setShowDeleteTxConfirm(false)
+                                handleSuccess(
+                                  lang === 'en'
+                                    ? 'All transactions deleted. Starting fresh!'
+                                    : 'Semua transaksi berhasil dihapus. Mulai dari nol!',
+                                  fresh
+                                )
+                              } catch (err: any) {
+                                showToast(err?.message || (lang === 'en' ? 'Failed to delete transactions' : 'Gagal menghapus transaksi'), 'error')
+                              } finally {
+                                setIsDeletingAllTx(false)
+                              }
+                            }}
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-60 px-3.5 py-2 text-xs font-bold text-white transition"
+                          >
+                            {isDeletingAllTx ? (
+                              <><RefreshCw className="h-3.5 w-3.5 animate-spin" /><span>{lang === 'en' ? 'Deleting...' : 'Menghapus...'}</span></>
+                            ) : (
+                              <><Trash2 className="h-3.5 w-3.5" /><span>{lang === 'en' ? 'Yes, Delete All' : 'Ya, Hapus Semua'}</span></>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 6. Progressive Web App (PWA) Card */}
+              <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Download className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                      <span>{lang === 'en' ? 'Install Progressive Web App (PWA)' : 'Pasang Aplikasi di HP (PWA)'}</span>
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {lang === 'en'
+                        ? 'Install Qwarts Finance to your phone home screen for offline access, full-screen standalone experience, and instant 1-tap launching without browser address bar.'
+                        : 'Pasang Qwarts Finance ke layar utama HP Anda untuk akses instan satu ketukan, layar penuh tanpa bar browser, dan hemat kuota.'}
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-emerald-100 dark:bg-emerald-950 px-2.5 py-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
+                    PWA Ready
+                  </span>
+                </div>
+
+                <div className="pt-2 flex flex-col sm:flex-row sm:items-center gap-3">
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem('qwarts_pwa_dismissed')
+                      window.dispatchEvent(new CustomEvent('qwarts-trigger-pwa-install'))
+                    }}
+                    className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 text-xs font-bold transition shadow-sm cursor-pointer"
+                  >
+                    <Download className="h-4 w-4" />
+                    <span>{lang === 'en' ? 'Install to Home Screen' : 'Pasang Aplikasi Sekarang'}</span>
+                  </button>
+                  <p className="text-[11px] text-slate-400">
+                    {lang === 'en' ? 'Supported on Android (Chrome/Edge) & iOS (Safari)' : 'Didukung di Android (Chrome/Edge) & iPhone/iPad (Safari)'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -2233,91 +4586,427 @@ export default function Dashboard({
       {/* MODAL DIALOGS */}
       {showModal && (
         <ModalContainer close={() => setShowModal(null)}>
-          {/* 1. Transaction Form Modal */}
-          {showModal.type === 'transaction' && (
-            <TransactionModal
-              data={data}
-              editData={showModal.editData}
-              close={() => setShowModal(null)}
-              done={handleSuccess}
-            />
-          )}
+          {/* PRO Guard for PRO-only Modals */}
+          {!isPro && ['budget', 'goal', 'goalDeposit', 'subscription', 'paySubscription'].includes(showModal.type) ? (
+            <div className="text-center p-6 sm:p-8 space-y-4 max-w-md mx-auto">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                <Lock className="h-7 w-7" />
+              </div>
+              <div className="space-y-1.5">
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-black px-2.5 py-0.5">
+                  ⭐ {t('pro_exclusive', lang)}
+                </span>
+                <h3 className="text-lg font-bold text-white">
+                  {showModal.type.includes('goal')
+                    ? (lang === 'en' ? 'PRO Exclusive Financial Goals' : 'Target Impian Eksklusif PRO')
+                    : showModal.type.includes('sub')
+                      ? (lang === 'en' ? 'PRO Exclusive Recurring Bills' : 'Tagihan Rutin Eksklusif PRO')
+                      : (lang === 'en' ? 'PRO Exclusive Monthly Budget' : 'Budget Bulanan Eksklusif PRO')}
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {lang === 'en'
+                    ? 'This feature is exclusively available for active Qwarts Finance PRO members. Enjoy limitless financial management.'
+                    : 'Fitur ini hanya dapat digunakan oleh pengguna dengan paket Qwarts Finance PRO aktif. Nikmati pengelolaan finansial tanpa batasan.'}
+                </p>
+              </div>
+              <div className="pt-2 flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    const feat = showModal.type.includes('goal')
+                      ? (lang === 'en' ? 'Financial Goals' : 'Target Impian')
+                      : showModal.type.includes('sub')
+                        ? (lang === 'en' ? 'Recurring Bills' : 'Tagihan Rutin')
+                        : (lang === 'en' ? 'Monthly Budget' : 'Budget Bulanan')
+                    setShowModal(null)
+                    setShowUpgradeModal({
+                      featureName: feat,
+                      description: lang === 'en'
+                        ? `Unlock full access to ${feat} and all other exclusive features in Qwarts Finance PRO.`
+                        : `Buka akses penuh fitur ${feat} dan semua fitur eksklusif lainnya di Qwarts Finance PRO.`
+                    })
+                  }}
+                  className="w-full rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/20 hover:from-emerald-700 hover:to-teal-700 transition"
+                >
+                  {lang === 'en' ? 'View Plans & Upgrade PRO' : 'Lihat Paket & Upgrade PRO'}
+                </button>
+                <button
+                  onClick={() => setShowModal(null)}
+                  className="w-full rounded-xl border border-slate-700 bg-slate-900 py-2.5 text-xs font-semibold text-slate-400 hover:bg-slate-800 transition"
+                >
+                  {lang === 'en' ? 'Back' : 'Kembali'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* 1. Transaction Form Modal */}
+              {showModal.type === 'transaction' && (
+                <TransactionModal
+                  data={data}
+                  editData={showModal.editData}
+                  lang={lang}
+                  isPro={isPro}
+                  onRequirePro={(featureName, description) => setShowUpgradeModal({ featureName, description })}
+                  close={() => setShowModal(null)}
+                  done={handleSuccess}
+                  onWalletCreated={(fresh) => setData(fresh)}
+                  onDataUpdated={(fresh) => setData(fresh)}
+                />
+              )}
 
-          {/* 2. Transfer Form Modal */}
-          {showModal.type === 'transfer' && (
-            <TransferModal data={data} close={() => setShowModal(null)} done={handleSuccess} />
-          )}
+              {/* 2. PDF Statement Import Modal */}
+              {showModal.type === 'importPdf' && (
+                <PdfImportModal
+                  data={data}
+                  lang={lang}
+                  close={() => setShowModal(null)}
+                  done={handleSuccess}
+                />
+              )}
 
-          {/* 3. Wallet Form Modal */}
-          {showModal.type === 'wallet' && (
-            <WalletModal editData={showModal.editData} close={() => setShowModal(null)} done={handleSuccess} />
-          )}
+              {/* 2. Transfer Form Modal */}
+              {showModal.type === 'transfer' && (
+                <TransferModal data={data} lang={lang} close={() => setShowModal(null)} done={handleSuccess} />
+              )}
 
-          {/* 4. Category Form Modal */}
-          {showModal.type === 'category' && (
-            <CategoryModal editData={showModal.editData} close={() => setShowModal(null)} done={handleSuccess} />
-          )}
+              {/* 3. Wallet Form Modal */}
+              {showModal.type === 'wallet' && (
+                <WalletModal editData={showModal.editData} lang={lang} close={() => setShowModal(null)} done={handleSuccess} />
+              )}
 
-          {/* 5. Budget Form Modal */}
-          {showModal.type === 'budget' && (
-            <BudgetModal
-              data={data}
-              editData={showModal.editData}
-              defaultMonth={selectedMonth}
-              close={() => setShowModal(null)}
-              done={handleSuccess}
-            />
-          )}
+              {/* 4. Category Form Modal */}
+              {showModal.type === 'category' && (
+                <CategoryModal editData={showModal.editData} lang={lang} close={() => setShowModal(null)} done={handleSuccess} />
+              )}
 
-          {/* 6. Goal (Target Tabungan) Modal - Tahap 2 */}
-          {showModal.type === 'goal' && (
-            <GoalModal
-              editData={showModal.editData}
-              close={() => setShowModal(null)}
-              done={handleSuccess}
-            />
-          )}
+              {/* 5. Budget Form Modal */}
+              {showModal.type === 'budget' && (
+                <BudgetModal
+                  data={data}
+                  editData={showModal.editData}
+                  defaultMonth={selectedMonth}
+                  lang={lang}
+                  close={() => setShowModal(null)}
+                  done={handleSuccess}
+                />
+              )}
 
-          {/* 7. Goal Deposit Modal - Tahap 2 */}
-          {showModal.type === 'goalDeposit' && (
-            <GoalDepositModal
-              goal={showModal.goal}
-              wallets={data.wallets}
-              close={() => setShowModal(null)}
-              done={handleSuccess}
-            />
-          )}
+              {/* 6. Goal (Target Tabungan) Modal - Tahap 2 */}
+              {showModal.type === 'goal' && (
+                <GoalModal
+                  editData={showModal.editData}
+                  lang={lang}
+                  close={() => setShowModal(null)}
+                  done={handleSuccess}
+                />
+              )}
 
-          {/* 8. Subscription Modal - Tahap 2 */}
-          {showModal.type === 'subscription' && (
-            <SubscriptionModal
-              data={data}
-              editData={showModal.editData}
-              close={() => setShowModal(null)}
-              done={handleSuccess}
-            />
-          )}
+              {/* 7. Goal Deposit Modal - Tahap 2 */}
+              {showModal.type === 'goalDeposit' && (
+                <GoalDepositModal
+                  goal={showModal.goal}
+                  wallets={data.wallets}
+                  lang={lang}
+                  close={() => setShowModal(null)}
+                  done={handleSuccess}
+                />
+              )}
 
-          {/* 9. Pay Subscription Modal - Tahap 2 */}
-          {showModal.type === 'paySubscription' && (
-            <PaySubscriptionModal
-              subscription={showModal.subscription}
-              wallets={data.wallets}
-              close={() => setShowModal(null)}
-              done={handleSuccess}
-            />
+              {/* 8. Subscription Modal - Tahap 2 */}
+              {showModal.type === 'subscription' && (
+                <SubscriptionModal
+                  data={data}
+                  editData={showModal.editData}
+                  lang={lang}
+                  close={() => setShowModal(null)}
+                  done={handleSuccess}
+                />
+              )}
+
+              {/* 9. Pay Subscription Modal - Tahap 2 */}
+              {showModal.type === 'paySubscription' && (
+                <PaySubscriptionModal
+                  subscription={showModal.subscription}
+                  wallets={data.wallets}
+                  lang={lang}
+                  close={() => setShowModal(null)}
+                  done={handleSuccess}
+                />
+              )}
+            </>
           )}
         </ModalContainer>
       )}
+
+      {/* 10. Upgrade to PRO Paywall Modal (Elevated Modern Design & Instant Duitku Checkout) */}
+      {showUpgradeModal && (
+        <ModalContainer close={() => setShowUpgradeModal(null)}>
+          <div className="relative overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-5 sm:p-7 text-white shadow-2xl max-w-xl w-full max-h-[92vh] overflow-y-auto">
+            {/* Background ambient lighting */}
+            <div className="pointer-events-none absolute -top-24 -right-24 h-60 w-60 rounded-full bg-amber-500/15 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-24 h-60 w-60 rounded-full bg-emerald-500/15 blur-3xl" />
+
+            <div className="relative z-10">
+              {/* Header Badge & Close Button */}
+              <div className="flex items-center justify-between">
+                <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-gradient-to-r from-amber-500/15 to-amber-600/5 px-3 py-1 text-xs font-black text-amber-300 shadow-sm">
+                  <Crown className="h-3.5 w-3.5 text-amber-400 fill-amber-400/20" />
+                  <span>QWARTS PRO UNLIMITED</span>
+                </div>
+                <button
+                  onClick={() => setShowUpgradeModal(null)}
+                  className="rounded-full p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition cursor-pointer"
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Title & Subtitle */}
+              <div className="mt-3.5">
+                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  {lang === 'en' ? 'Upgrade to Qwarts Finance PRO 👑' : 'Tingkatkan Finansial ke Level PRO 👑'}
+                </h2>
+                <p className="mt-1 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  {showUpgradeModal.description
+                    ? showUpgradeModal.description
+                    : (lang === 'en'
+                      ? 'Unlock all powerful PRO features without limits. Instant activation upon checkout.'
+                      : 'Buka seluruh fitur unggulan tanpa batas. Pembayaran otomatis dan aktif detik ini juga.')}
+                </p>
+              </div>
+
+              {/* Feature Highlights Grid */}
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-2.5">
+                <div className="rounded-2xl border border-slate-800/80 bg-slate-950/60 p-2.5 sm:p-3 hover:border-teal-500/30 transition">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-500/15 text-teal-400">
+                      <Target className="h-3.5 w-3.5" />
+                    </div>
+                    <span className="text-[9px] font-bold text-teal-300 bg-teal-500/10 px-1.5 py-0.5 rounded-full">UNLIMITED</span>
+                  </div>
+                  <p className="text-xs font-bold text-white leading-tight">{lang === 'en' ? 'Dream Goals' : 'Target Impian'}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">{lang === 'en' ? 'Auto accumulation & tracker' : 'Tabungan & dana darurat otomatis'}</p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-800/80 bg-slate-950/60 p-2.5 sm:p-3 hover:border-sky-500/30 transition">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-500/15 text-sky-400">
+                      <Camera className="h-3.5 w-3.5" />
+                    </div>
+                    <span className="text-[9px] font-bold text-sky-300 bg-sky-500/10 px-1.5 py-0.5 rounded-full">AI SCAN</span>
+                  </div>
+                  <p className="text-xs font-bold text-white leading-tight">{lang === 'en' ? 'AI Receipt Scanner' : 'AI Struk Pintar'}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">{lang === 'en' ? 'Foto nota & auto catat kas' : 'Foto nota belanja terisi instan'}</p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-800/80 bg-slate-950/60 p-2.5 sm:p-3 hover:border-purple-500/30 transition">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-500/15 text-purple-400">
+                      <FileSpreadsheet className="h-3.5 w-3.5" />
+                    </div>
+                    <span className="text-[9px] font-bold text-purple-300 bg-purple-500/10 px-1.5 py-0.5 rounded-full">EXCEL / CSV</span>
+                  </div>
+                  <p className="text-xs font-bold text-white leading-tight">{lang === 'en' ? 'Export Reports' : 'Ekspor Laporan'}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">{lang === 'en' ? '1-Click download bookkeeping' : '1-Klik unduh buku kas lengkap'}</p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-800/80 bg-slate-950/60 p-2.5 sm:p-3 hover:border-amber-500/30 transition">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/15 text-amber-400">
+                      <Wallet className="h-3.5 w-3.5" />
+                    </div>
+                    <span className="text-[9px] font-bold text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded-full">MULTI WALLET</span>
+                  </div>
+                  <p className="text-xs font-bold text-white leading-tight">{lang === 'en' ? 'Unlimited Wallets' : 'Multi Rekening'}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">{lang === 'en' ? 'Manage all bank & e-wallets' : 'Semua bank & e-wallet bebas batas'}</p>
+                </div>
+              </div>
+
+              {/* Plan Selection Cards */}
+              <div className="mt-4 grid grid-cols-2 gap-2.5 sm:gap-3">
+                {/* Yearly Plan (Best Value) */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedUpgradePlan('yearly')}
+                  className={`relative rounded-2xl p-3 sm:p-3.5 text-left transition cursor-pointer border ${selectedUpgradePlan === 'yearly'
+                    ? 'border-amber-400/80 bg-gradient-to-b from-amber-500/15 via-slate-900/90 to-slate-950 shadow-lg shadow-amber-500/15 ring-1 ring-amber-400/50'
+                    : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
+                    }`}
+                >
+                  <span className="absolute -top-2.5 right-3 rounded-full bg-gradient-to-r from-amber-500 to-amber-400 px-2 py-0.5 text-[9px] font-black text-slate-950 uppercase tracking-wider shadow-sm">
+                    {lang === 'en' ? 'SAVE 35%' : 'HEMAT 35%'}
+                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-amber-300">
+                      {lang === 'en' ? 'Yearly Plan' : 'Paket Tahunan'}
+                    </span>
+                    <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${selectedUpgradePlan === 'yearly'
+                      ? 'border-amber-400 bg-amber-400 text-slate-950'
+                      : 'border-slate-600 bg-transparent'
+                      }`}>
+                      {selectedUpgradePlan === 'yearly' && <Check className="h-3 w-3 stroke-[3]" />}
+                    </div>
+                  </div>
+                  <p className="mt-1 text-lg sm:text-xl font-black text-white">Rp 149.000</p>
+                  <p className="text-[10px] text-emerald-400 font-semibold mt-0.5">
+                    {lang === 'en' ? 'Only Rp 12,416 / mo' : 'Hanya Rp 12.416 / bln'}
+                  </p>
+                </button>
+
+                {/* Monthly Plan */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedUpgradePlan('monthly')}
+                  className={`relative rounded-2xl p-3 sm:p-3.5 text-left transition cursor-pointer border ${selectedUpgradePlan === 'monthly'
+                    ? 'border-teal-400/80 bg-gradient-to-b from-teal-500/15 via-slate-900/90 to-slate-950 shadow-lg shadow-teal-500/15 ring-1 ring-teal-400/50'
+                    : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
+                    }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-300">
+                      {lang === 'en' ? 'Monthly Plan' : 'Paket Bulanan'}
+                    </span>
+                    <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${selectedUpgradePlan === 'monthly'
+                      ? 'border-teal-400 bg-teal-400 text-slate-950'
+                      : 'border-slate-600 bg-transparent'
+                      }`}>
+                      {selectedUpgradePlan === 'monthly' && <Check className="h-3 w-3 stroke-[3]" />}
+                    </div>
+                  </div>
+                  <p className="mt-1 text-lg sm:text-xl font-black text-white">Rp 19.000</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    {lang === 'en' ? 'Flexible monthly billing' : 'Fleksibel bayar per bulan'}
+                  </p>
+                </button>
+              </div>
+
+              {/* Action Button & Payment Channels */}
+              <div className="mt-5 flex flex-col gap-3">
+                <button
+                  type="button"
+                  disabled={isPayingDuitku}
+                  onClick={handlePayWithDuitku}
+                  className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-400 py-3.5 text-sm font-black text-slate-950 shadow-xl shadow-teal-500/25 transition hover:brightness-110 active:scale-[0.99] cursor-pointer disabled:opacity-60"
+                >
+                  {isPayingDuitku ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin text-slate-950" />
+                      <span>{lang === 'en' ? 'Connecting to Duitku...' : 'Menghubungkan ke Duitku Gateway...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="h-4 w-4 text-slate-950" />
+                      <span>
+                        {lang === 'en'
+                          ? `Continue to Payment • ${selectedUpgradePlan === 'yearly' ? 'Rp 149.000' : 'Rp 19.000'}`
+                          : `Lanjut ke Pembayaran • ${selectedUpgradePlan === 'yearly' ? 'Rp 149.000' : 'Rp 19.000'}`}
+                      </span>
+                    </>
+                  )}
+                </button>
+
+                {/* Security and Trust Badges */}
+                <div className="rounded-xl bg-slate-950/70 border border-slate-800/80 p-3 text-center space-y-1.5">
+                  <div className="flex items-center justify-center gap-1.5 text-[11px] font-semibold text-emerald-400">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    <span>
+                      {lang === 'en'
+                        ? 'Official Duitku Checkout • Auto-Verification'
+                        : 'Halaman Checkout Resmi Duitku • Verifikasi Otomatis'}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    {lang === 'en'
+                      ? 'Choose freely on Duitku: QRIS (All Banks & E-Wallets), Virtual Accounts (BCA, Mandiri, BRI, BNI, BSI), ShopeePay & Retail.'
+                      : 'Pilih bebas di halaman Duitku: QRIS (Semua Bank & E-Wallet), Virtual Account (BCA, Mandiri, BRI, BNI, BSI), ShopeePay & Retail.'}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowUpgradeModal(null)}
+                  className="w-full py-1 text-xs font-semibold text-slate-500 hover:text-slate-300 transition cursor-pointer"
+                >
+                  {lang === 'en' ? 'Maybe Later' : 'Nanti Saja'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalContainer>
+      )}
+
+      {/* Mobile Bottom Navigation Bar (Fixed at bottom on mobile) */}
+      <nav className="fixed bottom-0 left-0 right-0 z-30 lg:hidden border-t border-slate-200/80 bg-white/95 dark:bg-slate-900/95 dark:border-slate-800 backdrop-blur-lg px-2 py-1.5 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+        <div className="grid grid-cols-5 items-center">
+          <button
+            onClick={() => setTab('Overview')}
+            className={`flex flex-col items-center justify-center py-1 transition cursor-pointer ${tab === 'Overview' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+              }`}
+          >
+            <LayoutDashboard className="h-5 w-5" />
+            <span className="text-[10px] mt-0.5">Overview</span>
+          </button>
+
+          <button
+            onClick={() => setTab('Transaksi')}
+            className={`flex flex-col items-center justify-center py-1 transition cursor-pointer ${tab === 'Transaksi' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+              }`}
+          >
+            <Receipt className="h-5 w-5" />
+            <span className="text-[10px] mt-0.5">{lang === 'en' ? 'Tx' : 'Transaksi'}</span>
+          </button>
+
+          {/* Quick Floating Action Button (Center +) */}
+          <div className="flex items-center justify-center">
+            <button
+              onClick={() => setShowModal({ type: 'transaction' })}
+              className="flex h-11 w-11 -mt-4 items-center justify-center rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-500/35 hover:scale-105 active:scale-95 transition cursor-pointer"
+              title={t('add_transaction', lang)}
+            >
+              <Plus className="h-6 w-6" />
+            </button>
+          </div>
+
+          <button
+            onClick={() => setTab('Dompet')}
+            className={`flex flex-col items-center justify-center py-1 transition cursor-pointer ${tab === 'Dompet' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+              }`}
+          >
+            <WalletCards className="h-5 w-5" />
+            <span className="text-[10px] mt-0.5">{lang === 'en' ? 'Wallets' : 'Dompet'}</span>
+          </button>
+
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="flex flex-col items-center justify-center py-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition cursor-pointer"
+          >
+            <Menu className="h-5 w-5" />
+            <span className="text-[10px] mt-0.5">Menu</span>
+          </button>
+        </div>
+      </nav>
+
+      {/* PWA Floating Install Prompt & iOS Guide */}
+      <PwaInstallPrompt lang={lang} />
     </div>
   )
 }
 
 function ModalContainer({ children, close }: { children: React.ReactNode; close: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
-      <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-2xl border border-slate-100 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
-        {children}
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 p-0 sm:p-4 backdrop-blur-xs animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) close()
+      }}
+    >
+      <div className="relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-100 dark:border-slate-800 max-h-[90dvh] sm:max-h-[90vh] flex flex-col overflow-hidden">
+        {/* Mobile top pull bar / drag indicator */}
+        <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto my-2.5 sm:hidden shrink-0" />
+        <div className="p-4 sm:p-7 overflow-y-auto flex-1">
+          {children}
+        </div>
       </div>
     </div>
   )
@@ -2327,13 +5016,23 @@ function ModalContainer({ children, close }: { children: React.ReactNode; close:
 function TransactionModal({
   data,
   editData,
+  lang = 'en',
+  isPro = false,
+  onRequirePro,
   close,
   done,
+  onWalletCreated,
+  onDataUpdated,
 }: {
   data: Data
-  editData?: Transaction
+  editData?: Transaction | Partial<Transaction>
+  lang?: Language
+  isPro?: boolean
+  onRequirePro?: (featureName: string, description: string) => void
   close: () => void
   done: (msg: string, freshData?: Data) => void
+  onWalletCreated?: (freshData: Data) => void
+  onDataUpdated?: (freshData: Data) => void
 }) {
   const [description, setDescription] = useState(editData?.description || '')
   const [amount, setAmount] = useState<number>(editData?.amount || 0)
@@ -2341,19 +5040,185 @@ function TransactionModal({
   const [walletId, setWalletId] = useState<number>(editData?.walletId || data.wallets[0]?.id || 0)
   const [categoryId, setCategoryId] = useState<number>(editData?.categoryId || data.categories[0]?.id || 0)
   const [date, setDate] = useState<string>(
-    editData ? new Date(editData.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
+    editData?.date ? new Date(editData.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)
   )
   const [submitting, setSubmitting] = useState(false)
+  const [walletsList, setWalletsList] = useState(data.wallets)
+  const [categoriesList, setCategoriesList] = useState(data.categories)
+  const [isCreatingWallet, setIsCreatingWallet] = useState(false)
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false)
+  const [scanningReceipt, setScanningReceipt] = useState(false)
+  const [scanMessage, setScanMessage] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const filteredCategories = data.categories.filter((c) => c.type === type)
+  const handleScanReceiptFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const MAX_FILE_SIZE = 5 * 1024 * 1024
+    if (file.size > MAX_FILE_SIZE) {
+      setScanMessage(
+        lang === 'en'
+          ? 'File size exceeds limit (max 5MB). Please select a smaller photo.'
+          : 'Ukuran file foto melebihi batas 5MB. Harap pilih foto yang lebih kecil.'
+      )
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
+    setScanningReceipt(true)
+    setScanMessage(lang === 'en' ? 'AI is scanning receipt & reading amounts...' : 'AI sedang memindai struk & membaca nominal...')
+
+    try {
+      const reader = new FileReader()
+      reader.onloadend = async () => {
+        const base64String = reader.result as string
+        const base64Data = base64String.includes(',') ? base64String.split(',')[1] : base64String
+
+        try {
+          const res = await fetch('/api/v1/scan-receipt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageBase64: base64Data, mimeType: file.type || 'image/jpeg' }),
+          })
+          const json = await res.json()
+          if (res.ok && json.success && json.data) {
+            const d = json.data
+            if (d.amount > 0) setAmount(d.amount)
+            if (d.type) {
+              setType(d.type)
+            }
+            if (d.description) setDescription(d.description)
+            if (d.date) setDate(d.date)
+            if (d.categoryId) {
+              setCategoryId(d.categoryId)
+            } else if (d.categoryName) {
+              const matched = categoriesList.find(
+                (c) => c.type === (d.type || 'expense') && c.name.toLowerCase().includes(d.categoryName.toLowerCase())
+              )
+              if (matched) setCategoryId(matched.id)
+            }
+            setScanMessage(
+              lang === 'en'
+                ? `✨ Receipt analyzed: ${d.type === 'expense' ? 'Expense' : 'Income'} • ${d.categoryName} (${d.description})`
+                : `✨ Struk terdeteksi: ${d.type === 'expense' ? 'Pengeluaran' : 'Pemasukan'} • ${d.categoryName} (${d.description})`
+            )
+          } else {
+            setScanMessage(
+              json.message ||
+              (res.status === 429
+                ? lang === 'en'
+                  ? 'Too many scan requests. Please wait a moment.'
+                  : 'Terlalu banyak permintaan scan. Harap tunggu sebentar.'
+                : lang === 'en'
+                  ? 'Failed to read receipt'
+                  : 'Gagal membaca struk belanja')
+            )
+          }
+        } catch (apiErr: any) {
+          setScanMessage(apiErr?.message || (lang === 'en' ? 'Failed to connect to AI scanner' : 'Gagal terhubung ke scanner AI'))
+        } finally {
+          setScanningReceipt(false)
+          if (fileInputRef.current) fileInputRef.current.value = ''
+        }
+      }
+      reader.readAsDataURL(file)
+    } catch (err: any) {
+      setScanMessage(lang === 'en' ? 'Error reading image file' : 'Gagal memproses file foto')
+      setScanningReceipt(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const filteredCategories = categoriesList.filter((c) => c.type === type)
 
   const handleTypeChange = (newType: 'expense' | 'income') => {
     setType(newType)
-    const firstMatching = data.categories.find((c) => c.type === newType)
+    const firstMatching = categoriesList.find((c) => c.type === newType)
     if (firstMatching) setCategoryId(firstMatching.id)
   }
 
-  const walletOptions: OptionType<number>[] = data.wallets.map((w) => ({
+  const handleCreateWallet = async (inputValue: string) => {
+    if (!inputValue || !inputValue.trim()) return
+    if (!isPro && walletsList.length >= 2) {
+      onRequirePro?.(
+        lang === 'en' ? 'Unlimited Wallets (> 2 Accounts)' : 'Multi-Dompet (> 2 Rekening)',
+        lang === 'en'
+          ? 'Free plan is limited to 2 wallets. Upgrade to PRO to add unlimited bank accounts, e-wallets, and cash registers.'
+          : 'Paket Free dibatasi maksimal 2 dompet. Upgrade ke PRO untuk mengelola rekening bank, e-wallet, dan dompet tanpa batas.'
+      )
+      return
+    }
+    const name = inputValue.trim()
+    setIsCreatingWallet(true)
+    try {
+      let inferredType = 'Bank'
+      const lower = name.toLowerCase()
+      if (lower.includes('cash') || lower.includes('tunai') || lower.includes('dompet')) {
+        inferredType = 'Tunai'
+      } else if (
+        lower.includes('gopay') ||
+        lower.includes('ovo') ||
+        lower.includes('dana') ||
+        lower.includes('shopee') ||
+        lower.includes('linkaja') ||
+        lower.includes('qris') ||
+        lower.includes('e-wallet') ||
+        lower.includes('ewallet')
+      ) {
+        inferredType = 'E-Wallet'
+      }
+
+      const fresh = await addWallet({
+        name,
+        type: inferredType,
+        balance: 0,
+        color: 'teal',
+      })
+      if (fresh?.wallets) {
+        setWalletsList(fresh.wallets)
+        onWalletCreated?.(fresh)
+        onDataUpdated?.(fresh)
+        const newWallet = fresh.wallets.find((w) => w.name.toLowerCase() === name.toLowerCase())
+        if (newWallet) {
+          setWalletId(newWallet.id)
+        }
+      }
+    } catch (err: any) {
+      alert(err?.message || (lang === 'en' ? 'Failed to create new wallet' : 'Gagal membuat dompet baru'))
+    } finally {
+      setIsCreatingWallet(false)
+    }
+  }
+
+  const handleCreateCategory = async (inputValue: string) => {
+    if (!inputValue || !inputValue.trim()) return
+    const name = inputValue.trim()
+    setIsCreatingCategory(true)
+    try {
+      const fresh = await addCategory({
+        name,
+        type,
+        color: 'slate',
+      })
+      if (fresh?.categories) {
+        setCategoriesList(fresh.categories)
+        onDataUpdated?.(fresh)
+        const newCat = fresh.categories.find(
+          (c) => c.name.toLowerCase() === name.toLowerCase() && c.type === type
+        )
+        if (newCat) {
+          setCategoryId(newCat.id)
+        }
+      }
+    } catch (err: any) {
+      alert(err?.message || (lang === 'en' ? 'Failed to create new category' : 'Gagal membuat kategori baru'))
+    } finally {
+      setIsCreatingCategory(false)
+    }
+  }
+
+  const walletOptions: OptionType<number>[] = walletsList.map((w) => ({
     value: w.id,
     label: `${w.name} (${w.type})`,
   }))
@@ -2366,12 +5231,20 @@ function TransactionModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!amount || amount <= 0) {
-      alert('Mohon masukkan nominal transaksi yang valid')
+      alert(lang === 'en' ? 'Please enter a valid transaction amount' : 'Mohon masukkan nominal transaksi yang valid')
+      return
+    }
+    if (!walletId || Number(walletId) <= 0) {
+      alert(lang === 'en' ? 'Please select or create a wallet first' : 'Mohon pilih atau buat dompet terlebih dahulu')
+      return
+    }
+    if (!categoryId || Number(categoryId) <= 0) {
+      alert(lang === 'en' ? 'Please select or create a category first' : 'Mohon pilih atau buat kategori terlebih dahulu')
       return
     }
     setSubmitting(true)
     try {
-      if (editData) {
+      if (editData && typeof editData.id === 'number') {
         const fresh = await updateTransaction({
           id: editData.id,
           walletId: Number(walletId),
@@ -2381,7 +5254,7 @@ function TransactionModal({
           description,
           date,
         })
-        done('Transaksi berhasil diperbarui!', fresh)
+        done(lang === 'en' ? 'Transaction updated successfully!' : 'Transaksi berhasil diperbarui!', fresh)
       } else {
         const fresh = await addTransaction({
           walletId: Number(walletId),
@@ -2391,48 +5264,161 @@ function TransactionModal({
           description,
           date,
         })
-        done('Transaksi baru berhasil ditambahkan!', fresh)
+        done(lang === 'en' ? 'New transaction added successfully!' : 'Transaksi baru berhasil ditambahkan!', fresh)
       }
       close()
     } catch (err: any) {
-      alert(err?.message || 'Gagal menyimpan transaksi')
+      alert(err?.message || (lang === 'en' ? 'Failed to save transaction' : 'Gagal menyimpan transaksi'))
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-          {editData ? 'Edit Transaksi' : 'Catat Transaksi Baru'}
-        </h3>
-        <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+    <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
+      {/* Sticky Header inside modal */}
+      <div className="sticky -top-4 sm:-top-7 -mt-4 sm:-mt-7 bg-white dark:bg-slate-900 z-10 flex items-center justify-between pb-3 pt-4 sm:pt-7 border-b border-slate-100 dark:border-slate-800">
+        <div>
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+            {editData ? (lang === 'en' ? 'Edit Transaction' : 'Edit Transaksi') : (lang === 'en' ? 'Record New Transaction' : 'Catat Transaksi Baru')}
+          </h3>
+          <p className="text-[10px] sm:text-xs text-slate-400">
+            {lang === 'en' ? 'Fill details to keep balance accurate' : 'Lengkapi data untuk pencatatan akurat'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={close}
+          className="rounded-xl p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
 
+      {/* Smart Receipt Scanner Card */}
+      <div className="rounded-2xl border border-teal-500/30 bg-teal-500/10 dark:bg-teal-950/30 p-2.5 sm:p-3 text-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-teal-500/20 text-teal-600 dark:text-teal-400">
+              <Camera className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-100">
+                <span className="truncate">{lang === 'en' ? 'Smart Receipt Scanner' : 'Pindai Struk / Bukti AI'}</span>
+                <span className="shrink-0 rounded-full bg-teal-500 px-1.5 py-0.2 text-[9px] font-black text-white">AI ✨</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 sm:line-clamp-none">
+                {lang === 'en' ? 'Upload receipt / screenshot for auto-fill' : 'Upload foto struk belanja / mutasi untuk isi otomatis'}
+              </p>
+            </div>
+          </div>
+
+          <div className="self-end sm:self-auto shrink-0">
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              className="hidden"
+              onChange={handleScanReceiptFile}
+            />
+            <button
+              type="button"
+              disabled={scanningReceipt}
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-teal-500/40 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-bold text-teal-600 dark:text-teal-400 shadow-sm hover:bg-teal-50 dark:hover:bg-slate-800 transition cursor-pointer"
+            >
+              {scanningReceipt ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>{lang === 'en' ? 'Analyzing...' : 'Membaca...'}</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>{lang === 'en' ? 'Upload Receipt' : 'Upload Struk'}</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {scanMessage && (
+          <div className="mt-2.5 flex items-center gap-1.5 rounded-lg bg-teal-500/15 px-2.5 py-1.5 text-[11px] font-semibold text-teal-700 dark:text-teal-300">
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+            <span>{scanMessage}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Voice Input Card */}
+      <div className="rounded-2xl border border-violet-500/30 bg-violet-500/10 dark:bg-violet-950/30 p-2.5 sm:p-3 text-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-500/20 text-violet-600 dark:text-violet-400">
+              <Mic className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-100">
+                <span className="truncate">{lang === 'en' ? 'Voice Input' : 'Input Suara'}</span>
+                <span className="shrink-0 rounded-full bg-violet-500 px-1.5 py-0.2 text-[9px] font-black text-white">AI 🎙️</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 sm:line-clamp-none">
+                {lang === 'en'
+                  ? 'Say e.g. "Lunch 25k" to auto-fill all fields'
+                  : 'Bilang cth: "Jajan 25 ribu" untuk isi otomatis'}
+              </p>
+            </div>
+          </div>
+          <div className="self-end sm:self-auto shrink-0">
+            <VoiceInputButton
+              lang={lang}
+              disabled={submitting}
+              onResult={(result) => {
+                if (result.amount > 0) setAmount(result.amount)
+                if (result.type) {
+                  setType(result.type)
+                  // reset category ke tipe yang sesuai
+                  const firstMatch = categoriesList.find((c) => c.type === result.type)
+                  if (firstMatch) setCategoryId(firstMatch.id)
+                }
+                if (result.description) setDescription(result.description)
+                if (result.date) setDate(result.date)
+                if (result.categoryId) {
+                  setCategoryId(result.categoryId)
+                } else if (result.categoryName) {
+                  const matched = categoriesList.find(
+                    (c) =>
+                      c.type === (result.type || 'expense') &&
+                      c.name.toLowerCase().includes(result.categoryName.toLowerCase())
+                  )
+                  if (matched) setCategoryId(matched.id)
+                }
+              }}
+              onError={(msg) => console.warn('[VoiceInput]', msg)}
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Type Switcher */}
-      <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 dark:bg-slate-800 p-1.5 text-xs font-bold">
+      <div className="grid grid-cols-2 gap-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 p-1 text-xs font-bold">
         <button
           type="button"
           onClick={() => handleTypeChange('expense')}
-          className={`flex items-center justify-center gap-2 rounded-xl py-2.5 transition ${
-            type === 'expense' ? 'bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
+          className={`flex items-center justify-center gap-1.5 rounded-xl py-2 sm:py-2.5 transition cursor-pointer ${type === 'expense' ? 'bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
         >
-          <ArrowUpRight className="h-4 w-4" />
-          <span>Pengeluaran</span>
+          <ArrowUpRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span>{lang === 'en' ? 'Expense' : 'Pengeluaran'}</span>
         </button>
         <button
           type="button"
           onClick={() => handleTypeChange('income')}
-          className={`flex items-center justify-center gap-2 rounded-xl py-2.5 transition ${
-            type === 'income' ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
+          className={`flex items-center justify-center gap-1.5 rounded-xl py-2 sm:py-2.5 transition cursor-pointer ${type === 'income' ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
         >
-          <ArrowDownRight className="h-4 w-4" />
-          <span>Pemasukan</span>
+          <ArrowDownRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span>{lang === 'en' ? 'Income' : 'Pemasukan'}</span>
         </button>
       </div>
 
@@ -2440,7 +5426,8 @@ function TransactionModal({
       <RupiahInput
         value={amount}
         onChange={setAmount}
-        label="Nominal Transaksi (Auto Rupiah)"
+        lang={lang}
+        label={lang === 'en' ? 'Transaction Amount (Auto Rupiah)' : 'Nominal Transaksi (Auto Rupiah)'}
         placeholder="Rp 0"
         required
         showPresets
@@ -2449,54 +5436,115 @@ function TransactionModal({
 
       {/* Description */}
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">Deskripsi / Catatan *</label>
+        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+          {lang === 'en' ? 'Description / Notes *' : 'Deskripsi / Catatan *'}
+        </label>
         <input
           type="text"
           required
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="cth: Makan siang, Gaji bulanan, Bensin..."
+          placeholder={lang === 'en' ? 'e.g. Lunch, Monthly Salary, Fuel...' : 'cth: Makan siang, Gaji bulanan, Bensin...'}
           className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
         />
       </div>
 
+      {/* Empty wallet / category helper banners */}
+      {walletsList.length === 0 && (
+        <div className="rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/70 dark:bg-amber-950/30 p-3 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+          <div>
+            <p className="font-bold">{lang === 'en' ? 'No Wallets Available' : 'Dompet Belum Tersedia'}</p>
+            <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
+              {lang === 'en'
+                ? 'Select or tap "+ Create New Wallet" in the selector below (e.g. "BCA" or "Cash") to create it immediately.'
+                : 'Pilih atau klik "+ Tambah Dompet Baru" pada kolom di bawah (misal: "BCA" atau "Kas Tunai") untuk langsung membuatnya.'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {filteredCategories.length === 0 && (
+        <div className="rounded-xl border border-teal-200 dark:border-teal-900/60 bg-teal-50/70 dark:bg-teal-950/30 p-3 text-xs text-teal-800 dark:text-teal-300 flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0 text-teal-600 mt-0.5" />
+          <div>
+            <p className="font-bold">{lang === 'en' ? 'No Category Available' : 'Kategori Belum Tersedia'}</p>
+            <p className="text-[11px] text-teal-700 dark:text-teal-400 mt-0.5">
+              {lang === 'en'
+                ? 'Select or tap "+ Create New Category" in the selector below (e.g. "Food" or "Salary") to create it immediately.'
+                : 'Pilih atau klik "+ Tambah Kategori Baru" pada kolom di bawah (misal: "Makanan" atau "Gaji") untuk langsung membuatnya.'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* React-Select: Wallet & Category Selection */}
       <div className="grid gap-3 sm:grid-cols-2">
-        <CustomSelect
-          label="Pilih Dompet / Rekening"
+        <CustomCreatableSelect
+          label={lang === 'en' ? 'Select Wallet / Account' : 'Pilih Dompet / Rekening'}
           required
+          isLoading={isCreatingWallet}
+          isDisabled={isCreatingWallet}
           value={walletOptions.find((o) => o.value === walletId)}
           onChange={(option) => option && setWalletId(option.value)}
+          onCreateOption={handleCreateWallet}
           options={walletOptions}
           isSearchable
+          placeholder={lang === 'en' ? 'Select or type to create new...' : 'Pilih atau ketik untuk buat baru...'}
+          formatCreateLabel={(inputValue) => lang === 'en' ? `+ Create new wallet: "${inputValue}"` : `+ Buat dompet baru: "${inputValue}"`}
         />
 
-        <CustomSelect
-          label="Kategori Transaksi"
+        <CustomCreatableSelect
+          label={lang === 'en' ? 'Transaction Category' : 'Kategori Transaksi'}
           required
+          isLoading={isCreatingCategory}
+          isDisabled={isCreatingCategory}
           value={categoryOptions.find((o) => o.value === categoryId)}
           onChange={(option) => option && setCategoryId(option.value)}
+          onCreateOption={handleCreateCategory}
           options={categoryOptions}
           isSearchable
+          placeholder={lang === 'en' ? 'Select or type to create new...' : 'Pilih atau ketik untuk buat baru...'}
+          formatCreateLabel={(inputValue) => lang === 'en' ? `+ Create category: "${inputValue}"` : `+ Buat kategori: "${inputValue}"`}
         />
       </div>
 
       {/* Clickable Date Picker Popup */}
       <DatePickerInput
-        label="Tanggal Transaksi (Klik untuk Memilih)"
+        label={lang === 'en' ? 'Transaction Date (Click to Select)' : 'Tanggal Transaksi (Klik untuk Memilih)'}
         required
         value={date}
         onChange={setDate}
+        lang={lang}
       />
 
-      <div className="pt-2">
+      {/* Sticky Bottom Actions */}
+      <div className="sticky -bottom-4 sm:-bottom-7 -mb-4 sm:-mb-7 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md pt-3 pb-4 sm:pb-7 border-t border-slate-100 dark:border-slate-800 mt-2 z-10">
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition disabled:opacity-50"
+          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
         >
-          {submitting ? 'Menyimpan...' : editData ? 'Perbarui Transaksi' : 'Simpan Transaksi'}
+          {submitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>{lang === 'en' ? 'Saving...' : 'Menyimpan...'}</span>
+            </>
+          ) : (
+            <span>
+              {editData
+                ? (amount > 0
+                  ? `${lang === 'en' ? 'Update Transaction' : 'Perbarui Transaksi'} • ${formatRupiah(amount, true)}`
+                  : (lang === 'en' ? 'Update Transaction' : 'Perbarui Transaksi'))
+                : (amount > 0
+                  ? `${type === 'expense' ? (lang === 'en' ? 'Save Expense' : 'Simpan Pengeluaran') : (lang === 'en' ? 'Save Income' : 'Simpan Pemasukan')} • ${formatRupiah(amount, true)}`
+                  : (lang === 'en' ? 'Save Transaction' : 'Simpan Transaksi'))}
+            </span>
+          )}
         </button>
+        <p className="mt-1.5 text-center text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400">
+          {lang === 'en' ? 'Instant recording • Wallet balance updates in real-time' : 'Pencatatan instan • Saldo dompet langsung ter-update'}
+        </p>
       </div>
     </form>
   )
@@ -2505,10 +5553,12 @@ function TransactionModal({
 // 2. Transfer Modal Between Wallets
 function TransferModal({
   data,
+  lang = 'en',
   close,
   done,
 }: {
   data: Data
+  lang?: Language
   close: () => void
   done: (msg: string, freshData?: Data) => void
 }) {
@@ -2527,11 +5577,11 @@ function TransferModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (fromWalletId === toWalletId) {
-      alert('Dompet asal dan tujuan tidak boleh sama')
+      alert(lang === 'en' ? 'Source and destination wallets cannot be the same' : 'Dompet asal dan tujuan tidak boleh sama')
       return
     }
     if (!amount || amount <= 0) {
-      alert('Mohon masukkan nominal transfer')
+      alert(lang === 'en' ? 'Please enter a valid transfer amount' : 'Mohon masukkan nominal transfer')
       return
     }
     setSubmitting(true)
@@ -2543,27 +5593,39 @@ function TransferModal({
         description,
         date,
       })
-      done('Transfer saldo antar dompet berhasil!', fresh)
+      done(lang === 'en' ? 'Fund transfer between wallets successful!' : 'Transfer saldo antar dompet berhasil!', fresh)
       close()
     } catch (err: any) {
-      alert(err?.message || 'Gagal melakukan transfer')
+      alert(err?.message || (lang === 'en' ? 'Failed to process transfer' : 'Gagal melakukan transfer'))
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Transfer Antar Dompet</h3>
-        <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+    <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
+      {/* Sticky Header inside modal */}
+      <div className="sticky -top-4 sm:-top-7 -mt-4 sm:-mt-7 bg-white dark:bg-slate-900 z-10 flex items-center justify-between pb-3 pt-4 sm:pt-7 border-b border-slate-100 dark:border-slate-800">
+        <div>
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+            {lang === 'en' ? 'Transfer Between Wallets' : 'Transfer Antar Dompet'}
+          </h3>
+          <p className="text-[10px] sm:text-xs text-slate-400">
+            {lang === 'en' ? 'Move funds instantly between accounts' : 'Pindahkan saldo seketika antar rekening'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={close}
+          className="rounded-xl p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <CustomSelect
-          label="Dari Dompet (Sumber)"
+          label={lang === 'en' ? 'From Wallet (Source)' : 'Dari Dompet (Sumber)'}
           required
           value={walletOptions.find((o) => o.value === fromWalletId)}
           onChange={(opt) => opt && setFromWalletId(opt.value)}
@@ -2571,7 +5633,7 @@ function TransferModal({
         />
 
         <CustomSelect
-          label="Ke Dompet (Tujuan)"
+          label={lang === 'en' ? 'To Wallet (Destination)' : 'Ke Dompet (Tujuan)'}
           required
           value={walletOptions.find((o) => o.value === toWalletId)}
           onChange={(opt) => opt && setToWalletId(opt.value)}
@@ -2582,7 +5644,8 @@ function TransferModal({
       <RupiahInput
         value={amount}
         onChange={setAmount}
-        label="Nominal Transfer (Auto Rupiah)"
+        lang={lang}
+        label={lang === 'en' ? 'Transfer Amount (Auto Rupiah)' : 'Nominal Transfer (Auto Rupiah)'}
         placeholder="Rp 0"
         required
         showPresets
@@ -2590,31 +5653,49 @@ function TransferModal({
       />
 
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">Catatan Transfer (Opsional)</label>
+        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+          {lang === 'en' ? 'Transfer Note (Optional)' : 'Catatan Transfer (Opsional)'}
+        </label>
         <input
           type="text"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="cth: Top-up Gopay, Tarik Tunai..."
+          placeholder={lang === 'en' ? 'e.g. Gopay Top-up, Cash withdrawal...' : 'cth: Top-up Gopay, Tarik Tunai...'}
           className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-100 focus:border-emerald-500 focus:outline-none"
         />
       </div>
 
       <DatePickerInput
-        label="Tanggal Transfer (Klik untuk Memilih)"
+        label={lang === 'en' ? 'Transfer Date (Click to Select)' : 'Tanggal Transfer (Klik untuk Memilih)'}
         required
         value={date}
         onChange={setDate}
+        lang={lang}
       />
 
-      <div className="pt-2">
+      {/* Sticky Bottom Actions */}
+      <div className="sticky -bottom-4 sm:-bottom-7 -mb-4 sm:-mb-7 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md pt-3 pb-4 sm:pb-7 border-t border-slate-100 dark:border-slate-800 mt-2 z-10">
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
+          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
         >
-          {submitting ? 'Memproses Transfer...' : 'Kirim Transfer Saldo'}
+          {submitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>{lang === 'en' ? 'Processing Transfer...' : 'Memproses Transfer...'}</span>
+            </>
+          ) : (
+            <span>
+              {amount > 0 && data.wallets.find((w) => w.id === toWalletId)
+                ? `${lang === 'en' ? 'Transfer' : 'Transfer'} ${formatRupiah(amount, true)} ${lang === 'en' ? 'to' : 'ke'} ${data.wallets.find((w) => w.id === toWalletId)?.name}`
+                : (lang === 'en' ? 'Send Fund Transfer' : 'Kirim Transfer Saldo')}
+            </span>
+          )}
         </button>
+        <p className="mt-1.5 text-center text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400">
+          {lang === 'en' ? 'Zero admin fee • Automated mutation recorded in both wallets' : 'Tanpa biaya admin • Mutasi otomatis tercatat di kedua dompet'}
+        </p>
       </div>
     </form>
   )
@@ -2623,10 +5704,12 @@ function TransferModal({
 // 3. Wallet Modal with React-Select
 function WalletModal({
   editData,
+  lang = 'en',
   close,
   done,
 }: {
   editData?: WalletType
+  lang?: Language
   close: () => void
   done: (msg: string, freshData?: Data) => void
 }) {
@@ -2636,12 +5719,12 @@ function WalletModal({
   const [submitting, setSubmitting] = useState(false)
 
   const walletTypeOptions: OptionType<string>[] = [
-    { value: 'Bank', label: 'Rekening Bank' },
-    { value: 'E-wallet', label: 'E-Wallet (GoPay, OVO, Dana, dll)' },
-    { value: 'Tunai', label: 'Uang Tunai / Cash' },
-    { value: 'Kartu Kredit', label: 'Kartu Kredit' },
-    { value: 'Investasi', label: 'Investasi / Saham / Reksadana' },
-    { value: 'Lainnya', label: 'Lainnya' },
+    { value: 'Bank', label: lang === 'en' ? 'Bank Account' : 'Rekening Bank' },
+    { value: 'E-wallet', label: lang === 'en' ? 'E-Wallet (GoPay, OVO, Dana, etc)' : 'E-Wallet (GoPay, OVO, Dana, dll)' },
+    { value: 'Tunai', label: lang === 'en' ? 'Cash' : 'Uang Tunai / Cash' },
+    { value: 'Kartu Kredit', label: lang === 'en' ? 'Credit Card' : 'Kartu Kredit' },
+    { value: 'Investasi', label: lang === 'en' ? 'Investment / Stocks' : 'Investasi / Saham / Reksadana' },
+    { value: 'Lainnya', label: lang === 'en' ? 'Other' : 'Lainnya' },
   ]
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -2654,46 +5737,60 @@ function WalletModal({
           name,
           type,
         })
-        done('Dompet berhasil diperbarui!', fresh)
+        done(lang === 'en' ? 'Wallet updated successfully!' : 'Dompet berhasil diperbarui!', fresh)
       } else {
         const fresh = await addWallet({
           name,
           type,
           balance,
         })
-        done('Dompet baru berhasil ditambahkan!', fresh)
+        done(lang === 'en' ? 'New wallet added successfully!' : 'Dompet baru berhasil ditambahkan!', fresh)
       }
       close()
     } catch (err: any) {
-      alert(err?.message || 'Gagal menyimpan dompet')
+      alert(err?.message || (lang === 'en' ? 'Failed to save wallet' : 'Gagal menyimpan dompet'))
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white">{editData ? 'Edit Dompet' : 'Tambah Dompet / Rekening'}</h3>
-        <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+    <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
+      {/* Sticky Header inside modal */}
+      <div className="sticky -top-4 sm:-top-7 -mt-4 sm:-mt-7 bg-white dark:bg-slate-900 z-10 flex items-center justify-between pb-3 pt-4 sm:pt-7 border-b border-slate-100 dark:border-slate-800">
+        <div>
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+            {editData ? (lang === 'en' ? 'Edit Wallet' : 'Edit Dompet') : (lang === 'en' ? 'Add Wallet / Account' : 'Tambah Dompet / Rekening')}
+          </h3>
+          <p className="text-[10px] sm:text-xs text-slate-400">
+            {lang === 'en' ? 'Bank, e-wallet, or cash register' : 'Rekening bank, e-wallet, atau kas tunai'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={close}
+          className="rounded-xl p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">Nama Dompet / Rekening *</label>
+        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+          {lang === 'en' ? 'Wallet / Account Name *' : 'Nama Dompet / Rekening *'}
+        </label>
         <input
           type="text"
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="cth: BCA Utama, Mandiri Tabungan, GoPay, Tunai..."
+          placeholder={lang === 'en' ? 'e.g. Main Bank, Savings, Digital Wallet, Cash...' : 'cth: BCA Utama, Mandiri Tabungan, GoPay, Tunai...'}
           className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-100 focus:border-emerald-500 focus:outline-none"
         />
       </div>
 
       <CustomSelect
-        label="Tipe / Jenis Dompet"
+        label={lang === 'en' ? 'Wallet Type' : 'Tipe / Jenis Dompet'}
         required
         value={walletTypeOptions.find((o) => o.value === type)}
         onChange={(opt) => opt && setType(opt.value)}
@@ -2705,19 +5802,25 @@ function WalletModal({
         <RupiahInput
           value={balance}
           onChange={setBalance}
-          label="Saldo Awal (Opsional)"
+          lang={lang}
+          label={lang === 'en' ? 'Initial Balance (Optional)' : 'Saldo Awal (Opsional)'}
           placeholder="Rp 0"
           showPresets
         />
       )}
 
-      <div className="pt-2">
+      {/* Sticky Bottom Actions */}
+      <div className="sticky -bottom-4 sm:-bottom-7 -mb-4 sm:-mb-7 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md pt-3 pb-4 sm:pb-7 border-t border-slate-100 dark:border-slate-800 mt-2 z-10">
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
+          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50 cursor-pointer active:scale-[0.99]"
         >
-          {submitting ? 'Menyimpan...' : editData ? 'Perbarui Dompet' : 'Simpan Dompet'}
+          {submitting
+            ? (lang === 'en' ? 'Saving...' : 'Menyimpan...')
+            : editData
+              ? (lang === 'en' ? 'Update Wallet' : 'Perbarui Dompet')
+              : (lang === 'en' ? 'Save Wallet' : 'Simpan Dompet')}
         </button>
       </div>
     </form>
@@ -2727,10 +5830,12 @@ function WalletModal({
 // 4. Category Modal with React-Select
 function CategoryModal({
   editData,
+  lang = 'en',
   close,
   done,
 }: {
   editData?: Category
+  lang?: Language
   close: () => void
   done: (msg: string, freshData?: Data) => void
 }) {
@@ -2739,8 +5844,8 @@ function CategoryModal({
   const [submitting, setSubmitting] = useState(false)
 
   const categoryTypeOptions: OptionType<string>[] = [
-    { value: 'expense', label: 'Pengeluaran (Expense)' },
-    { value: 'income', label: 'Pemasukan (Income)' },
+    { value: 'expense', label: lang === 'en' ? 'Expense' : 'Pengeluaran (Expense)' },
+    { value: 'income', label: lang === 'en' ? 'Income' : 'Pemasukan (Income)' },
   ]
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -2753,45 +5858,59 @@ function CategoryModal({
           name,
           type,
         })
-        done('Kategori berhasil diperbarui!', fresh)
+        done(lang === 'en' ? 'Category updated successfully!' : 'Kategori berhasil diperbarui!', fresh)
       } else {
         const fresh = await addCategory({
           name,
           type,
         })
-        done('Kategori baru berhasil ditambahkan!', fresh)
+        done(lang === 'en' ? 'New category added successfully!' : 'Kategori baru berhasil ditambahkan!', fresh)
       }
       close()
     } catch (err: any) {
-      alert(err?.message || 'Gagal menyimpan kategori')
+      alert(err?.message || (lang === 'en' ? 'Failed to save category' : 'Gagal menyimpan kategori'))
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white">{editData ? 'Edit Kategori' : 'Tambah Kategori Baru'}</h3>
-        <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+    <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
+      {/* Sticky Header inside modal */}
+      <div className="sticky -top-4 sm:-top-7 -mt-4 sm:-mt-7 bg-white dark:bg-slate-900 z-10 flex items-center justify-between pb-3 pt-4 sm:pt-7 border-b border-slate-100 dark:border-slate-800">
+        <div>
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+            {editData ? (lang === 'en' ? 'Edit Category' : 'Edit Kategori') : (lang === 'en' ? 'Add New Category' : 'Tambah Kategori Baru')}
+          </h3>
+          <p className="text-[10px] sm:text-xs text-slate-400">
+            {lang === 'en' ? 'Group your expenses and incomes' : 'Kelompokkan pos pengeluaran & pemasukan'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={close}
+          className="rounded-xl p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">Nama Kategori *</label>
+        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+          {lang === 'en' ? 'Category Name *' : 'Nama Kategori *'}
+        </label>
         <input
           type="text"
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="cth: Belanja Bulanan, Kopi & Nongkrong, Bonus..."
+          placeholder={lang === 'en' ? 'e.g. Groceries, Dining out, Bonus...' : 'cth: Belanja Bulanan, Kopi & Nongkrong, Bonus...'}
           className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-100 focus:border-emerald-500 focus:outline-none"
         />
       </div>
 
       <CustomSelect
-        label="Tipe Kategori"
+        label={lang === 'en' ? 'Category Type' : 'Tipe Kategori'}
         required
         value={categoryTypeOptions.find((o) => o.value === type)}
         onChange={(opt) => opt && setType(opt.value)}
@@ -2799,13 +5918,18 @@ function CategoryModal({
         isSearchable={false}
       />
 
-      <div className="pt-2">
+      {/* Sticky Bottom Actions */}
+      <div className="sticky -bottom-4 sm:-bottom-7 -mb-4 sm:-mb-7 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md pt-3 pb-4 sm:pb-7 border-t border-slate-100 dark:border-slate-800 mt-2 z-10">
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
+          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50 cursor-pointer active:scale-[0.99]"
         >
-          {submitting ? 'Menyimpan...' : editData ? 'Perbarui Kategori' : 'Simpan Kategori'}
+          {submitting
+            ? (lang === 'en' ? 'Saving...' : 'Menyimpan...')
+            : editData
+              ? (lang === 'en' ? 'Update Category' : 'Perbarui Kategori')
+              : (lang === 'en' ? 'Save Category' : 'Simpan Kategori')}
         </button>
       </div>
     </form>
@@ -2817,12 +5941,14 @@ function BudgetModal({
   data,
   editData,
   defaultMonth,
+  lang = 'en',
   close,
   done,
 }: {
   data: Data
   editData?: Budget
   defaultMonth: string
+  lang?: Language
   close: () => void
   done: (msg: string, freshData?: Data) => void
 }) {
@@ -2843,7 +5969,7 @@ function BudgetModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!amount || amount <= 0) {
-      alert('Mohon masukkan batas budget yang valid')
+      alert(lang === 'en' ? 'Please enter a valid budget limit' : 'Mohon masukkan batas budget yang valid')
       return
     }
     setSubmitting(true)
@@ -2853,28 +5979,38 @@ function BudgetModal({
         amount,
         month,
       })
-      done('Budget bulanan berhasil disimpan!', fresh)
+      done(lang === 'en' ? 'Monthly budget saved successfully!' : 'Budget bulanan berhasil disimpan!', fresh)
       close()
     } catch (err: any) {
-      alert(err?.message || 'Gagal menyimpan budget')
+      alert(err?.message || (lang === 'en' ? 'Failed to save budget' : 'Gagal menyimpan budget'))
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-          {editData ? 'Edit Budget Kategori' : 'Atur Budget Bulanan'}
-        </h3>
-        <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+    <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
+      {/* Sticky Header inside modal */}
+      <div className="sticky -top-4 sm:-top-7 -mt-4 sm:-mt-7 bg-white dark:bg-slate-900 z-10 flex items-center justify-between pb-3 pt-4 sm:pt-7 border-b border-slate-100 dark:border-slate-800">
+        <div>
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+            {editData ? (lang === 'en' ? 'Edit Category Budget' : 'Edit Budget Kategori') : (lang === 'en' ? 'Set Monthly Budget' : 'Atur Budget Bulanan')}
+          </h3>
+          <p className="text-[10px] sm:text-xs text-slate-400">
+            {lang === 'en' ? 'Control monthly spending limits' : 'Kontrol batas belanja agar tidak boros'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={close}
+          className="rounded-xl p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
 
       <CustomSelect
-        label="Pilih Kategori Pengeluaran"
+        label={lang === 'en' ? 'Select Expense Category' : 'Pilih Kategori Pengeluaran'}
         required
         value={categoryOptions.find((o) => o.value === categoryId)}
         onChange={(opt) => opt && setCategoryId(opt.value)}
@@ -2883,30 +6019,33 @@ function BudgetModal({
       />
 
       <DatePickerInput
-        label="Bulan Budget (Klik untuk Memilih)"
+        label={lang === 'en' ? 'Budget Month (Click to Select)' : 'Bulan Budget (Klik untuk Memilih)'}
         type="month"
         required
         value={month}
         onChange={setMonth}
+        lang={lang}
       />
 
       <RupiahInput
         value={amount}
         onChange={setAmount}
-        label="Batas Alokasi Budget (Auto Rupiah)"
+        lang={lang}
+        label={lang === 'en' ? 'Budget Allocation Limit (Auto Rupiah)' : 'Batas Alokasi Budget (Auto Rupiah)'}
         placeholder="Rp 0"
         required
         showPresets
         showTerbilang
       />
 
-      <div className="pt-2">
+      {/* Sticky Bottom Actions */}
+      <div className="sticky -bottom-4 sm:-bottom-7 -mb-4 sm:-mb-7 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md pt-3 pb-4 sm:pb-7 border-t border-slate-100 dark:border-slate-800 mt-2 z-10">
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
+          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50 cursor-pointer active:scale-[0.99]"
         >
-          {submitting ? 'Menyimpan...' : 'Simpan Budget'}
+          {submitting ? (lang === 'en' ? 'Saving...' : 'Menyimpan...') : (lang === 'en' ? 'Save Budget' : 'Simpan Budget')}
         </button>
       </div>
     </form>
@@ -2916,10 +6055,12 @@ function BudgetModal({
 // 6. Goal Modal (Tahap 2: Target Tabungan)
 function GoalModal({
   editData,
+  lang = 'en',
   close,
   done,
 }: {
   editData?: Goal
+  lang?: Language
   close: () => void
   done: (msg: string, freshData?: Data) => void
 }) {
@@ -2934,11 +6075,11 @@ function GoalModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) {
-      alert('Nama target tabungan wajib diisi')
+      alert(lang === 'en' ? 'Goal name is required' : 'Nama target tabungan wajib diisi')
       return
     }
     if (!targetAmount || targetAmount <= 0) {
-      alert('Target nominal tabungan harus lebih dari 0')
+      alert(lang === 'en' ? 'Target amount must be greater than 0' : 'Target nominal tabungan harus lebih dari 0')
       return
     }
     setSubmitting(true)
@@ -2951,7 +6092,7 @@ function GoalModal({
           currentAmount,
           targetDate: targetDate || undefined,
         })
-        done('Target tabungan berhasil diperbarui!', fresh)
+        done(lang === 'en' ? 'Goal updated successfully!' : 'Target tabungan berhasil diperbarui!', fresh)
       } else {
         const fresh = await addGoal({
           name,
@@ -2959,38 +6100,45 @@ function GoalModal({
           currentAmount,
           targetDate: targetDate || undefined,
         })
-        done('Target impian baru berhasil dibuat!', fresh)
+        done(lang === 'en' ? 'New financial goal created!' : 'Target impian baru berhasil dibuat!', fresh)
       }
       close()
     } catch (err: any) {
-      alert(err?.message || 'Gagal menyimpan target')
+      alert(err?.message || (lang === 'en' ? 'Failed to save goal' : 'Gagal menyimpan target'))
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-2">
-          <Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-            {editData ? 'Edit Target Tabungan' : 'Buat Target Impian Baru'}
+    <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
+      {/* Sticky Header inside modal */}
+      <div className="sticky -top-4 sm:-top-7 -mt-4 sm:-mt-7 bg-white dark:bg-slate-900 z-10 flex items-center justify-between pb-3 pt-4 sm:pt-7 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-2 min-w-0">
+          <Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate">
+            {editData ? (lang === 'en' ? 'Edit Financial Goal' : 'Edit Target Tabungan') : (lang === 'en' ? 'Create New Financial Goal' : 'Buat Target Impian Baru')}
           </h3>
         </div>
-        <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+        <button
+          type="button"
+          onClick={close}
+          className="rounded-xl p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer shrink-0"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">Nama Impian / Sasaran Target *</label>
+        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+          {lang === 'en' ? 'Goal Name / Purpose *' : 'Nama Impian / Sasaran Target *'}
+        </label>
         <input
           type="text"
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="cth: DP Rumah, Dana Darurat 6 Bulan, Liburan Jepang..."
+          placeholder={lang === 'en' ? 'e.g. Home Down Payment, Emergency Fund, Tokyo Trip...' : 'cth: DP Rumah, Dana Darurat 6 Bulan, Liburan Jepang...'}
           className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-100 focus:border-emerald-500 focus:outline-none"
         />
       </div>
@@ -2998,7 +6146,8 @@ function GoalModal({
       <RupiahInput
         value={targetAmount}
         onChange={setTargetAmount}
-        label="Target Nominal yang Ingin Dicapai *"
+        lang={lang}
+        label={lang === 'en' ? 'Target Amount to Reach *' : 'Target Nominal yang Ingin Dicapai *'}
         placeholder="Rp 0"
         required
         showPresets
@@ -3008,24 +6157,27 @@ function GoalModal({
       <RupiahInput
         value={currentAmount}
         onChange={setCurrentAmount}
-        label="Saldo yang Sudah Terkumpul Saat Ini (Opsional)"
+        lang={lang}
+        label={lang === 'en' ? 'Currently Saved Amount (Optional)' : 'Saldo yang Sudah Terkumpul Saat Ini (Opsional)'}
         placeholder="Rp 0"
         showPresets
       />
 
       <DatePickerInput
-        label="Target Tanggal Tercapai (Opsional)"
+        label={lang === 'en' ? 'Target Completion Date (Optional)' : 'Target Tanggal Tercapai (Opsional)'}
         value={targetDate}
         onChange={setTargetDate}
+        lang={lang}
       />
 
-      <div className="pt-2">
+      {/* Sticky Bottom Actions */}
+      <div className="sticky -bottom-4 sm:-bottom-7 -mb-4 sm:-mb-7 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md pt-3 pb-4 sm:pb-7 border-t border-slate-100 dark:border-slate-800 mt-2 z-10">
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
+          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50 cursor-pointer active:scale-[0.99]"
         >
-          {submitting ? 'Menyimpan...' : editData ? 'Perbarui Target' : 'Simpan Target Impian'}
+          {submitting ? (lang === 'en' ? 'Saving...' : 'Menyimpan...') : editData ? (lang === 'en' ? 'Update Goal' : 'Perbarui Target') : (lang === 'en' ? 'Save Goal' : 'Simpan Target Impian')}
         </button>
       </div>
     </form>
@@ -3036,11 +6188,13 @@ function GoalModal({
 function GoalDepositModal({
   goal,
   wallets,
+  lang = 'en',
   close,
   done,
 }: {
   goal: Goal
   wallets: WalletType[]
+  lang?: Language
   close: () => void
   done: (msg: string, freshData?: Data) => void
 }) {
@@ -3056,7 +6210,7 @@ function GoalDepositModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!amount || amount <= 0) {
-      alert('Mohon masukkan nominal setoran yang valid')
+      alert(lang === 'en' ? 'Please enter a valid deposit amount' : 'Mohon masukkan nominal setoran yang valid')
       return
     }
     setSubmitting(true)
@@ -3066,26 +6220,38 @@ function GoalDepositModal({
         amount,
         walletId: walletId || undefined,
       })
-      done(`Berhasil menyetor ${formatRupiah(amount)} ke target "${goal.name}"!`, fresh)
+      done(
+        lang === 'en'
+          ? `Successfully deposited ${formatRupiah(amount)} to "${goal.name}"!`
+          : `Berhasil menyetor ${formatRupiah(amount)} ke target "${goal.name}"!`,
+        fresh
+      )
       close()
     } catch (err: any) {
-      alert(err?.message || 'Gagal menyetor tabungan')
+      alert(err?.message || (lang === 'en' ? 'Failed to deposit savings' : 'Gagal menyetor tabungan'))
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-2">
-          <PiggyBank className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-          <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Setor Saldo Tabungan</h3>
-            <p className="text-xs text-slate-400">{goal.name}</p>
+    <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
+      {/* Sticky Header inside modal */}
+      <div className="sticky -top-4 sm:-top-7 -mt-4 sm:-mt-7 bg-white dark:bg-slate-900 z-10 flex items-center justify-between pb-3 pt-4 sm:pt-7 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-2 min-w-0">
+          <PiggyBank className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <div className="min-w-0">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate">
+              {lang === 'en' ? 'Deposit Savings' : 'Setor Saldo Tabungan'}
+            </h3>
+            <p className="text-[10px] sm:text-xs text-slate-400 truncate">{goal.name}</p>
           </div>
         </div>
-        <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+        <button
+          type="button"
+          onClick={close}
+          className="rounded-xl p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer shrink-0"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -3093,7 +6259,8 @@ function GoalDepositModal({
       <RupiahInput
         value={amount}
         onChange={setAmount}
-        label="Nominal yang Disetor (Auto Rupiah) *"
+        lang={lang}
+        label={lang === 'en' ? 'Deposit Amount (Auto Rupiah) *' : 'Nominal yang Disetor (Auto Rupiah) *'}
         placeholder="Rp 0"
         required
         showPresets
@@ -3101,19 +6268,20 @@ function GoalDepositModal({
       />
 
       <CustomSelect
-        label="Potong dari Dompet / Rekening (Opsional)"
+        label={lang === 'en' ? 'Deduct from Wallet / Account (Optional)' : 'Potong dari Dompet / Rekening (Opsional)'}
         value={walletOptions.find((o) => o.value === walletId)}
         onChange={(opt) => opt && setWalletId(opt.value)}
         options={walletOptions}
       />
 
-      <div className="pt-2">
+      {/* Sticky Bottom Actions */}
+      <div className="sticky -bottom-4 sm:-bottom-7 -mb-4 sm:-mb-7 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md pt-3 pb-4 sm:pb-7 border-t border-slate-100 dark:border-slate-800 mt-2 z-10">
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
+          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50 cursor-pointer active:scale-[0.99]"
         >
-          {submitting ? 'Memproses...' : 'Setor Sekarang'}
+          {submitting ? (lang === 'en' ? 'Processing...' : 'Memproses...') : (lang === 'en' ? 'Deposit Now' : 'Setor Sekarang')}
         </button>
       </div>
     </form>
@@ -3124,11 +6292,13 @@ function GoalDepositModal({
 function SubscriptionModal({
   data,
   editData,
+  lang = 'en',
   close,
   done,
 }: {
   data: Data
   editData?: Subscription
+  lang?: Language
   close: () => void
   done: (msg: string, freshData?: Data) => void
 }) {
@@ -3143,9 +6313,9 @@ function SubscriptionModal({
   const [submitting, setSubmitting] = useState(false)
 
   const cycleOptions: OptionType<string>[] = [
-    { value: 'monthly', label: 'Bulanan (Tiap Bulan)' },
-    { value: 'yearly', label: 'Tahunan (Tiap Tahun)' },
-    { value: 'weekly', label: 'Mingguan (Tiap Minggu)' },
+    { value: 'monthly', label: lang === 'en' ? 'Monthly (Every Month)' : 'Bulanan (Tiap Bulan)' },
+    { value: 'yearly', label: lang === 'en' ? 'Yearly (Every Year)' : 'Tahunan (Tiap Tahun)' },
+    { value: 'weekly', label: lang === 'en' ? 'Weekly (Every Week)' : 'Mingguan (Tiap Minggu)' },
   ]
 
   const categoryOptions: OptionType<number>[] = data.categories
@@ -3160,11 +6330,11 @@ function SubscriptionModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) {
-      alert('Nama tagihan wajib diisi')
+      alert(lang === 'en' ? 'Bill name is required' : 'Nama tagihan wajib diisi')
       return
     }
     if (!amount || amount <= 0) {
-      alert('Nominal tagihan harus lebih dari 0')
+      alert(lang === 'en' ? 'Bill cost must be greater than 0' : 'Nominal tagihan harus lebih dari 0')
       return
     }
     setSubmitting(true)
@@ -3181,7 +6351,7 @@ function SubscriptionModal({
           isActive,
           reminderDaysBefore,
         })
-        done('Tagihan rutin berhasil diperbarui!', fresh)
+        done(lang === 'en' ? 'Recurring bill updated successfully!' : 'Tagihan rutin berhasil diperbarui!', fresh)
       } else {
         const fresh = await addSubscription({
           name,
@@ -3192,38 +6362,45 @@ function SubscriptionModal({
           walletId,
           reminderDaysBefore,
         })
-        done('Tagihan baru berhasil ditambahkan!', fresh)
+        done(lang === 'en' ? 'New recurring bill added!' : 'Tagihan baru berhasil ditambahkan!', fresh)
       }
       close()
     } catch (err: any) {
-      alert(err?.message || 'Gagal menyimpan tagihan')
+      alert(err?.message || (lang === 'en' ? 'Failed to save bill' : 'Gagal menyimpan tagihan'))
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-            {editData ? 'Edit Tagihan Rutin' : 'Catat Tagihan & Langganan Rutin'}
+    <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
+      {/* Sticky Header inside modal */}
+      <div className="sticky -top-4 sm:-top-7 -mt-4 sm:-mt-7 bg-white dark:bg-slate-900 z-10 flex items-center justify-between pb-3 pt-4 sm:pt-7 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-2 min-w-0">
+          <CalendarDays className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate">
+            {editData ? (lang === 'en' ? 'Edit Recurring Bill' : 'Edit Tagihan Rutin') : (lang === 'en' ? 'Record Recurring Bill' : 'Catat Tagihan & Langganan')}
           </h3>
         </div>
-        <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+        <button
+          type="button"
+          onClick={close}
+          className="rounded-xl p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer shrink-0"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">Nama Tagihan / Langganan *</label>
+        <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+          {lang === 'en' ? 'Bill / Subscription Name *' : 'Nama Tagihan / Langganan *'}
+        </label>
         <input
           type="text"
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="cth: Netflix Premium, Spotify Family, WiFi Indihome, BPJS, PLN..."
+          placeholder={lang === 'en' ? 'e.g. Netflix Premium, Spotify, Internet WiFi, Insurance...' : 'cth: Netflix Premium, Spotify Family, WiFi Indihome, BPJS, PLN...'}
           className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-100 focus:border-emerald-500 focus:outline-none"
         />
       </div>
@@ -3231,7 +6408,8 @@ function SubscriptionModal({
       <RupiahInput
         value={amount}
         onChange={setAmount}
-        label="Biaya Tagihan (Auto Rupiah) *"
+        lang={lang}
+        label={lang === 'en' ? 'Billing Cost (Auto Rupiah) *' : 'Biaya Tagihan (Auto Rupiah) *'}
         placeholder="Rp 0"
         required
         showPresets
@@ -3240,7 +6418,7 @@ function SubscriptionModal({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <CustomSelect
-          label="Siklus Tagihan"
+          label={lang === 'en' ? 'Billing Cycle' : 'Siklus Tagihan'}
           value={cycleOptions.find((o) => o.value === billingCycle)}
           onChange={(opt) => opt && setBillingCycle(opt.value)}
           options={cycleOptions}
@@ -3248,7 +6426,9 @@ function SubscriptionModal({
         />
 
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">Tanggal Jatuh Tempo (1 - 31) *</label>
+          <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+            {lang === 'en' ? 'Due Day of Month (1 - 31) *' : 'Tanggal Jatuh Tempo (1 - 31) *'}
+          </label>
           <input
             type="number"
             min={1}
@@ -3263,29 +6443,34 @@ function SubscriptionModal({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <CustomSelect
-          label="Kategori Biaya (Opsional)"
+          label={lang === 'en' ? 'Expense Category (Optional)' : 'Kategori Biaya (Opsional)'}
           value={categoryOptions.find((o) => o.value === categoryId)}
           onChange={(opt) => setCategoryId(opt?.value)}
           options={categoryOptions}
-          placeholder="Pilih Kategori"
+          placeholder={lang === 'en' ? 'Select Category' : 'Pilih Kategori'}
         />
 
         <CustomSelect
-          label="Dompet Default (Opsional)"
+          label={lang === 'en' ? 'Default Wallet (Optional)' : 'Dompet Default (Opsional)'}
           value={walletOptions.find((o) => o.value === walletId)}
           onChange={(opt) => setWalletId(opt?.value)}
           options={walletOptions}
-          placeholder="Pilih Dompet"
+          placeholder={lang === 'en' ? 'Select Wallet' : 'Pilih Dompet'}
         />
       </div>
 
-      <div className="pt-2">
+      {/* Sticky Bottom Actions */}
+      <div className="sticky -bottom-4 sm:-bottom-7 -mb-4 sm:-mb-7 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md pt-3 pb-4 sm:pb-7 border-t border-slate-100 dark:border-slate-800 mt-2 z-10">
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
+          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50 cursor-pointer active:scale-[0.99]"
         >
-          {submitting ? 'Menyimpan...' : editData ? 'Perbarui Tagihan' : 'Simpan Tagihan Rutin'}
+          {submitting
+            ? (lang === 'en' ? 'Saving...' : 'Menyimpan...')
+            : editData
+              ? (lang === 'en' ? 'Update Bill' : 'Perbarui Tagihan')
+              : (lang === 'en' ? 'Save Recurring Bill' : 'Simpan Tagihan Rutin')}
         </button>
       </div>
     </form>
@@ -3296,17 +6481,30 @@ function SubscriptionModal({
 function PaySubscriptionModal({
   subscription,
   wallets,
+  lang = 'en',
   close,
   done,
 }: {
   subscription: Subscription
   wallets: WalletType[]
+  lang?: Language
   close: () => void
   done: (msg: string, freshData?: Data) => void
 }) {
   const [walletId, setWalletId] = useState<number>(subscription.walletId || wallets[0]?.id || 0)
   const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10))
+  const [markAsPaid, setMarkAsPaid] = useState<boolean>(true)
   const [submitting, setSubmitting] = useState(false)
+
+  const now = new Date()
+  const currentMonth = now.getMonth()
+  const currentYear = now.getFullYear()
+  const isAlreadyPaid = !!(
+    subscription.lastPaidAt &&
+    new Date(subscription.lastPaidAt).getMonth() === currentMonth &&
+    new Date(subscription.lastPaidAt).getFullYear() === currentYear
+  )
+  const isOverdue = !isAlreadyPaid && now.getDate() > subscription.dueDate
 
   const walletOptions: OptionType<number>[] = wallets.map((w) => ({
     value: w.id,
@@ -3316,7 +6514,7 @@ function PaySubscriptionModal({
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!walletId) {
-      alert('Pilih dompet untuk pembayaran')
+      alert(lang === 'en' ? 'Select a wallet for payment' : 'Pilih dompet untuk pembayaran')
       return
     }
     setSubmitting(true)
@@ -3325,38 +6523,53 @@ function PaySubscriptionModal({
         subscriptionId: subscription.id,
         walletId,
         date,
+        markAsPaid,
       })
-      done(`Pembayaran tagihan "${subscription.name}" sebesar ${formatRupiah(subscription.amount)} berhasil dicatat!`, fresh)
+      done(
+        lang === 'en'
+          ? `Payment of ${formatRupiah(subscription.amount)} for "${subscription.name}" recorded! Status: Paid.`
+          : `Pembayaran tagihan "${subscription.name}" sebesar ${formatRupiah(subscription.amount)} berhasil dicatat & status tagihan kini Lunas!`,
+        fresh
+      )
       close()
     } catch (err: any) {
-      alert(err?.message || 'Gagal memproses pembayaran')
+      alert(err?.message || (lang === 'en' ? 'Failed to process payment' : 'Gagal memproses pembayaran'))
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <form onSubmit={handlePay} className="space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-2">
-          <Zap className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-          <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Bayar Tagihan</h3>
-            <p className="text-xs text-slate-400">{subscription.name}</p>
+    <form onSubmit={handlePay} className="space-y-3.5 sm:space-y-4">
+      {/* Sticky Header inside modal */}
+      <div className="sticky -top-4 sm:-top-7 -mt-4 sm:-mt-7 bg-white dark:bg-slate-900 z-10 flex items-center justify-between pb-3 pt-4 sm:pt-7 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-2 min-w-0">
+          <Zap className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <div className="min-w-0">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate">
+              {lang === 'en' ? 'Pay Bill' : 'Bayar Tagihan'}
+            </h3>
+            <p className="text-[10px] sm:text-xs text-slate-400 truncate">{subscription.name}</p>
           </div>
         </div>
-        <button type="button" onClick={close} className="rounded-lg p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+        <button
+          type="button"
+          onClick={close}
+          className="rounded-xl p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer shrink-0"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
 
-      <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-4 text-center">
-        <p className="text-xs text-slate-400">Total yang akan dicatat sebagai pengeluaran:</p>
-        <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{formatRupiah(subscription.amount)}</p>
+      <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-3 sm:p-4 text-center">
+        <p className="text-xs text-slate-400">
+          {lang === 'en' ? 'Total to be recorded as expense:' : 'Total yang akan dicatat sebagai pengeluaran:'}
+        </p>
+        <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">{formatRupiah(subscription.amount)}</p>
       </div>
 
       <CustomSelect
-        label="Bayar Menggunakan Dompet / Rekening *"
+        label={lang === 'en' ? 'Pay Using Wallet / Account *' : 'Bayar Menggunakan Dompet / Rekening *'}
         required
         value={walletOptions.find((o) => o.value === walletId)}
         onChange={(opt) => opt && setWalletId(opt.value)}
@@ -3364,19 +6577,76 @@ function PaySubscriptionModal({
       />
 
       <DatePickerInput
-        label="Tanggal Pembayaran *"
+        label={lang === 'en' ? 'Payment Date *' : 'Tanggal Pembayaran *'}
         required
         value={date}
         onChange={setDate}
+        lang={lang}
       />
 
-      <div className="pt-2">
+      {/* Modern iOS-Style Toggle Card */}
+      <div className={`rounded-2xl border transition-all duration-200 p-3 sm:p-4 ${markAsPaid
+        ? 'border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20'
+        : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40'
+        }`}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <span className={`flex h-6 w-6 items-center justify-center rounded-lg text-xs font-bold transition-colors ${markAsPaid
+                ? 'bg-emerald-500 text-white shadow-xs'
+                : 'bg-slate-200 dark:bg-slate-800 text-slate-400'
+                }`}>
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              </span>
+              <p className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                {lang === 'en'
+                  ? 'Mark as Paid This Month'
+                  : 'Tandai Lunas Periode Ini'}
+              </p>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 pl-8 leading-relaxed">
+              {markAsPaid
+                ? (lang === 'en'
+                  ? 'Status in the list will become Paid & due date warnings will be muted.'
+                  : 'Status di list tagihan otomatis menjadi Lunas dan notifikasi tempo dihentikan.')
+                : (lang === 'en'
+                  ? 'Only the transaction will be recorded (status remains unpaid).'
+                  : 'Hanya mencatat transaksi pengeluaran (status tagihan tetap belum lunas).')}
+            </p>
+          </div>
+
+          {/* iOS-Style Toggle Pill */}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={markAsPaid}
+            onClick={() => setMarkAsPaid(!markAsPaid)}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${markAsPaid ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
+              }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${markAsPaid ? 'translate-x-5' : 'translate-x-0'
+                }`}
+            />
+          </button>
+        </div>
+      </div>
+
+      {/* Sticky Bottom Actions */}
+      <div className="sticky -bottom-4 sm:-bottom-7 -mb-4 sm:-mb-7 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md pt-3 pb-4 sm:pb-7 border-t border-slate-100 dark:border-slate-800 mt-2 z-10">
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700 transition disabled:opacity-50 cursor-pointer active:scale-[0.99]"
         >
-          {submitting ? 'Memproses Transaksi...' : 'Konfirmasi & Catat Pembayaran'}
+          <Zap className="h-4 w-4 text-white" />
+          <span>
+            {submitting
+              ? (lang === 'en' ? 'Processing Transaction...' : 'Memproses Transaksi...')
+              : markAsPaid
+                ? (lang === 'en' ? 'Confirm & Mark as Paid' : 'Konfirmasi & Tandai Lunas')
+                : (lang === 'en' ? 'Record Expense Only' : 'Catat Pengeluaran Saja')}
+          </span>
         </button>
       </div>
     </form>

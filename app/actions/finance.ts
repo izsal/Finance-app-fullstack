@@ -43,31 +43,35 @@ export async function getFinanceData() {
   };
 }
 
+async function checkProAccess(uid: string, featureName: string) {
+  const userRecord = await db.query.user.findFirst({ where: (u, { eq }) => eq(u.id, uid) });
+  if (userRecord?.plan !== 'pro') {
+    throw new Error(`Fitur ${featureName} eksklusif untuk pengguna Qwarts Finance PRO.`);
+  }
+}
+
 export async function seedDefaults() {
   await ensureTahap2Tables();
   const uid = await userId();
+  const userRecord = await db.query.user.findFirst({ where: (u, { eq }) => eq(u.id, uid) });
+  const isPro = userRecord?.plan === 'pro';
+
   const existing = await db
     .select()
     .from(wallets)
     .where(eq(wallets.userId, uid));
   if (!existing.length) {
-    await db.insert(wallets).values([
-      { userId: uid, name: "Tunai / Cash", type: "Tunai", balance: 0, color: "emerald" },
-      {
-        userId: uid,
-        name: "BCA / Bank Utama",
-        type: "Bank",
-        balance: 0,
-        color: "teal",
-      },
-      {
-        userId: uid,
-        name: "GoPay / OVO / Dana",
-        type: "E-wallet",
-        balance: 0,
-        color: "indigo",
-      },
-    ]);
+    const defaultWallets = isPro
+      ? [
+        { userId: uid, name: "Tunai / Cash", type: "Tunai", balance: 0, color: "emerald" },
+        { userId: uid, name: "BCA / Bank Utama", type: "Bank", balance: 0, color: "teal" },
+        { userId: uid, name: "GoPay / OVO / Dana", type: "E-wallet", balance: 0, color: "indigo" },
+      ]
+      : [
+        { userId: uid, name: "Tunai / Cash", type: "Tunai", balance: 0, color: "emerald" },
+        { userId: uid, name: "BCA / Bank Utama", type: "Bank", balance: 0, color: "teal" },
+      ];
+    await db.insert(wallets).values(defaultWallets);
   }
 
   const cats = await db
@@ -92,6 +96,14 @@ export async function seedDefaults() {
 // WALLET ACTIONS
 export async function addWallet(form: { name: string; type: string; balance?: number; color?: string }) {
   const uid = await userId();
+  const userRecord = await db.query.user.findFirst({ where: (u, { eq }) => eq(u.id, uid) });
+  if (userRecord?.plan !== 'pro') {
+    const currentWallets = await db.select().from(wallets).where(eq(wallets.userId, uid));
+    if (currentWallets.length >= 2) {
+      throw new Error('Paket Free dibatasi maksimal 2 dompet/rekening. Silakan upgrade ke PRO untuk menambah dompet tanpa batas.');
+    }
+  }
+
   await db.insert(wallets).values({
     userId: uid,
     name: form.name.trim(),
@@ -170,6 +182,7 @@ export async function upsertBudget(form: {
   month: string;
 }) {
   const uid = await userId();
+  await checkProAccess(uid, "Budget Bulanan");
   const existing = await db
     .select()
     .from(budgets)
@@ -234,6 +247,67 @@ export async function addTransaction(form: {
     description: form.description.trim(),
     date: new Date(form.date),
   });
+  revalidatePath("/");
+  return getFinanceData();
+}
+
+export async function importTransactions(form: {
+  walletId: number;
+  transactions: Array<{
+    categoryId?: number | null;
+    type: string;
+    amount: number;
+    description: string;
+    date: string;
+  }>;
+}) {
+  const uid = await userId();
+  const wallet = await db
+    .select()
+    .from(wallets)
+    .where(and(eq(wallets.id, form.walletId), eq(wallets.userId, uid)));
+  if (!wallet.length) throw new Error("Dompet tidak ditemukan");
+
+  const userCats = await db
+    .select()
+    .from(categories)
+    .where(eq(categories.userId, uid));
+  if (!userCats.length) throw new Error("Buat kategori terlebih dahulu sebelum mengimpor");
+
+  const catIds = new Set(userCats.map((c) => c.id));
+
+  const rows = form.transactions
+    .filter((t) => Number.isFinite(Number(t.amount)) && Number(t.amount) > 0)
+    .slice(0, 1000)
+    .map((t) => {
+      const type = t.type === "income" ? "income" : "expense";
+      const provided =
+        typeof t.categoryId === "number" && catIds.has(t.categoryId)
+          ? userCats.find((c) => c.id === t.categoryId)
+          : undefined;
+      const categoryId =
+        provided && provided.type === type
+          ? provided.id
+          : (userCats.find((c) => c.type === type) ?? userCats[0]).id;
+
+      return {
+        userId: uid,
+        walletId: form.walletId,
+        categoryId,
+        type,
+        amount: Math.round(Number(t.amount)),
+        description: String(t.description || "Transaksi").trim().slice(0, 200),
+        date: new Date(t.date),
+      };
+    });
+
+  if (!rows.length) throw new Error("Tidak ada transaksi valid untuk diimpor");
+
+  const CHUNK_SIZE = 200;
+  for (let i = 0; i < rows.length; i += CHUNK_SIZE) {
+    await db.insert(transactions).values(rows.slice(i, i + CHUNK_SIZE));
+  }
+
   revalidatePath("/");
   return getFinanceData();
 }
@@ -355,6 +429,7 @@ export async function addGoal(form: {
 }) {
   await ensureTahap2Tables();
   const uid = await userId();
+  await checkProAccess(uid, "Target Impian");
   await db.insert(goals).values({
     userId: uid,
     name: form.name.trim(),
@@ -482,6 +557,7 @@ export async function addSubscription(form: {
 }) {
   await ensureTahap2Tables();
   const uid = await userId();
+  await checkProAccess(uid, "Tagihan Rutin");
   await db.insert(subscriptions).values({
     userId: uid,
     name: form.name.trim(),
@@ -531,6 +607,7 @@ export async function paySubscription(form: {
   subscriptionId: number;
   walletId: number;
   date?: string;
+  markAsPaid?: boolean;
 }) {
   await ensureTahap2Tables();
   const uid = await userId();
@@ -562,6 +639,8 @@ export async function paySubscription(form: {
     }
   }
 
+  const paymentDate = form.date ? new Date(form.date) : new Date();
+
   await db.insert(transactions).values({
     userId: uid,
     walletId: form.walletId,
@@ -569,9 +648,27 @@ export async function paySubscription(form: {
     type: "expense",
     amount: sub.amount,
     description: `Pembayaran: ${sub.name}`,
-    date: form.date ? new Date(form.date) : new Date(),
+    date: paymentDate,
   });
 
+  if (form.markAsPaid !== false) {
+    await db
+      .update(subscriptions)
+      .set({ lastPaidAt: paymentDate })
+      .where(and(eq(subscriptions.id, form.subscriptionId), eq(subscriptions.userId, uid)));
+  }
+
+  revalidatePath("/");
+  return getFinanceData();
+}
+
+export async function resetSubscriptionPayment(subscriptionId: number) {
+  await ensureTahap2Tables();
+  const uid = await userId();
+  await db
+    .update(subscriptions)
+    .set({ lastPaidAt: null })
+    .where(and(eq(subscriptions.id, subscriptionId), eq(subscriptions.userId, uid)));
   revalidatePath("/");
   return getFinanceData();
 }
@@ -585,3 +682,28 @@ export async function deleteSubscription(id: number) {
   revalidatePath("/");
   return getFinanceData();
 }
+
+export async function checkEmailRegistered(email: string) {
+  if (!email || typeof email !== "string") return { exists: false };
+  const cleanEmail = email.trim().toLowerCase();
+  const existingUser = await db.query.user.findFirst({
+    where: (u, { eq }) => eq(u.email, cleanEmail),
+    columns: { id: true, email: true },
+  });
+  return { exists: !!existingUser };
+}
+
+/**
+ * Hapus SEMUA transaksi milik user yang sedang login.
+ * Wallet balance tidak direset — hanya history transaksi yang dihapus.
+ * Digunakan untuk memulai pencatatan dari nol.
+ */
+export async function deleteAllTransactions() {
+  const uid = await userId();
+  const result = await db
+    .delete(transactions)
+    .where(eq(transactions.userId, uid));
+  revalidatePath("/");
+  return getFinanceData();
+}
+

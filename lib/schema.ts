@@ -5,6 +5,8 @@ export const user = pgTable('user', {
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
   emailVerified: boolean('emailVerified').notNull().default(false),
+  plan: text('plan').notNull().default('free'),
+  proExpiresAt: timestamp('proExpiresAt'),
   image: text('image'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
@@ -112,7 +114,23 @@ export const subscriptions = pgTable('subscriptions', {
   walletId: integer('walletId'),
   isActive: boolean('isActive').notNull().default(true),
   reminderDaysBefore: integer('reminderDaysBefore').notNull().default(3),
+  lastPaidAt: timestamp('lastPaidAt'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
+})
+
+export const payments = pgTable('payments', {
+  id: serial('id').primaryKey(),
+  orderId: text('orderId').notNull().unique(),
+  userId: text('userId').notNull(),
+  amount: integer('amount').notNull(),
+  plan: text('plan').notNull().default('pro'),
+  billingCycle: text('billingCycle').notNull().default('yearly'),
+  status: text('status').notNull().default('PENDING'),
+  paymentUrl: text('paymentUrl'),
+  reference: text('reference'),
+  expiresAt: timestamp('expiresAt'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 })
 
 export type Wallet = typeof wallets.$inferSelect
@@ -121,3 +139,5 @@ export type Budget = typeof budgets.$inferSelect
 export type Transaction = typeof transactions.$inferSelect
 export type Goal = typeof goals.$inferSelect
 export type Subscription = typeof subscriptions.$inferSelect
+export type Payment = typeof payments.$inferSelect
+

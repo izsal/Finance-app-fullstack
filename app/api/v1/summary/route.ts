@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { apiError, apiSuccess, getAuthUser } from '@/lib/api-auth'
+import { apiError, apiSuccess, getAuthUser, requireProUser } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 import { budgets, categories, transactions, wallets } from '@/lib/schema'
 import { desc, eq } from 'drizzle-orm'
@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   try {
     const user = await getAuthUser(req)
 
-    const [allWallets, allCategories, allBudgets, allTransactions] = await Promise.all([
+    let [allWallets, allCategories, allBudgets, allTransactions] = await Promise.all([
       db.select().from(wallets).where(eq(wallets.userId, user.id)),
       db.select().from(categories).where(eq(categories.userId, user.id)),
       db.select().from(budgets).where(eq(budgets.userId, user.id)),
@@ -18,6 +18,8 @@ export async function GET(req: NextRequest) {
         .where(eq(transactions.userId, user.id))
         .orderBy(desc(transactions.date)),
     ])
+
+
 
     // Calculate dynamic wallet balances
     const calculatedWallets = allWallets.map((w) => {
@@ -95,6 +97,9 @@ export async function GET(req: NextRequest) {
   } catch (err: any) {
     if (err?.message === 'UNAUTHORIZED') {
       return apiError('Unauthorized. Silakan sertakan header Authorization: Bearer <token>', 401)
+    }
+    if (err?.message === 'PRO_REQUIRED') {
+      return apiError('Fitur REST API eksklusif untuk pengguna Qwarts Finance PRO. Silakan upgrade paket akun Anda di dashboard.', 403)
     }
     return apiError(err?.message || 'Gagal memuat ringkasan', 500)
   }

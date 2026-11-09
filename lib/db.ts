@@ -1,42 +1,43 @@
-import dns from 'node:dns'
 import { drizzle } from 'drizzle-orm/node-postgres'
-import { Pool } from 'pg'
+import { Pool, type PoolConfig } from 'pg'
 import * as schema from './schema'
 
-// Prioritize IPv4 to avoid network EHOSTUNREACH errors on IPv6-incompatible networks
-try {
-  dns.setDefaultResultOrder('ipv4first')
-} catch {
-  // ignore if not supported in runtime
-}
+function getDatabaseConfig(): PoolConfig {
+  let connectionString = process.env.DATABASE_URL
 
-// Prevent creating multiple pg Pool instances during Next.js Hot Reloading
-const globalForDb = globalThis as unknown as {
-  pgPool: Pool | undefined
-}
+  if (connectionString) {
+    try {
+      const url = new URL(connectionString)
+      const sslmode = url.searchParams.get('sslmode')
+      if (sslmode && !url.searchParams.has('uselibpqcompat')) {
+        url.searchParams.set('uselibpqcompat', 'true')
+      }
+      connectionString = url.toString()
+    } catch {
+      if (connectionString.includes('sslmode=') && !connectionString.includes('uselibpqcompat')) {
+        connectionString = connectionString.includes('?')
+          ? `${connectionString}&uselibpqcompat=true`
+          : `${connectionString}?uselibpqcompat=true`
+      }
+    }
+  }
 
-const connectionString =
-  (process.env.NODE_ENV !== 'production' && process.env.DATABASE_URL_UNPOOLED)
-    ? process.env.DATABASE_URL_UNPOOLED
-    : (process.env.DATABASE_URL || process.env.POSTGRES_URL)
-
-export const pool =
-  globalForDb.pgPool ??
-  new Pool({
+  return {
     connectionString,
-    connectionTimeoutMillis: 20000,
-    idleTimeoutMillis: 30000,
     max: 10,
-  })
-
-if (!globalForDb.pgPool) {
-  pool.on('error', (err) => {
-    console.warn('[PostgreSQL Pool] Idle client warning:', err.message)
-  })
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+  }
 }
+
+const globalForDb = globalThis as unknown as {
+  pool: Pool | undefined
+}
+
+export const pool = globalForDb.pool ?? new Pool(getDatabaseConfig())
 
 if (process.env.NODE_ENV !== 'production') {
-  globalForDb.pgPool = pool
+  globalForDb.pool = pool
 }
 
 export const db = drizzle(pool, { schema })

@@ -25,7 +25,7 @@ export function exportFinanceToExcel({ user, wallets, categories, budgets, trans
 
   // 1. Sheet Ringkasan Keuangan
   const summaryRows = [
-    ['LAPORAN KEUANGAN PRIBADI - DOMPETKU PRO'],
+    ['LAPORAN KEUANGAN PRIBADI - QWARTS FINANCE PRO'],
     ['Generated at:', new Date().toLocaleString('id-ID')],
     ['Pemilik Akun:', user.name],
     ['Email:', user.email],
@@ -232,6 +232,6 @@ export function exportFinanceToExcel({ user, wallets, categories, budgets, trans
   ]
   XLSX.utils.book_append_sheet(wb, wsCategory, 'Rekap Kategori')
 
-  const fileName = `Laporan_Keuangan_Dompetku_${new Date().toISOString().slice(0, 10)}.xlsx`
+  const fileName = `Laporan_Keuangan_Qwarts_Finance_${new Date().toISOString().slice(0, 10)}.xlsx`
   XLSX.writeFile(wb, fileName)
 }

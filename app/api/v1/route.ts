@@ -2,9 +2,11 @@ import { NextResponse } from 'next/server'
 
 export async function GET() {
   return NextResponse.json({
-    name: 'Dompetku Mobile REST API',
+    name: 'Qwarts Finance REST API',
     version: '1.2.0',
-    description: 'API backend untuk integrasi aplikasi Android, iOS, dan web clients.',
+    tier: 'PRO Exclusive',
+    planRequired: 'Qwarts Finance PRO',
+    description: 'API backend untuk integrasi aplikasi Android, iOS, dan web clients. Memerlukan paket Qwarts Finance PRO.',
     baseUrl: '/api/v1',
     authentication: {
       type: 'Bearer Token',

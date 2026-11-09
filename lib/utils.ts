@@ -42,10 +42,10 @@ export function terbilangRupiah(angka: number): string {
   return hasil ? `${hasil} Rupiah` : 'Nol Rupiah'
 }
 
-export function formatIndoDate(date: string | Date, withDay = false): string {
+export function formatIndoDate(date: string | Date, withDay = false, lang: 'id' | 'en' = 'id'): string {
   const d = new Date(date)
   if (isNaN(d.getTime())) return '-'
-  return d.toLocaleDateString('id-ID', {
+  return d.toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', {
     weekday: withDay ? 'long' : undefined,
     day: 'numeric',
     month: 'short',

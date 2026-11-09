@@ -23,11 +23,27 @@ export async function GET(req: NextRequest) {
     const catMap = new Map(allCats.map((c) => [c.id, c]))
     const walMap = new Map(allWallets.map((w) => [w.id, w]))
 
-    const todayDate = new Date().getDate()
+    const now = new Date()
+    const todayDate = now.getDate()
+    const currentMonth = now.getMonth()
+    const currentYear = now.getFullYear()
 
     const enriched = subs.map((s) => {
       const daysUntilDue = s.dueDate >= todayDate ? s.dueDate - todayDate : 30 - (todayDate - s.dueDate)
-      const isDueSoon = s.isActive && daysUntilDue <= s.reminderDaysBefore
+      
+      const isPaidThisMonth = !!(
+        s.lastPaidAt &&
+        new Date(s.lastPaidAt).getMonth() === currentMonth &&
+        new Date(s.lastPaidAt).getFullYear() === currentYear
+      )
+
+      const isDueSoon = s.isActive && !isPaidThisMonth && daysUntilDue <= s.reminderDaysBefore
+      const isOverdue = s.isActive && !isPaidThisMonth && todayDate > s.dueDate
+
+      let paymentStatus: 'paid' | 'overdue' | 'due_soon' | 'unpaid' = 'unpaid'
+      if (isPaidThisMonth) paymentStatus = 'paid'
+      else if (isOverdue) paymentStatus = 'overdue'
+      else if (isDueSoon) paymentStatus = 'due_soon'
 
       return {
         ...s,
@@ -35,6 +51,9 @@ export async function GET(req: NextRequest) {
         wallet: s.walletId ? walMap.get(s.walletId) || null : null,
         daysUntilDue,
         isDueSoon,
+        isOverdue,
+        isPaidThisMonth,
+        paymentStatus,
       }
     })
 
@@ -46,11 +65,20 @@ export async function GET(req: NextRequest) {
         return sum + s.amount
       }, 0)
 
+    const paidCountThisMonth = enriched.filter((s) => s.isActive && s.isPaidThisMonth).length
+    const unpaidCountThisMonth = enriched.filter((s) => s.isActive && !s.isPaidThisMonth).length
+    const totalPaidAmount = enriched
+      .filter((s) => s.isActive && s.isPaidThisMonth)
+      .reduce((sum, s) => sum + s.amount, 0)
+
     return apiSuccess(
       {
         totalActiveMonthly,
+        totalPaidAmount,
         totalCount: subs.length,
         dueSoonCount: enriched.filter((s) => s.isDueSoon).length,
+        paidCountThisMonth,
+        unpaidCountThisMonth,
         subscriptions: enriched,
       },
       'Daftar langganan & tagihan rutin berhasil dimuat'
