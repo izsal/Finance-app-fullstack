@@ -30,6 +30,7 @@ import {
 } from '@/app/actions/finance'
 import { authClient, signOut } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
+import { toast } from '@yusufceng1z/ding-react'
 import {
   AlertCircle,
   ArrowDownRight,
@@ -184,14 +185,12 @@ export default function Dashboard({
   // Profile update state
   const [profileName, setProfileName] = useState(user.name)
   const [isUpdatingName, setIsUpdatingName] = useState(false)
-  const [nameStatus, setNameStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   // Password change state
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
-  const [passwordStatus, setPasswordStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   // Delete all transactions state
   const [isDeletingAllTx, setIsDeletingAllTx] = useState(false)
@@ -199,7 +198,6 @@ export default function Dashboard({
 
   // Resend email verification state
   const [isResendingEmail, setIsResendingEmail] = useState(false)
-  const [emailStatus, setEmailStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [hideBalance, setHideBalance] = useState(false)
 
   // Initialize and persist theme, language, sidebar & privacy state
@@ -225,6 +223,7 @@ export default function Dashboard({
     } else {
       document.documentElement.classList.remove('dark')
     }
+    toast.configure({ theme: t })
   }
 
   const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
@@ -288,12 +287,17 @@ export default function Dashboard({
     | null
   >(null)
 
-  // Feedback Toast notification
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null)
-
-  const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
-    setToast({ message, type })
-    setTimeout(() => setToast(null), 3500)
+  // Feedback Toast notification (powered by @yusufceng1z/ding-react)
+  const showToast = (message: string, type: 'success' | 'info' | 'error' | 'warning' = 'success') => {
+    if (type === 'error') {
+      toast.error(message, { duration: 4500 })
+    } else if (type === 'warning') {
+      toast.warning(message, { duration: 4000 })
+    } else if (type === 'info') {
+      toast.info(message, { duration: 3500 })
+    } else {
+      toast.success(message, { duration: 3500 })
+    }
   }
 
   // Reload or refresh state reactively
@@ -337,15 +341,16 @@ export default function Dashboard({
       if (result.success && result.data?.paymentUrl) {
         window.location.href = result.data.paymentUrl
       } else {
-        alert(
+        showToast(
           result.message ||
           (lang === 'en'
             ? 'Failed to create Duitku invoice. Please ensure DUITKU_MERCHANT_CODE is set in .env.local.'
-            : 'Gagal membuat invoice Duitku. Pastikan DUITKU_MERCHANT_CODE sudah diset di file .env.local.')
+            : 'Gagal membuat invoice Duitku. Pastikan DUITKU_MERCHANT_CODE sudah diset di file .env.local.'),
+          'error'
         )
       }
     } catch (err: any) {
-      alert(err?.message || (lang === 'en' ? 'Failed to connect to Duitku payment server' : 'Gagal menghubungi server pembayaran Duitku'))
+      showToast(err?.message || (lang === 'en' ? 'Failed to connect to Duitku payment server' : 'Gagal menghubungi server pembayaran Duitku'), 'error')
     } finally {
       setIsPayingDuitku(false)
     }
@@ -828,17 +833,6 @@ export default function Dashboard({
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex flex-col antialiased transition-colors duration-200">
-      {/* Toast Notification */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl bg-slate-900 dark:bg-emerald-950 border border-slate-700 dark:border-emerald-800 px-5 py-3.5 text-white shadow-2xl transition-all animate-bounce">
-          <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-          <span className="text-sm font-medium">{toast.message}</span>
-          <button onClick={() => setToast(null)} className="ml-2 text-slate-400 hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-
       {/* Desktop Sidebar (Collapsible) */}
       <aside
         className={`fixed inset-y-0 hidden border-r border-slate-200/80 bg-white/90 dark:bg-slate-900/90 dark:border-slate-800 backdrop-blur-md p-4 lg:flex lg:flex-col lg:justify-between z-30 shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-all duration-300 ${sidebarCollapsed ? 'w-20' : 'w-64'
@@ -1194,7 +1188,7 @@ export default function Dashboard({
                   <button
                     onClick={() => {
                       if (data.wallets.length < 2) {
-                        alert(lang === 'en' ? 'You need at least 2 wallets to transfer balance between accounts.' : 'Anda membutuhkan minimal 2 dompet untuk melakukan transfer saldo.')
+                        showToast(lang === 'en' ? 'You need at least 2 wallets to transfer balance between accounts.' : 'Anda membutuhkan minimal 2 dompet untuk melakukan transfer saldo.', 'warning')
                         return
                       }
                       setShowModal({ type: 'transfer' })
@@ -3259,7 +3253,7 @@ export default function Dashboard({
                   <button
                     onClick={() => {
                       if (data.wallets.length < 2) {
-                        alert(lang === 'en' ? 'You need at least 2 wallets to transfer balance between accounts.' : 'Anda membutuhkan minimal 2 dompet untuk melakukan transfer saldo.')
+                        showToast(lang === 'en' ? 'You need at least 2 wallets to transfer balance between accounts.' : 'Anda membutuhkan minimal 2 dompet untuk melakukan transfer saldo.', 'warning')
                         return
                       }
                       setShowModal({ type: 'transfer' })
@@ -4111,19 +4105,18 @@ export default function Dashboard({
                             type="button"
                             onClick={async () => {
                               setIsResendingEmail(true)
-                              setEmailStatus(null)
                               try {
                                 const res = await authClient.sendVerificationEmail({
                                   email: currentUser.email,
                                   callbackURL: window.location.origin + '/?verified=true',
                                 })
                                 if (res.error) {
-                                  setEmailStatus({ type: 'error', message: res.error.message || (lang === 'en' ? 'Failed to send verification email' : 'Gagal mengirim email verifikasi') })
+                                  showToast(res.error.message || (lang === 'en' ? 'Failed to send verification email' : 'Gagal mengirim email verifikasi'), 'error')
                                 } else {
-                                  setEmailStatus({ type: 'success', message: lang === 'en' ? 'New verification email successfully sent! Please check your inbox.' : 'Email verifikasi baru berhasil dikirim! Silakan periksa inbox Anda.' })
+                                  showToast(lang === 'en' ? 'New verification email successfully sent! Please check your inbox.' : 'Email verifikasi baru berhasil dikirim! Silakan periksa inbox Anda.', 'success')
                                 }
                               } catch (err: any) {
-                                setEmailStatus({ type: 'error', message: err.message || (lang === 'en' ? 'Failed to send email' : 'Gagal mengirim email') })
+                                showToast(err.message || (lang === 'en' ? 'Failed to send email' : 'Gagal mengirim email'), 'error')
                               } finally {
                                 setIsResendingEmail(false)
                               }
@@ -4149,16 +4142,6 @@ export default function Dashboard({
                     <span>{t('btn_sign_out', lang)}</span>
                   </button>
                 </div>
-
-                {emailStatus && (
-                  <div className={`rounded-xl p-3 text-xs flex items-center gap-2 ${emailStatus.type === 'success'
-                    ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                    : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-                    }`}>
-                    {emailStatus.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
-                    <span>{emailStatus.message}</span>
-                  </div>
-                )}
               </div>
 
               {/* 5. Membership Plan Card */}
@@ -4246,41 +4229,28 @@ export default function Dashboard({
                   onSubmit={async (e) => {
                     e.preventDefault()
                     if (!profileName.trim()) {
-                      setNameStatus({ type: 'error', message: lang === 'en' ? 'Name cannot be empty' : 'Nama tidak boleh kosong' })
+                      showToast(lang === 'en' ? 'Name cannot be empty' : 'Nama tidak boleh kosong', 'error')
                       return
                     }
                     setIsUpdatingName(true)
-                    setNameStatus(null)
                     try {
                       const res = await authClient.updateUser({
                         name: profileName.trim(),
                       })
                       if (res.error) {
-                        setNameStatus({ type: 'error', message: res.error.message || (lang === 'en' ? 'Failed to update name' : 'Gagal memperbarui nama') })
+                        showToast(res.error.message || (lang === 'en' ? 'Failed to update name' : 'Gagal memperbarui nama'), 'error')
                       } else {
                         setCurrentUser((prev) => ({ ...prev, name: profileName.trim() }))
-                        setNameStatus({ type: 'success', message: lang === 'en' ? 'Profile name successfully updated!' : 'Nama profil berhasil diperbarui!' })
                         showToast(lang === 'en' ? 'Profile name successfully saved!' : 'Nama profil berhasil disimpan!', 'success')
-                        setTimeout(() => setNameStatus(null), 4000)
                       }
                     } catch (err: any) {
-                      setNameStatus({ type: 'error', message: err.message || (lang === 'en' ? 'An error occurred while updating name' : 'Terjadi kesalahan saat memperbarui nama') })
+                      showToast(err.message || (lang === 'en' ? 'An error occurred while updating name' : 'Terjadi kesalahan saat memperbarui nama'), 'error')
                     } finally {
                       setIsUpdatingName(false)
                     }
                   }}
                   className="space-y-4 max-w-lg"
                 >
-                  {nameStatus && (
-                    <div className={`rounded-xl p-3 text-xs flex items-center gap-2 ${nameStatus.type === 'success'
-                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                      : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-                      }`}>
-                      {nameStatus.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
-                      <span>{nameStatus.message}</span>
-                    </div>
-                  )}
-
                   <div>
                     <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
                       {t('full_name_label', lang)}
@@ -4329,18 +4299,17 @@ export default function Dashboard({
                 <form
                   onSubmit={async (e) => {
                     e.preventDefault()
-                    setPasswordStatus(null)
 
                     if (!currentPassword) {
-                      setPasswordStatus({ type: 'error', message: lang === 'en' ? 'Current password is required' : 'Kata sandi saat ini wajib diisi' })
+                      showToast(lang === 'en' ? 'Current password is required' : 'Kata sandi saat ini wajib diisi', 'error')
                       return
                     }
                     if (newPassword.length < 8) {
-                      setPasswordStatus({ type: 'error', message: lang === 'en' ? 'New password must be at least 8 characters' : 'Kata sandi baru minimal 8 karakter' })
+                      showToast(lang === 'en' ? 'New password must be at least 8 characters' : 'Kata sandi baru minimal 8 karakter', 'error')
                       return
                     }
                     if (newPassword !== confirmPassword) {
-                      setPasswordStatus({ type: 'error', message: lang === 'en' ? 'New password confirmation does not match' : 'Konfirmasi kata sandi baru tidak cocok' })
+                      showToast(lang === 'en' ? 'New password confirmation does not match' : 'Konfirmasi kata sandi baru tidak cocok', 'error')
                       return
                     }
 
@@ -4352,33 +4321,21 @@ export default function Dashboard({
                         revokeOtherSessions: false,
                       })
                       if (res.error) {
-                        setPasswordStatus({ type: 'error', message: res.error.message || (lang === 'en' ? 'Failed to change password. Make sure current password is correct.' : 'Gagal mengubah kata sandi. Pastikan kata sandi saat ini benar.') })
+                        showToast(res.error.message || (lang === 'en' ? 'Failed to change password. Make sure current password is correct.' : 'Gagal mengubah kata sandi. Pastikan kata sandi saat ini benar.'), 'error')
                       } else {
-                        setPasswordStatus({ type: 'success', message: lang === 'en' ? 'Password changed successfully!' : 'Kata sandi berhasil diubah!' })
                         showToast(lang === 'en' ? 'Password updated successfully!' : 'Kata sandi berhasil diperbarui!', 'success')
                         setCurrentPassword('')
                         setNewPassword('')
                         setConfirmPassword('')
-                        setTimeout(() => setPasswordStatus(null), 5000)
                       }
                     } catch (err: any) {
-                      setPasswordStatus({ type: 'error', message: err.message || (lang === 'en' ? 'An error occurred while changing password' : 'Terjadi kesalahan saat mengubah kata sandi') })
+                      showToast(err.message || (lang === 'en' ? 'An error occurred while changing password' : 'Terjadi kesalahan saat mengubah kata sandi'), 'error')
                     } finally {
                       setIsUpdatingPassword(false)
                     }
                   }}
                   className="space-y-4 max-w-lg"
                 >
-                  {passwordStatus && (
-                    <div className={`rounded-xl p-3 text-xs flex items-center gap-2 ${passwordStatus.type === 'success'
-                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                      : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-                      }`}>
-                      {passwordStatus.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
-                      <span>{passwordStatus.message}</span>
-                    </div>
-                  )}
-
                   <div>
                     <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
                       {t('current_password_label', lang)}
@@ -5185,7 +5142,7 @@ function TransactionModal({
         }
       }
     } catch (err: any) {
-      alert(err?.message || (lang === 'en' ? 'Failed to create new wallet' : 'Gagal membuat dompet baru'))
+      toast.error(err?.message || (lang === 'en' ? 'Failed to create new wallet' : 'Gagal membuat dompet baru'), { duration: 4500 })
     } finally {
       setIsCreatingWallet(false)
     }
@@ -5212,7 +5169,7 @@ function TransactionModal({
         }
       }
     } catch (err: any) {
-      alert(err?.message || (lang === 'en' ? 'Failed to create new category' : 'Gagal membuat kategori baru'))
+      toast.error(err?.message || (lang === 'en' ? 'Failed to create new category' : 'Gagal membuat kategori baru'), { duration: 4500 })
     } finally {
       setIsCreatingCategory(false)
     }
@@ -5231,15 +5188,15 @@ function TransactionModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!amount || amount <= 0) {
-      alert(lang === 'en' ? 'Please enter a valid transaction amount' : 'Mohon masukkan nominal transaksi yang valid')
+      toast.warning(lang === 'en' ? 'Please enter a valid transaction amount' : 'Mohon masukkan nominal transaksi yang valid', { duration: 4000 })
       return
     }
     if (!walletId || Number(walletId) <= 0) {
-      alert(lang === 'en' ? 'Please select or create a wallet first' : 'Mohon pilih atau buat dompet terlebih dahulu')
+      toast.warning(lang === 'en' ? 'Please select or create a wallet first' : 'Mohon pilih atau buat dompet terlebih dahulu', { duration: 4000 })
       return
     }
     if (!categoryId || Number(categoryId) <= 0) {
-      alert(lang === 'en' ? 'Please select or create a category first' : 'Mohon pilih atau buat kategori terlebih dahulu')
+      toast.warning(lang === 'en' ? 'Please select or create a category first' : 'Mohon pilih atau buat kategori terlebih dahulu', { duration: 4000 })
       return
     }
     setSubmitting(true)
@@ -5268,7 +5225,7 @@ function TransactionModal({
       }
       close()
     } catch (err: any) {
-      alert(err?.message || (lang === 'en' ? 'Failed to save transaction' : 'Gagal menyimpan transaksi'))
+      toast.error(err?.message || (lang === 'en' ? 'Failed to save transaction' : 'Gagal menyimpan transaksi'), { duration: 4500 })
     } finally {
       setSubmitting(false)
     }
@@ -5577,11 +5534,11 @@ function TransferModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (fromWalletId === toWalletId) {
-      alert(lang === 'en' ? 'Source and destination wallets cannot be the same' : 'Dompet asal dan tujuan tidak boleh sama')
+      toast.warning(lang === 'en' ? 'Source and destination wallets cannot be the same' : 'Dompet asal dan tujuan tidak boleh sama', { duration: 4000 })
       return
     }
     if (!amount || amount <= 0) {
-      alert(lang === 'en' ? 'Please enter a valid transfer amount' : 'Mohon masukkan nominal transfer')
+      toast.warning(lang === 'en' ? 'Please enter a valid transfer amount' : 'Mohon masukkan nominal transfer', { duration: 4000 })
       return
     }
     setSubmitting(true)
@@ -5596,7 +5553,7 @@ function TransferModal({
       done(lang === 'en' ? 'Fund transfer between wallets successful!' : 'Transfer saldo antar dompet berhasil!', fresh)
       close()
     } catch (err: any) {
-      alert(err?.message || (lang === 'en' ? 'Failed to process transfer' : 'Gagal melakukan transfer'))
+      toast.error(err?.message || (lang === 'en' ? 'Failed to process transfer' : 'Gagal melakukan transfer'), { duration: 4500 })
     } finally {
       setSubmitting(false)
     }
@@ -5748,7 +5705,7 @@ function WalletModal({
       }
       close()
     } catch (err: any) {
-      alert(err?.message || (lang === 'en' ? 'Failed to save wallet' : 'Gagal menyimpan dompet'))
+      toast.error(err?.message || (lang === 'en' ? 'Failed to save wallet' : 'Gagal menyimpan dompet'), { duration: 4500 })
     } finally {
       setSubmitting(false)
     }
@@ -5868,7 +5825,7 @@ function CategoryModal({
       }
       close()
     } catch (err: any) {
-      alert(err?.message || (lang === 'en' ? 'Failed to save category' : 'Gagal menyimpan kategori'))
+      toast.error(err?.message || (lang === 'en' ? 'Failed to save category' : 'Gagal menyimpan kategori'), { duration: 4500 })
     } finally {
       setSubmitting(false)
     }
@@ -5969,7 +5926,7 @@ function BudgetModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!amount || amount <= 0) {
-      alert(lang === 'en' ? 'Please enter a valid budget limit' : 'Mohon masukkan batas budget yang valid')
+      toast.warning(lang === 'en' ? 'Please enter a valid budget limit' : 'Mohon masukkan batas budget yang valid', { duration: 4000 })
       return
     }
     setSubmitting(true)
@@ -5982,7 +5939,7 @@ function BudgetModal({
       done(lang === 'en' ? 'Monthly budget saved successfully!' : 'Budget bulanan berhasil disimpan!', fresh)
       close()
     } catch (err: any) {
-      alert(err?.message || (lang === 'en' ? 'Failed to save budget' : 'Gagal menyimpan budget'))
+      toast.error(err?.message || (lang === 'en' ? 'Failed to save budget' : 'Gagal menyimpan budget'), { duration: 4500 })
     } finally {
       setSubmitting(false)
     }
@@ -6075,11 +6032,11 @@ function GoalModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) {
-      alert(lang === 'en' ? 'Goal name is required' : 'Nama target tabungan wajib diisi')
+      toast.warning(lang === 'en' ? 'Goal name is required' : 'Nama target tabungan wajib diisi', { duration: 4000 })
       return
     }
     if (!targetAmount || targetAmount <= 0) {
-      alert(lang === 'en' ? 'Target amount must be greater than 0' : 'Target nominal tabungan harus lebih dari 0')
+      toast.warning(lang === 'en' ? 'Target amount must be greater than 0' : 'Target nominal tabungan harus lebih dari 0', { duration: 4000 })
       return
     }
     setSubmitting(true)
@@ -6104,7 +6061,7 @@ function GoalModal({
       }
       close()
     } catch (err: any) {
-      alert(err?.message || (lang === 'en' ? 'Failed to save goal' : 'Gagal menyimpan target'))
+      toast.error(err?.message || (lang === 'en' ? 'Failed to save goal' : 'Gagal menyimpan target'), { duration: 4500 })
     } finally {
       setSubmitting(false)
     }
@@ -6210,7 +6167,7 @@ function GoalDepositModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!amount || amount <= 0) {
-      alert(lang === 'en' ? 'Please enter a valid deposit amount' : 'Mohon masukkan nominal setoran yang valid')
+      toast.warning(lang === 'en' ? 'Please enter a valid deposit amount' : 'Mohon masukkan nominal setoran yang valid', { duration: 4000 })
       return
     }
     setSubmitting(true)
@@ -6228,7 +6185,7 @@ function GoalDepositModal({
       )
       close()
     } catch (err: any) {
-      alert(err?.message || (lang === 'en' ? 'Failed to deposit savings' : 'Gagal menyetor tabungan'))
+      toast.error(err?.message || (lang === 'en' ? 'Failed to deposit savings' : 'Gagal menyetor tabungan'), { duration: 4500 })
     } finally {
       setSubmitting(false)
     }
@@ -6330,11 +6287,11 @@ function SubscriptionModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) {
-      alert(lang === 'en' ? 'Bill name is required' : 'Nama tagihan wajib diisi')
+      toast.warning(lang === 'en' ? 'Bill name is required' : 'Nama tagihan wajib diisi', { duration: 4000 })
       return
     }
     if (!amount || amount <= 0) {
-      alert(lang === 'en' ? 'Bill cost must be greater than 0' : 'Nominal tagihan harus lebih dari 0')
+      toast.warning(lang === 'en' ? 'Bill cost must be greater than 0' : 'Nominal tagihan harus lebih dari 0', { duration: 4000 })
       return
     }
     setSubmitting(true)
@@ -6366,7 +6323,7 @@ function SubscriptionModal({
       }
       close()
     } catch (err: any) {
-      alert(err?.message || (lang === 'en' ? 'Failed to save bill' : 'Gagal menyimpan tagihan'))
+      toast.error(err?.message || (lang === 'en' ? 'Failed to save bill' : 'Gagal menyimpan tagihan'), { duration: 4500 })
     } finally {
       setSubmitting(false)
     }
@@ -6514,7 +6471,7 @@ function PaySubscriptionModal({
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!walletId) {
-      alert(lang === 'en' ? 'Select a wallet for payment' : 'Pilih dompet untuk pembayaran')
+      toast.warning(lang === 'en' ? 'Select a wallet for payment' : 'Pilih dompet untuk pembayaran', { duration: 4000 })
       return
     }
     setSubmitting(true)
@@ -6533,7 +6490,7 @@ function PaySubscriptionModal({
       )
       close()
     } catch (err: any) {
-      alert(err?.message || (lang === 'en' ? 'Failed to process payment' : 'Gagal memproses pembayaran'))
+      toast.error(err?.message || (lang === 'en' ? 'Failed to process payment' : 'Gagal memproses pembayaran'), { duration: 4500 })
     } finally {
       setSubmitting(false)
     }

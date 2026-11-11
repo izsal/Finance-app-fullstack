@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import type { Metadata, Viewport } from 'next'
 import { PwaRegister } from '@/components/pwa-register'
+import { Toaster } from '@yusufceng1z/ding-react'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -110,6 +111,7 @@ export default function RootLayout({
     <html lang="id" className="bg-[#f7f9fb]" suppressHydrationWarning>
       <body className="antialiased">
         <PwaRegister />
+        <Toaster position="bottom-right" theme="system" />
         {children}
         {process.env.NODE_ENV === 'production' &&
           <>

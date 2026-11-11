@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { toast } from '@yusufceng1z/ding-react'
 import {
   AlertCircle,
   ArrowDownRight,
@@ -76,7 +77,6 @@ export default function LandingPage() {
   const [previewTab, setPreviewTab] = useState<'overview' | 'budget' | 'goals' | 'mobile'>('overview')
   const [hideBalance, setHideBalance] = useState(false)
   const [simulatedDeposit, setSimulatedDeposit] = useState(0)
-  const [depositSuccessToast, setDepositSuccessToast] = useState(false)
 
   useEffect(() => {
     try {
@@ -100,8 +100,12 @@ export default function LandingPage() {
 
   const handleSimulateDeposit = () => {
     setSimulatedDeposit((prev) => prev + 500000)
-    setDepositSuccessToast(true)
-    setTimeout(() => setDepositSuccessToast(false), 2500)
+    toast.success(
+      lang === 'en'
+        ? 'Simulated deposit added! Savings balance increased by Rp 500,000.'
+        : 'Setoran simulasi berhasil ditambahkan! Saldo tabungan bertambah Rp 500.000.',
+      { duration: 3500 }
+    )
   }
 
   const formatRupiah = (val: number) => {
@@ -870,12 +874,6 @@ export default function LandingPage() {
                     </div>
                   </div>
                 </div>
-
-                {depositSuccessToast && (
-                  <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/70 p-3 text-center text-xs font-bold text-emerald-300 animate-fadeIn">
-                    🎉 Setoran simulasi berhasil ditambahkan! Saldo tabungan bertambah Rp 500.000.
-                  </div>
-                )}
               </div>
             )}
 

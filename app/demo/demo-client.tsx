@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { toast } from '@yusufceng1z/ding-react'
 import {
   AlertCircle,
   ArrowDownRight,
@@ -103,7 +104,6 @@ export default function DemoClient() {
   const [lang, setLang] = useState<Lang>('id')
   const [hideBalance, setHideBalance] = useState(false)
   const [depositAdded, setDepositAdded] = useState(0)
-  const [depositToast, setDepositToast] = useState(false)
   const [paidBills, setPaidBills] = useState<number[]>([2, 4])
   const [addedTx, setAddedTx] = useState<typeof DEMO_TRANSACTIONS[0] | null>(null)
   const [showAddTxHint, setShowAddTxHint] = useState(false)
@@ -132,8 +132,12 @@ export default function DemoClient() {
 
   const handleDeposit = () => {
     setDepositAdded(p => p + 500000)
-    setDepositToast(true)
-    setTimeout(() => setDepositToast(false), 2500)
+    toast.success(
+      lang === 'id'
+        ? 'Setoran Rp 500.000 berhasil ditambahkan ke Dana Darurat!'
+        : 'Rp 500,000 deposited to Emergency Fund!',
+      { duration: 3500 }
+    )
   }
 
   const handleSimulateAddTx = () => {
@@ -148,6 +152,12 @@ export default function DemoClient() {
     }
     setAddedTx(newTx)
     setShowAddTxHint(false)
+    toast.success(
+      lang === 'id'
+        ? `Transaksi "${newTx.desc}" berhasil ditambahkan!`
+        : `Transaction "${newTx.desc}" added!`,
+      { duration: 3500 }
+    )
   }
 
   const toggleBillPaid = (id: number) => {
@@ -554,13 +564,6 @@ export default function DemoClient() {
                 <h2 className="text-xl font-extrabold text-white">{lang === 'id' ? 'Target Impian' : 'Savings Goals'}</h2>
                 <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] font-black text-amber-400">PRO</span>
               </div>
-
-              {depositToast && (
-                <div className="rounded-2xl border border-emerald-500/40 bg-emerald-950/30 p-3.5 flex items-center gap-2 text-xs font-semibold text-emerald-300">
-                  <CheckCircle2 className="h-4 w-4" />
-                  {lang === 'id' ? '✅ Setoran Rp 500.000 berhasil ditambahkan ke Dana Darurat!' : '✅ Rp 500,000 deposited to Emergency Fund!'}
-                </div>
-              )}
 
               <div className="grid gap-4 sm:grid-cols-3">
                 {DEMO_GOALS.map((goal, i) => {
